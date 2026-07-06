@@ -116,4 +116,4 @@ proto_ext_framework_destroy(fw);
 
 ---
 
-© 2026 SPHARX Ltd. All Rights Reserved.
+© 2025-2026 SPHARX Ltd. All Rights Reserved.
