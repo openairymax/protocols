@@ -1,58 +1,45 @@
+# protocols — AgentsIPC & A2A/A2T Protocol Stack
+
+> The unified communication contract of the Airymax runtime: every cross-module, cross-service, and external message rides on this stack.
+> Leaf repository under the [agentrt](../) management repo.
+
 **Language:** English | [简体中文](README_zh.md)
 
-# Airymax Protocols — Unified Communication Protocol Stack
+[![Version](https://img.shields.io/badge/version-0.1.1-5a6b7e)](https://atomgit.com/openairymax/protocols)
+[![License](https://img.shields.io/badge/license-AGPL--3.0+Apache--2.0-4a90d9)](LICENSE)
+[![C11](https://img.shields.io/badge/C-11-00599C?logo=c&logoColor=white)](https://en.cppreference.com/w/c/11)
 
-`agentrt/protocols/`
-
-**Version:** 0.1.1
-**License:** AGPL-3.0-or-later OR Apache-2.0 (dual-licensed)
-**Branch:** `feature/official-hubs-01`
+- **Repository:** `git@atomgit.com:openairymax/protocols.git`
+- **Branch:** `feature/official-hubs-01`
+- **Version:** 0.1.1 (Airymax foundational release)
 
 ---
 
-## 1. Module Positioning
+## Overview
 
-Protocols is the **unified communication protocol stack** of the Airymax agent
-runtime. It defines and implements every protocol contract used inside the
-system — between modules, between services, and between the runtime and
-external platforms. The stack is organized in five layers (Common / Core /
-Standards / Integrations / Frameworks) and is compiled into the
-`libagentrt_protocols` shared library.
+**protocols** is the **unified communication protocol stack** of the Airymax agent runtime. It defines and implements every protocol contract used inside the system — between modules, between services, and between the runtime and external platforms. The stack is organized in five layers (Common / Core / Standards / Integrations / Frameworks) and is compiled into the `libagentrt_protocols` shared library.
 
 The stack carries three protocol families:
 
-- **AgentsIPC** — the Airymax internal IPC wire format. Its L2 application-level
-  message header (`agentrt_ipc_header_t`, defined authoritatively in
-  `commons/include/agentrt_types.h`) is a **fixed-length binary header**
-  carrying magic, version, type, flags, message ID, correlation ID, 64-byte
-  source, 64-byte target, payload length, checksum, and timestamp — the
-  canonical envelope for cross-module, cross-service, and application-level
-  messaging across Linux / Windows / macOS.
-- **A2A (Agent-to-Agent)** — the v0.3 Agent-to-Agent standard protocol adapter
-  for inter-agent dialogue and capability exchange.
-- **A2T (Agent-to-Tool) / MCP** — the Model Context Protocol (MCP v1.0)
-  adapter serves as the Agent-to-Tool contract, exposing tool surfaces to
-  agents through a standardized context protocol.
+- **AgentsIPC** — the Airymax internal IPC wire format. Its L2 application-level message header (`agentrt_ipc_header_t`, defined authoritatively in `commons/include/agentrt_types.h`) is a **fixed-length binary header** carrying magic, version, type, flags, message ID, correlation ID, 64-byte source, 64-byte target, payload length, checksum, and timestamp — the canonical envelope for cross-module, cross-service, and application-level messaging across Linux / Windows / macOS. Payloads fall into **5 categories** aligned with the runtime's message domains (task / memory / session / telemetry / agent).
+- **A2A (Agent-to-Agent)** — the v0.3 Agent-to-Agent standard protocol adapter for inter-agent dialogue and capability exchange.
+- **A2T (Agent-to-Tool) / MCP** — the Model Context Protocol (MCP v1.0) adapter serves as the Agent-to-Tool contract, exposing tool surfaces to agents through a standardized context protocol.
 
-Core design principles:
+Core design principles: protocol-agnostic API (upper-layer code talks to a unified `unified_message_t` model and `protocol_adapter_t` interface), pluggable adapters (each protocol is independently registerable / unregisterable / hot-loadable), intelligent routing (rule-engine-based protocol router performs automatic cross-protocol message conversion), and a unified registry (protocol discovery, capability query, dependency tracking, lifecycle management).
 
-- **Protocol-agnostic API** — upper-layer business code talks to a unified
-  `unified_message_t` model and `protocol_adapter_t` interface; the underlying
-  protocol details are irrelevant.
-- **Pluggable adapters** — each protocol is an independent adapter that can be
-  dynamically registered / unregistered / hot-loaded.
-- **Intelligent routing** — a rule-engine-based protocol router performs
-  automatic cross-protocol message conversion.
-- **Unified registry** — protocol discovery, capability query, dependency
-  tracking, and lifecycle management.
+Within the Airymax 0.1.1 release, the workspace is partitioned into **38 repositories** (1 umbrella + 5 management + 29 leaf + 3 top-level); `protocols` is one of the 7 leaf repositories aggregated by the [agentrt](../) management repo, forming the **Protocol Layer** in the cyclic architecture (above the Storage Layer `heapstore`, below the Gateway and Service layers).
 
----
+## Module Classification
 
-## 2. Directory Structure
+**Class — (Service / Composition layer).**
+
+protocols is neither a foundational primitive (Class A) nor a behavioral safety module (Class B); it is a service/composition module that provides the wire-format contracts and adapter plumbing the rest of the runtime speaks. It depends on `commons` (the authoritative `agentrt_ipc_header_t` type and platform/string utilities) and `atoms/corekern` (kernel type definitions; CoreKern Binder IPC is the underlying transport that the AgentsIPC envelope rides on). Its consumers — `gateway` and `daemons` — use the protocol router/gateway interfaces to translate transports and bridge A2A/MCP at protocol boundaries.
+
+## Directory Structure
 
 ```
 protocols/
-├── CMakeLists.txt                          # CMake build configuration
+├── CMakeLists.txt                          # CMake build configuration (shared lib libagentrt_protocols)
 ├── README.md                               # This file (English)
 ├── README_zh.md                            # Chinese version
 ├── LICENSE                                 # Dual license texts (AGPL-3.0 + Apache-2.0)
@@ -70,14 +57,14 @@ protocols/
 │       ├── unified_protocol.c              # Core (msg create / send / receive / callbacks)
 │       └── protocols_impl.c                # Framework init / manager / default adapter / errors
 ├── core/                                   # Core layer — routing / extension / transform / registry
-│   ├── adapter/                            # Extension framework
-│   ├── registry/                           # Registry center
-│   ├── router/                             # Protocol routing engine
-│   └── transformers/                       # Message transformers
+│   ├── adapter/                            # Extension framework (protocol_extension_framework.h)
+│   ├── registry/                           # Registry center (protocol_registry.h)
+│   ├── router/                             # Protocol routing engine (protocol_router.h)
+│   └── transformers/                       # Message transformers (protocol_transformers.h)
 ├── standards/                              # Standards layer — industry-standard protocols
-│   ├── a2a/                                # A2A v0.3 (Agent-to-Agent)
-│   ├── mcp/                                # MCP v1.0 (Model Context Protocol — Agent-to-Tool)
-│   └── agntcy/                             # AGNTCY ACP
+│   ├── a2a/                                # A2A v0.3 (Agent-to-Agent) — a2a_v03_adapter.h
+│   ├── mcp/                                # MCP v1.0 (Model Context Protocol — Agent-to-Tool) — mcp_v1_adapter.h, mcp_transport.h
+│   └── agntcy/                             # AGNTCY ACP — agntcy_acp_adapter.h
 ├── integrations/                           # Integrations layer — major AI platform adapters
 │   ├── openai/                             # OpenAI API enterprise adapter
 │   ├── claude/                             # Anthropic Claude API adapter
@@ -93,9 +80,75 @@ protocols/
     └── test_china_eco_crypto.c
 ```
 
-### Five-Layer Architecture
+## Core Components
+
+### AgentsIPC — the L2 application-level wire format
+
+The canonical envelope for all cross-module / cross-service messaging, defined authoritatively in `commons/include/agentrt_types.h`:
+
+```c
+typedef struct {
+    uint32_t magic;          /* 0x414F5350 = "AOSP" */
+    uint32_t version;        /* protocol version */
+    uint32_t type;           /* message type */
+    uint32_t flags;          /* message flags */
+    uint64_t msg_id;         /* message ID */
+    uint64_t correlation_id; /* correlation ID (request-response) */
+    char     source[64];     /* sender identity */
+    char     target[64];     /* target identity */
+    uint32_t payload_len;    /* payload length */
+    uint32_t checksum;       /* checksum */
+    uint64_t timestamp;      /* nanosecond timestamp */
+} agentrt_ipc_header_t;
+```
+
+The header carries a structured addressing block (64-byte source + 64-byte target = 128 bytes of routing identity) plus magic/version/type/flags, message & correlation IDs, payload length, checksum, and nanosecond timestamp. **5 payload categories** align with the runtime's message domains:
+
+| Payload category | Domain | Example use |
+|------------------|--------|-------------|
+| task | Task scheduling | Task creation, cancellation, completion events |
+| memory | Memory management | Allocation records, pool stats, arena ops |
+| session | Session lifecycle | Session open/close, context sync |
+| telemetry | Observability | Metrics, traces, logs, health |
+| agent | Agent runtime | Agent messages, skill invocations, A2A/A2T |
+
+### Three protocol families
+
+| Family | Adapter | Standard | Purpose |
+|--------|---------|----------|---------|
+| **AgentsIPC** | (L2 envelope, native) | Airymax internal | Cross-module / cross-service messaging on Linux/Windows/macOS |
+| **A2A** | `a2a_v03_adapter.c` | A2A v0.3 | Agent-to-Agent dialogue and capability exchange |
+| **A2T / MCP** | `mcp_v1_adapter.c`, `mcp_transport.c` | MCP v1.0 | Agent-to-Tool contract; exposes tool surfaces to agents |
+
+### Five-layer architecture
+
+| Layer | Components | Responsibility |
+|-------|-----------|----------------|
+| **Common** | `unified_protocol.c`, `protocols_impl.c` | Unified message model (`unified_message_t`), protocol-stack lifecycle (`protocol_stack_*`), adapter registration and routing, framework init / manager / default adapter factory |
+| **Core** | `protocol_router.c`, `protocol_extension_framework.c`, `protocol_transformers.c`, `protocol_registry.c` | Routing engine (rule matching / msg conversion), extension framework (plugin adapters / middleware pipeline), message transformers (cross-protocol format adaptation), registry (discovery / capability query / dependency tracking) |
+| **Standards** | `a2a_v03_adapter.c`, `mcp_v1_adapter.c`, `mcp_transport.c`, `agntcy_acp_adapter.c` | A2A (Agent-to-Agent), MCP (Model Context Protocol — Agent-to-Tool), AGNTCY ACP — industry-standard protocol adapters |
+| **Integrations** | `openai_enterprise_adapter.c`, `claude_adapter.c`, `openjiuwen_adapter.c`, `openclaw_adapter.c`, `china_eco_adapter.c` | OpenAI (Chat / Embeddings / Function Calling / Streaming), Claude (Messages / Tool Use / Extended Thinking / Vision), OpenJiuwen (custom binary protocol), OpenClaw (Jiuwen / multi-agent / safety control), China ecosystem (Bailian / Wenxin / SM2-4 national crypto / object storage) |
+| **Frameworks** | `langchain_adapter.c`, `autogen_adapter.c` | LangChain (Chain / Agent / Tool / Memory / RAG / Streaming), AutoGen (multi-agent dialogue / group chat / code execution / human-in-the-loop) |
+
+## Architecture
 
 ```
+┌──────────────────────────────────────────────┐
+│             Applications (OpenLab)            │
+├──────────────────────────────────────────────┤
+│             Ecosystem (Toolkit / SDK)         │
+├──────────────────────────────────────────────┤
+│              Daemon Services (daemons)        │
+├──────────────────────────────────────────────┤
+│   Gateway Layer (gateway)                     │
+├──────────────────────────────────────────────┤
+│          ★ protocols (Protocol Layer) ★      │
+├──────────────────────────────────────────────┤
+│   Storage (heapstore) / Security (cupolas)    │
+├──────────────────────────────────────────────┤
+│            atoms / commons / OS               │
+└──────────────────────────────────────────────┘
+
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     Frameworks Layer (framework adapters)            │
 │  ┌──────────────────┐  ┌──────────────────┐                        │
@@ -106,7 +159,7 @@ protocols/
 │  openai_enterprise | openjiuwen | openclaw | claude | china_eco      │
 ├─────────────────────────────────────────────────────────────────────┤
 │                   Standards Layer (standard protocols)               │
-│  a2a_v03_adapter | mcp_v1_adapter | agntcy_acp_adapter              │
+│  a2a_v03_adapter (A2A) | mcp_v1_adapter (A2T/MCP) | agntcy_acp      │
 ├─────────────────────────────────────────────────────────────────────┤
 │                     Core Layer (routing / extension / transform)     │
 │  protocol_router | protocol_extension_framework | protocol_          │
@@ -116,68 +169,79 @@ protocols/
 │                    Common Layer (unified model)                      │
 │  unified_protocol.c | protocols_impl.c                              │
 └─────────────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+        AgentsIPC L2 envelope (agentrt_ipc_header_t + payload)
+        rides on atoms/corekern Binder IPC transport
 ```
 
-### Layer Responsibilities
+## Upstream Dependencies
 
-| Layer | Components | Responsibility |
-|-------|-----------|----------------|
-| **Common** | `unified_protocol.c`, `protocols_impl.c` | Unified message model (`unified_message_t`), protocol-stack lifecycle (`protocol_stack_*`), adapter registration and routing, framework init / manager / default adapter factory |
-| **Core** | `protocol_router.c`, `protocol_extension_framework.c`, `protocol_transformers.c`, `protocol_registry.c` | Routing engine (rule matching / msg conversion), extension framework (plugin adapters / middleware pipeline), message transformers (cross-protocol format adaptation), registry (discovery / capability query / dependency tracking) |
-| **Standards** | `a2a_v03_adapter.c`, `mcp_v1_adapter.c`, `mcp_transport.c`, `agntcy_acp_adapter.c` | A2A (Agent-to-Agent), MCP (Model Context Protocol — Agent-to-Tool), AGNTCY ACP — industry-standard protocol adapters |
-| **Integrations** | `openai_enterprise_adapter.c`, `claude_adapter.c`, `openjiuwen_adapter.c`, `openclaw_adapter.c`, `china_eco_adapter.c` | OpenAI (Chat / Embeddings / Function Calling / Streaming), Claude (Messages / Tool Use / Extended Thinking / Vision), OpenJiuwen (custom binary protocol), OpenClaw (Jiuwen / multi-agent / safety control), China ecosystem (Bailian / Wenxin / SM2-4 national crypto / object storage) |
-| **Frameworks** | `langchain_adapter.c`, `autogen_adapter.c` | LangChain (Chain / Agent / Tool / Memory / RAG / Streaming), AutoGen (multi-agent dialogue / group chat / code execution / human-in-the-loop) |
-
----
-
-## 3. Upstream / Downstream Dependencies
-
-### Upstream (Protocols depends on)
+> `commons` is the foundation for all agentrt modules; protocols consumes it for the authoritative `agentrt_ipc_header_t` type and platform/string utilities. protocols also depends on `atoms/corekern`.
 
 | Dependency | Source | Purpose |
 |------------|--------|---------|
-| **commons** | `commons/` | Platform abstraction, memory management, string tools, `agentrt_ipc_header_t` authoritative type definition (the AgentsIPC L2 wire-format header) |
+| **commons** | `commons/` | Platform abstraction, memory management, string tools, **authoritative `agentrt_ipc_header_t` type definition** (the AgentsIPC L2 wire-format header) |
 | **atoms/corekern** | `atoms/corekern/` | Kernel type definitions; CoreKern Binder IPC is the underlying transport that the AgentsIPC envelope rides on |
 | `svc_common` | `daemons/common/` | Safe-string utilities (`safe_string_utils.c`) |
 | `agentrt_compile_defs` | umbrella CMake | Compile definitions |
 | cJSON | external | JSON parsing (MCP and other adapters) |
 | libcurl | external | HTTP client (some integration adapters) |
 
-### Downstream (consumers of Protocols)
+## Downstream Consumers
 
-| Consumer | What it uses |
-|----------|--------------|
+| Consumer | What they use |
+|----------|---------------|
 | **gateway** | Gateway uses the protocol router / gateway interfaces to translate HTTP / WS / Stdio into JSON-RPC 2.0 over AgentsIPC, and to bridge A2A / MCP at the protocol boundary |
-| **daemons** | All 12 daemons communicate with each other via JSON-RPC 2.0 carried over the AgentsIPC L2 envelope; tool_d / plugin_d expose MCP tool surfaces (Agent-to-Tool) |
+| **daemons** | All 12 daemons communicate with each other via JSON-RPC 2.0 carried over the AgentsIPC L2 envelope; `tool_d` / `plugin_d` expose MCP tool surfaces (Agent-to-Tool) |
 | Toolkit / SDK | The SDK ships protocol client libraries built on top of this stack |
 | OpenLab applications | All OpenLab modules talk to the core runtime over JSON-RPC 2.0 |
 
----
+## Build
 
-## 4. Core Interfaces
+The protocols layer builds as a shared library `libagentrt_protocols`. Each adapter can be individually enabled or disabled through CMake options.
 
-### I-L1: Protocol adapter interface (`proto_adapter_vtable_t`)
+```bash
+# Standard build (out-of-source, enforced by BAN-33)
+cmake -S . -B /tmp/protocols-build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON
+cmake --build /tmp/protocols-build --parallel $(nproc)
 
-The unified vtable for every protocol adapter, defining
-`init / destroy / encode / decode / connect / disconnect / send / receive / get_stats`
-plus capability flags (`proto_capability_flags_t`).
+# Run tests
+ctest --test-dir /tmp/protocols-build -R protocols --output-on-failure
 
-### I-L2: Protocol router interface (`proto_router_iface_t`)
+# Install
+cmake --install /tmp/protocols-build --prefix /opt/airymax
+```
 
-Rule-engine-based router supporting route add / remove, single / batch message
-routing, protocol conversion, default-protocol selection, and route statistics.
+**CMake options:**
 
-### I-L3: Protocol gateway interface (`proto_gateway_iface_t`)
+| Option | Default | Description |
+|--------|---------|-------------|
+| `PROTOCOLS_ENABLE_OPENCLAW` | `OFF` | OpenClaw (Jiuwen) platform adapter (requires Unix sockets) |
+| `PROTOCOLS_ENABLE_CLAUDE` | `ON` | Claude API adapter |
+| `PROTOCOLS_ENABLE_LANGCHAIN` | `ON` | LangChain framework adapter |
+| `PROTOCOLS_ENABLE_AUTOGEN` | `ON` | AutoGen framework adapter |
+| `PROTOCOLS_ENABLE_AGNTCY` | `ON` | AGNTCY ACP protocol adapter |
+| `PROTOCOLS_ENABLE_CHINA_ECO` | `ON` | China ecosystem adapter (requires Unix) |
+| `PROTOCOLS_ENABLE_MCP` | `ON` (OFF on Windows) | MCP protocol adapter (requires cJSON / unistd.h) |
 
-Gateway integration interface providing protocol register / unregister, request
-handling, automatic protocol detection, event callbacks, and statistics query.
+Windows note: `OPENCLAW`, `CHINA_ECO`, and `MCP` are force-disabled on Windows because they require Unix-domain sockets or `unistd.h`.
 
-### I-L4: Protocol extension interface (`proto_extension_mgr_iface_t`)
+**Build artifacts:**
 
-Extension manager interface supporting extension register / unregister,
-load / unload, auto-detection, and capability query.
+- `libagentrt_protocols` — shared library aggregating Common / Core / Standards / Integrations / Frameworks layers
+- Public headers installed under `include/agentrt/protocols`
 
-### Usage Example
+## API
+
+### Core interfaces
+
+- **I-L1: Protocol adapter interface** (`proto_adapter_vtable_t`) — the unified vtable for every protocol adapter, defining `init / destroy / encode / decode / connect / disconnect / send / receive / get_stats` plus capability flags (`proto_capability_flags_t`).
+- **I-L2: Protocol router interface** (`proto_router_iface_t`) — rule-engine-based router supporting route add / remove, single / batch message routing, protocol conversion, default-protocol selection, and route statistics.
+- **I-L3: Protocol gateway interface** (`proto_gateway_iface_t`) — gateway integration interface providing protocol register / unregister, request handling, automatic protocol detection, event callbacks, and statistics query.
+- **I-L4: Protocol extension interface** (`proto_extension_mgr_iface_t`) — extension manager interface supporting extension register / unregister, load / unload, auto-detection, and capability query.
+
+### Usage example
 
 ```c
 #include "protocols.h"
@@ -200,52 +264,7 @@ protocol_manager_destroy(mgr);
 protocols_framework_cleanup();
 ```
 
----
-
-## 5. Build Instructions
-
-The protocols layer builds as a shared library `libagentrt_protocols`. Each
-adapter can be individually enabled or disabled through CMake options.
-
-```bash
-# Standard build (from the umbrella root, or standalone)
-cmake -B build -DBUILD_TESTS=ON
-cmake --build build
-
-# Run tests
-ctest --test-dir build -R protocols
-```
-
-### CMake Options
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `PROTOCOLS_ENABLE_OPENCLAW` | `OFF` | OpenClaw (Jiuwen) platform adapter (requires Unix sockets) |
-| `PROTOCOLS_ENABLE_CLAUDE` | `ON` | Claude API adapter |
-| `PROTOCOLS_ENABLE_LANGCHAIN` | `ON` | LangChain framework adapter |
-| `PROTOCOLS_ENABLE_AUTOGEN` | `ON` | AutoGen framework adapter |
-| `PROTOCOLS_ENABLE_AGNTCY` | `ON` | AGNTCY ACP protocol adapter |
-| `PROTOCOLS_ENABLE_CHINA_ECO` | `ON` | China ecosystem adapter (requires Unix) |
-| `PROTOCOLS_ENABLE_MCP` | `ON` (OFF on Windows) | MCP protocol adapter (requires cJSON / unistd.h) |
-
-Windows note: `OPENCLAW`, `CHINA_ECO`, and `MCP` are force-disabled on Windows
-because they require Unix-domain sockets or `unistd.h`.
-
-### Build Artifacts
-
-- `libagentrt_protocols` — shared library aggregating Common / Core / Standards /
-  Integrations / Frameworks layers
-- Public headers installed under `include/agentrt/protocols`
-
-### Installation
-
-```bash
-cmake --install build --prefix /opt/airymax
-```
-
----
-
-## 6. License
+## License
 
 Copyright (c) 2025-2026 SPHARX Ltd. All Rights Reserved.
 
@@ -258,8 +277,4 @@ This module is dual-licensed under the terms of either:
 
 SPDX-License-Identifier: `AGPL-3.0-or-later OR Apache-2.0`
 
-The full license texts are in the [LICENSE](LICENSE) file; the copyright
-notice is in [NOTICE](NOTICE). You may select either license to comply with.
-The AGPL-3.0-or-later terms apply by default; the Apache-2.0 alternative is
-provided for downstream integration scenarios (e.g., closed-source or
-proprietary distribution) that the AGPL does not accommodate.
+The full license texts are in the [LICENSE](LICENSE) file; the copyright notice is in [NOTICE](NOTICE). You may select either license to comply with. The AGPL-3.0-or-later terms apply by default; the Apache-2.0 alternative is provided for downstream integration scenarios (e.g., closed-source or proprietary distribution) that the AGPL does not accommodate.
