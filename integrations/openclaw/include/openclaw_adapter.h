@@ -6,7 +6,7 @@
  * @brief OpenClaw Platform Integration Adapter for AgentRT
  *
  * OpenClaw (九问) 是开源AI Agent平台，专注于政务和企业应用。
- * 本适配器实现AgentOS与OpenClaw平台的完整集成。
+ * 本适配器实现AgentRT与OpenClaw平台的完整集成。
  *
  * OpenClaw核心特性（v2026.4.11+）:
  * 1. 离线私有化部署 — 完全本地运行，数据不出域
@@ -17,8 +17,8 @@
  *
  * 集成模式:
  * - 双向桥接: AgentRT ↔ OpenClaw 消息互通
- * - 工具共享: AgentOS工具注册到OpenClaw工具链
- * - 能力映射: OpenClaw能力 → AgentOS协议转换
+ * - 工具共享: AgentRT工具注册到OpenClaw工具链
+ * - 能力映射: OpenClaw能力 → AgentRT协议转换
  *
  * @since 2.1.0
  * @see unified_protocol.h

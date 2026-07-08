@@ -5,7 +5,7 @@
  * @file langchain_adapter.h
  * @brief LangChain Framework Integration Adapter for AgentRT
  *
- * LangChain 框架适配器，实现AgentOS与LangChain生态的完整集成。
+ * LangChain 框架适配器，实现AgentRT与LangChain生态的完整集成。
  *
  * LangChain核心概念映射:
  * - Chain → AgentRT Task Pipeline

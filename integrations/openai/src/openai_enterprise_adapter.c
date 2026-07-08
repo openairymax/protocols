@@ -247,7 +247,7 @@ static void openai_register_builtin_models(struct openai_enterprise_adapter_s *a
         openai_model_t *m = &a->models[a->model_count++];
         m->id = AGENTRT_STRDUP(builtin[i][0]);
         m->name = AGENTRT_STRDUP(builtin[i][1]);
-        m->owned_by = AGENTRT_STRDUP("agentos");
+        m->owned_by = AGENTRT_STRDUP("agentrt");
         m->is_default = (i == 0);
         m->is_available = true;
         m->max_context_tokens = 128000;
