@@ -31,6 +31,8 @@
 
 #ifdef AGENTRT_HAS_CJSON
 #include <cjson/cJSON.h>
+/* P0.18.2: 引入 cjson_helpers.h 提供 CJSON_PARSE_GUARD/CJSON_AUTO_FREE 宏 */
+#include <cjson_helpers.h>
 #endif
 
 #include "memory_compat.h"
@@ -479,11 +481,11 @@ static int openai_parse_chat_response(const char *json_str, char *content_out, s
         agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_parse_chat_response: parse error");
         return AGENTRT_ERR_UNKNOWN;
         }
-    cJSON *root = cJSON_Parse(json_str);
-    if (!root) {
+    /* P0.18.2: 模式 A — CJSON_PARSE_GUARD 自动释放 + NULL 检查 */
+    CJSON_PARSE_GUARD(root, json_str, {
         agentrt_error_push_ex(AGENTRT_ERR_NOT_FOUND, __FILE__, __LINE__, __func__, "openai: not found");
         return AGENTRT_ERR_NOT_FOUND;
-        }
+    });
 
     int result = -3;
     cJSON *choices = cJSON_GetObjectItem(root, "choices");
@@ -512,7 +514,7 @@ static int openai_parse_chat_response(const char *json_str, char *content_out, s
         }
     }
 
-    cJSON_Delete(root);
+    /* root 由 CJSON_AUTO_FREE 自动释放 */
     return result;
 }
 #endif
@@ -675,9 +677,12 @@ int openai_chat_completion(openai_handle_t handle, const openai_chat_request_t *
                                         ? request->tools[i].function.description
                                         : "");
             if (request->tools[i].function.parameters_schema_json) {
-                cJSON *params = cJSON_Parse(request->tools[i].function.parameters_schema_json);
+                /* P0.18.2: 模式 A 变体 — CJSON_PARSE_GUARD + 所有权转移后置 NULL */
+                CJSON_PARSE_GUARD(params, request->tools[i].function.parameters_schema_json,
+                                  { (void)0; });
                 if (params) {
                     cJSON_AddItemToObject(func_obj, "parameters", params);
+                    params = NULL; /* 所有权已转移到 func_obj，防止 CJSON_AUTO_FREE 重复释放 */
                 } else {
                     cJSON_AddItemToObject(func_obj, "parameters", cJSON_CreateObject());
                 }

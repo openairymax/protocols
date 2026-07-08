@@ -15,6 +15,8 @@
 #include "unified_protocol.h"
 
 #include <cjson/cJSON.h>
+/* P0.18.2: 引入 cjson_helpers.h 提供 CJSON_PARSE_GUARD/CJSON_AUTO_FREE 宏 */
+#include <cjson_helpers.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1215,15 +1217,16 @@ int mcp_v1_route_request(mcp_v1_context_t *ctx, const char *method, const char *
     } else if (strcmp(method, "tools/call") == 0) {
         char tool_name[256] = {0};
         if (params_json) {
-            cJSON *pj = cJSON_Parse(params_json);
-            if (pj) {
+            /* P0.18.2: 模式 C — 用 do { ... } while (0) + break 配合 CJSON_PARSE_GUARD */
+            do {
+                CJSON_PARSE_GUARD(pj, params_json, { break; });
                 cJSON *name_item = cJSON_GetObjectItem(pj, "name");
                 if (cJSON_IsString(name_item) && name_item->valuestring) {
                     AGENTRT_STRNCPY_TERM(tool_name, name_item->valuestring, sizeof(tool_name));
                     tool_name[sizeof(tool_name) - 1] = '\0';
                 }
-                cJSON_Delete(pj);
-            }
+                /* pj 由 CJSON_AUTO_FREE 自动释放 */
+            } while (0);
         }
         return mcp_v1_handle_tools_call(ctx, tool_name[0] ? tool_name : "unknown", params_json,
                                         response_json);
@@ -1232,14 +1235,15 @@ int mcp_v1_route_request(mcp_v1_context_t *ctx, const char *method, const char *
     } else if (strcmp(method, "resources/read") == 0) {
         char resource_uri[512] = {0};
         if (params_json) {
-            cJSON *pj = cJSON_Parse(params_json);
-            if (pj) {
+            /* P0.18.2: 模式 C — 用 do { ... } while (0) + break 配合 CJSON_PARSE_GUARD */
+            do {
+                CJSON_PARSE_GUARD(pj, params_json, { break; });
                 cJSON *uri_item = cJSON_GetObjectItem(pj, "uri");
                 if (cJSON_IsString(uri_item) && uri_item->valuestring) {
                     AGENTRT_STRNCPY_TERM(resource_uri, uri_item->valuestring, sizeof(resource_uri));
                 }
-                cJSON_Delete(pj);
-            }
+                /* pj 由 CJSON_AUTO_FREE 自动释放 */
+            } while (0);
         }
         return mcp_v1_handle_resources_read(ctx, resource_uri[0] ? resource_uri : "unknown",
                                             response_json);
@@ -1250,14 +1254,15 @@ int mcp_v1_route_request(mcp_v1_context_t *ctx, const char *method, const char *
     } else if (strcmp(method, "prompts/get") == 0) {
         char prompt_name[256] = {0};
         if (params_json) {
-            cJSON *pj = cJSON_Parse(params_json);
-            if (pj) {
+            /* P0.18.2: 模式 C — 用 do { ... } while (0) + break 配合 CJSON_PARSE_GUARD */
+            do {
+                CJSON_PARSE_GUARD(pj, params_json, { break; });
                 cJSON *name_item = cJSON_GetObjectItem(pj, "name");
                 if (cJSON_IsString(name_item) && name_item->valuestring) {
                     AGENTRT_STRNCPY_TERM(prompt_name, name_item->valuestring, sizeof(prompt_name));
                 }
-                cJSON_Delete(pj);
-            }
+                /* pj 由 CJSON_AUTO_FREE 自动释放 */
+            } while (0);
         }
         return mcp_v1_handle_prompts_get(ctx, prompt_name[0] ? prompt_name : "unknown", params_json,
                                          response_json);
