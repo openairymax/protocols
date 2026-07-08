@@ -42,10 +42,10 @@ static int test_agent_register(void)
     agntcy_acp_create(&h);
 
     agntcy_agent_card_t card = {0};
-    strcpy(card.agent_id, "agent-001");
-    strcpy(card.name, "TestAgent");
+    snprintf(card.agent_id, sizeof(card.agent_id), "%s", "agent-001");
+    snprintf(card.name, sizeof(card.name), "%s", "TestAgent");
     card.capabilities_mask = AGNTCY_CAP_DISCOVERY | AGNTCY_CAP_MESSAGING;
-    strcpy(card.endpoint_url, "http://localhost:9001");
+    snprintf(card.endpoint_url, sizeof(card.endpoint_url), "%s", "http://localhost:9001");
 
     int ret __attribute__((unused)) = agntcy_agent_register(h, &card);
     assert(ret == 0);
@@ -69,8 +69,8 @@ static int test_agent_register_duplicate(void)
     agntcy_acp_create(&h);
 
     agntcy_agent_card_t card = {0};
-    strcpy(card.agent_id, "agent-001");
-    strcpy(card.name, "TestAgent");
+    snprintf(card.agent_id, sizeof(card.agent_id), "%s", "agent-001");
+    snprintf(card.name, sizeof(card.name), "%s", "TestAgent");
     card.capabilities_mask = AGNTCY_CAP_DISCOVERY;
 
     agntcy_agent_register(h, &card);
@@ -90,9 +90,9 @@ static int test_agent_unregister(void)
     agntcy_acp_create(&h);
 
     agntcy_agent_card_t card1 = {0}, card2 = {0};
-    strcpy(card1.agent_id, "agent-001");
+    snprintf(card1.agent_id, sizeof(card1.agent_id), "%s", "agent-001");
     card1.capabilities_mask = AGNTCY_CAP_DISCOVERY;
-    strcpy(card2.agent_id, "agent-002");
+    snprintf(card2.agent_id, sizeof(card2.agent_id), "%s", "agent-002");
     card2.capabilities_mask = AGNTCY_CAP_CHANNEL;
 
     agntcy_agent_register(h, &card1);
@@ -117,14 +117,14 @@ static int test_agent_discover(void)
     agntcy_acp_create(&h);
 
     agntcy_agent_card_t card1 = {0}, card2 = {0};
-    strcpy(card1.agent_id, "agent-disc");
+    snprintf(card1.agent_id, sizeof(card1.agent_id), "%s", "agent-disc");
     card1.capabilities_mask = AGNTCY_CAP_DISCOVERY | AGNTCY_CAP_CHANNEL;
-    strcpy(card1.endpoint_url, "http://host:9001");
+    snprintf(card1.endpoint_url, sizeof(card1.endpoint_url), "%s", "http://host:9001");
     card1.online = true;
 
-    strcpy(card2.agent_id, "agent-msg");
+    snprintf(card2.agent_id, sizeof(card2.agent_id), "%s", "agent-msg");
     card2.capabilities_mask = AGNTCY_CAP_MESSAGING;
-    strcpy(card2.endpoint_url, "http://host:9002");
+    snprintf(card2.endpoint_url, sizeof(card2.endpoint_url), "%s", "http://host:9002");
     card2.online = true;
 
     agntcy_agent_register(h, &card1);
@@ -153,10 +153,10 @@ static int test_channel_open_close(void)
     agntcy_acp_create(&h);
 
     agntcy_agent_card_t initiator = {0}, responder = {0};
-    strcpy(initiator.agent_id, "init-01");
+    snprintf(initiator.agent_id, sizeof(initiator.agent_id), "%s", "init-01");
     initiator.capabilities_mask = AGNTCY_CAP_CHANNEL;
     initiator.online = true;
-    strcpy(responder.agent_id, "resp-01");
+    snprintf(responder.agent_id, sizeof(responder.agent_id), "%s", "resp-01");
     responder.capabilities_mask = AGNTCY_CAP_CHANNEL;
     responder.online = true;
 
@@ -187,9 +187,9 @@ static int test_message_send(void)
     agntcy_acp_create(&h);
 
     agntcy_agent_card_t snd = {0}, rcv = {0};
-    strcpy(snd.agent_id, "sender");
+    snprintf(snd.agent_id, sizeof(snd.agent_id), "%s", "sender");
     snd.online = true;
-    strcpy(rcv.agent_id, "receiver");
+    snprintf(rcv.agent_id, sizeof(rcv.agent_id), "%s", "receiver");
     rcv.online = true;
     agntcy_agent_register(h, &snd);
     agntcy_agent_register(h, &rcv);
@@ -198,10 +198,10 @@ static int test_message_send(void)
     agntcy_channel_open(h, "sender", "receiver", &ch);
 
     agntcy_message_t msg = {0};
-    strcpy(msg.message_id, "msg-001");
-    strcpy(msg.sender_id, "sender");
-    strcpy(msg.receiver_id, "receiver");
-    strcpy(msg.channel_id, ch.channel_id);
+    snprintf(msg.message_id, sizeof(msg.message_id), "%s", "msg-001");
+    snprintf(msg.sender_id, sizeof(msg.sender_id), "%s", "sender");
+    snprintf(msg.receiver_id, sizeof(msg.receiver_id), "%s", "receiver");
+    snprintf(msg.channel_id, sizeof(msg.channel_id), "%s", ch.channel_id);
     msg.mode = AGNTCY_MSG_SYNC;
     msg.payload = (char *)"Hello";
     msg.payload_size = 5;
@@ -225,7 +225,7 @@ static int test_task_orchestrate(void)
     agntcy_acp_create(&h);
 
     agntcy_agent_card_t worker = {0};
-    strcpy(worker.agent_id, "worker-01");
+    snprintf(worker.agent_id, sizeof(worker.agent_id), "%s", "worker-01");
     worker.capabilities_mask = AGNTCY_CAP_ORCHESTRATE;
     worker.online = true;
     agntcy_agent_register(h, &worker);
@@ -255,12 +255,12 @@ static int test_ack_negotiate(void)
     agntcy_acp_create(&h);
 
     agntcy_agent_card_t agent = {0};
-    strcpy(agent.agent_id, "agent-ack");
+    snprintf(agent.agent_id, sizeof(agent.agent_id), "%s", "agent-ack");
     agent.online = true;
     agntcy_agent_register(h, &agent);
 
     agntcy_ack_t req = {0}, resp = {0};
-    strcpy(req.resource_type, "memory");
+    snprintf(req.resource_type, sizeof(req.resource_type), "%s", "memory");
     req.requested_amount = 500 * 1024 * 1024;
     req.cpu_cores = 2;
 
