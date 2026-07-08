@@ -33,6 +33,8 @@
 
 #ifdef AGENTRT_HAS_CURL
 #include <cjson/cJSON.h>
+/* P0.18.2: 引入 cjson_helpers.h 提供 CJSON_PARSE_GUARD/CJSON_AUTO_FREE 宏 */
+#include <cjson_helpers.h>
 #include <curl/curl.h>
 #endif
 
@@ -104,8 +106,9 @@ static int claude_api_call(const char *api_key, const char *base_url, const char
     }
 
     if (http_code == 200 && response_buf.data) {
-        cJSON *root = cJSON_Parse(response_buf.data);
-        if (root) {
+        /* P0.18.2: 模式 C — 用 do { ... } while (0) + break 配合 CJSON_PARSE_GUARD */
+        do {
+            CJSON_PARSE_GUARD(root, response_buf.data, { break; });
             cJSON *content_arr = cJSON_GetObjectItem(root, "content");
             if (content_arr && cJSON_IsArray(content_arr)) {
                 cJSON *first = cJSON_GetArrayItem(content_arr, 0);
@@ -113,14 +116,14 @@ static int claude_api_call(const char *api_key, const char *base_url, const char
                     cJSON *text = cJSON_GetObjectItem(first, "text");
                     if (text && text->valuestring) {
                         snprintf(out_buf, buf_len, "%s", text->valuestring);
-                        cJSON_Delete(root);
+                        /* root 由 CJSON_AUTO_FREE 自动释放 */
                         AGENTRT_FREE(response_buf.data);
                         return (int)strlen(out_buf);
                     }
                 }
             }
-            cJSON_Delete(root);
-        }
+            /* root 由 CJSON_AUTO_FREE 自动释放 */
+        } while (0);
     }
 
     AGENTRT_FREE(response_buf.data);
@@ -256,8 +259,9 @@ static int claude_proto_handle_request(void *context, const void *req, void **re
 
 #ifdef AGENTRT_HAS_CURL
     if (request->payload) {
-        cJSON *json = cJSON_Parse(request->payload);
-        if (json) {
+        /* P0.18.2: 模式 C — 用 do { ... } while (0) + break 配合 CJSON_PARSE_GUARD */
+        do {
+            CJSON_PARSE_GUARD(json, request->payload, { break; });
             cJSON *msgs = cJSON_GetObjectItem(json, "messages");
             if (cJSON_IsArray(msgs)) {
                 int mcount = cJSON_GetArraySize(msgs);
@@ -273,8 +277,8 @@ static int claude_proto_handle_request(void *context, const void *req, void **re
                         system_content = cs;
                 }
             }
-            cJSON_Delete(json);
-        }
+            /* json 由 CJSON_AUTO_FREE 自动释放 */
+        } while (0);
     }
 #else
     if (request->payload) {
@@ -591,9 +595,8 @@ int claude_messages_create(claude_adapter_context_t *ctx, const claude_message_t
     if (api_result <= 0)
         return AGENTRT_ERR_UNKNOWN;
 
-    cJSON *root = cJSON_Parse(api_response);
-    if (!root)
-        return AGENTRT_ERR_UNKNOWN;
+    /* P0.18.2: 模式 A — CJSON_PARSE_GUARD 自动释放 + NULL 检查 */
+    CJSON_PARSE_GUARD(root, api_response, { return AGENTRT_ERR_UNKNOWN; });
 
     static uint32_t msg_counter = 0;
     msg_counter++;
@@ -645,7 +648,7 @@ int claude_messages_create(claude_adapter_context_t *ctx, const claude_message_t
         response->output_tokens = ot ? ot->valueint : 0;
     }
 
-    cJSON_Delete(root);
+    /* root 由 CJSON_AUTO_FREE 自动释放 */
     ctx->total_tokens_in += response->input_tokens;
     ctx->total_tokens_out += response->output_tokens;
     return 0;
