@@ -5,7 +5,7 @@
  * @file autogen_adapter.h
  * @brief AutoGen Framework Integration Adapter for AgentRT
  *
- * AutoGen 框架适配器，实现AgentOS与Microsoft AutoGen多代理对话框架的集成。
+ * AutoGen 框架适配器，实现AgentRT与Microsoft AutoGen多代理对话框架的集成。
  *
  * AutoGen核心概念映射:
  * - ConversableAgent → AgentRT Agent + Protocol Session

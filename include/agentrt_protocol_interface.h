@@ -7,7 +7,7 @@
  *
  * 定义 AgentRT 协议系统的公共接口契约，作为所有协议适配器、网关、SDK 的统一抽象层。
  *
- * 原位置: agentos/interfaces/include/
+ * 原位置: agentrt/interfaces/include/
  * 迁移至: agentrt/protocols/include/ (2026-04-19 interfaces删除重构)
  */
 

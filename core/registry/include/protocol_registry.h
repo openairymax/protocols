@@ -5,7 +5,7 @@
  * @file protocol_registry.h
  * @brief Protocol Registry Center - Unified Protocol Discovery & Management
  *
- * 协议注册中心是AgentOS协议系统的核心组件，提供：
+ * 协议注册中心是AgentRT协议系统的核心组件，提供：
  * 1. 协议适配器注册/注销/发现
  * 2. 协议能力查询与匹配
  * 3. 协议版本管理

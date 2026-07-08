@@ -5,7 +5,7 @@
  * @file agentrt_protocol_interface.c
  * @brief AgentRT Protocol System Unified Interface Implementation
  *
- * 原位置: agentos/interfaces/src/
+ * 原位置: agentrt/interfaces/src/
  * 迁移至: agentrt/protocols/src/ (2026-04-19 interfaces删除重构)
  */
 

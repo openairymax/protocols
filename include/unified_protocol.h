@@ -7,7 +7,7 @@
  * 通信协议（JSON-RPC、MCP、A2A、OpenAI、OpenJiuwen）的
  * 统一抽象层。
  *
- * 原位置: agentos/include/agentrt/unified_protocol.h
+ * 原位置: agentrt/include/agentrt/unified_protocol.h
  * 迁移至: agentrt/protocols/include/ (2026-04-19 include/整合重构)
  */
 

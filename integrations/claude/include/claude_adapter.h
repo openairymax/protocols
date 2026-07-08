@@ -5,7 +5,7 @@
  * @file claude_adapter.h
  * @brief Anthropic Claude API Integration Adapter for AgentRT
  *
- * Claude API 适配器，实现AgentOS与Anthropic Claude模型的完整集成。
+ * Claude API 适配器，实现AgentRT与Anthropic Claude模型的完整集成。
  *
  * Claude核心特性（v2026+）:
  * 1. Messages API — 多轮对话、系统提示词
