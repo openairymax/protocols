@@ -21,10 +21,10 @@
  * @see unified_protocol.h
  */
 
-#ifndef AGENTRT_CLAUDE_ADAPTER_H
-#define AGENTRT_CLAUDE_ADAPTER_H
+#ifndef AIRY_RT_CLAUDE_ADAPTER_H
+#define AIRY_RT_CLAUDE_ADAPTER_H
 
-#include "agentrt_protocol_interface.h"
+#include "airy_protocol_interface.h"
 #include "unified_protocol.h"
 
 #include <stdbool.h>
@@ -225,4 +225,4 @@ void claude_stream_event_destroy(claude_stream_event_t *event);
 }
 #endif
 
-#endif /* AGENTRT_CLAUDE_ADAPTER_H */
+#endif /* AIRY_RT_CLAUDE_ADAPTER_H */

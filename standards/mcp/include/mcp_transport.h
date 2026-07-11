@@ -10,8 +10,8 @@
  */
 // @owner: team-B
 
-#ifndef AGENTRT_MCP_TRANSPORT_H
-#define AGENTRT_MCP_TRANSPORT_H
+#ifndef AIRY_RT_MCP_TRANSPORT_H
+#define AIRY_RT_MCP_TRANSPORT_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -96,4 +96,4 @@ const char *mcp_transport_type_string(mcp_transport_type_t type);
 }
 #endif
 
-#endif /* AGENTRT_MCP_TRANSPORT_H */
+#endif /* AIRY_RT_MCP_TRANSPORT_H */

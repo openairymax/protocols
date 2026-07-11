@@ -9,8 +9,8 @@
  * 提供智能协议路由、消息转换和协议兼容性处理。
  */
 
-#ifndef AGENTRT_PROTOCOL_ROUTER_H
-#define AGENTRT_PROTOCOL_ROUTER_H
+#ifndef AIRY_RT_PROTOCOL_ROUTER_H
+#define AIRY_RT_PROTOCOL_ROUTER_H
 
 #include "unified_protocol.h"
 
@@ -188,4 +188,4 @@ int protocol_transformer_default(const unified_message_t *source, unified_messag
 }
 #endif
 
-#endif  // AGENTRT_PROTOCOL_ROUTER_H
+#endif  // AIRY_RT_PROTOCOL_ROUTER_H

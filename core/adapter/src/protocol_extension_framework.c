@@ -47,16 +47,16 @@ static uint64_t current_time_ms(void)
 
 proto_ext_framework_t *proto_ext_framework_create(void)
 {
-    proto_ext_framework_t *fw = AGENTRT_CALLOC(1, sizeof(proto_ext_framework_t));
+    proto_ext_framework_t *fw = AIRY_CALLOC(1, sizeof(proto_ext_framework_t));
     if (!fw)
         return NULL;
 
     fw->adapter_capacity = 16;
-    fw->adapters = AGENTRT_CALLOC(fw->adapter_capacity, sizeof(proto_ext_adapter_entry_t));
+    fw->adapters = AIRY_CALLOC(fw->adapter_capacity, sizeof(proto_ext_adapter_entry_t));
     fw->adapter_count = 0;
 
     fw->middleware_capacity = 16;
-    fw->middlewares = AGENTRT_CALLOC(fw->middleware_capacity, sizeof(proto_middleware_t));
+    fw->middlewares = AIRY_CALLOC(fw->middleware_capacity, sizeof(proto_middleware_t));
     fw->middleware_count = 0;
 
     fw->total_messages = 0;
@@ -75,9 +75,9 @@ void proto_ext_framework_destroy(proto_ext_framework_t *fw)
             fw->adapters[i].callbacks.on_unload(fw->adapters[i].adapter_context);
         }
     }
-    AGENTRT_FREE(fw->adapters);
-    AGENTRT_FREE(fw->middlewares);
-    AGENTRT_FREE(fw);
+    AIRY_FREE(fw->adapters);
+    AIRY_FREE(fw->middlewares);
+    AIRY_FREE(fw);
 }
 
 int proto_ext_register(proto_ext_framework_t *fw, const proto_ext_descriptor_t *descriptor,
@@ -85,30 +85,30 @@ int proto_ext_register(proto_ext_framework_t *fw, const proto_ext_descriptor_t *
 {
     if (!fw || !descriptor || !callbacks)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_register: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_register: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     if (fw->adapter_count >= PROTO_EXT_MAX_ADAPTERS)
-        AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+        AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, descriptor->name) == 0) {
-            AGENTRT_ERROR(AGENTRT_ERR_NULL_POINTER, "null pointer");
+            AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
         }
     }
 
     if (fw->adapter_count >= fw->adapter_capacity) {
         size_t new_cap = fw->adapter_capacity * 2;
         proto_ext_adapter_entry_t *new_adapters =
-            AGENTRT_REALLOC(fw->adapters, new_cap * sizeof(proto_ext_adapter_entry_t));
+            AIRY_REALLOC(fw->adapters, new_cap * sizeof(proto_ext_adapter_entry_t));
         if (!new_adapters)
-            AGENTRT_ERROR(AGENTRT_ERR_OUT_OF_MEMORY, "out of memory");
+            AIRY_ERROR(AIRY_ERR_OUT_OF_MEMORY, "out of memory");
         fw->adapters = new_adapters;
         fw->adapter_capacity = new_cap;
     }
 
     proto_ext_adapter_entry_t *entry = &fw->adapters[fw->adapter_count];
-    AGENTRT_MEMSET(entry, 0, sizeof(*entry));
+    AIRY_MEMSET(entry, 0, sizeof(*entry));
     __builtin_memcpy(&entry->descriptor, descriptor, sizeof(proto_ext_descriptor_t));
     __builtin_memcpy(&entry->callbacks, callbacks, sizeof(proto_ext_callbacks_t));
     entry->adapter_context = NULL;
@@ -126,8 +126,8 @@ int proto_ext_unregister(proto_ext_framework_t *fw, const char *name)
 {
     if (!fw || !name)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_unregister: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_unregister: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, name) == 0) {
@@ -143,20 +143,20 @@ int proto_ext_unregister(proto_ext_framework_t *fw, const char *name)
             return 0;
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+    AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 }
 
 int proto_ext_load(proto_ext_framework_t *fw, const char *name, const char *config_json)
 {
     if (!fw || !name)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_load: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_load: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, name) == 0) {
             if (fw->adapters[i].state != PROTO_EXT_STATE_UNLOADED)
-                AGENTRT_ERROR(AGENTRT_ERR_NULL_POINTER, "null pointer");
+                AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
 
             if (fw->adapters[i].callbacks.on_load) {
                 int rc = fw->adapters[i].callbacks.on_load(&fw->adapters[i].adapter_context);
@@ -181,15 +181,15 @@ int proto_ext_load(proto_ext_framework_t *fw, const char *name, const char *conf
             return 0;
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+    AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 }
 
 int proto_ext_unload(proto_ext_framework_t *fw, const char *name)
 {
     if (!fw || !name)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_unload: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_unload: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, name) == 0) {
@@ -201,15 +201,15 @@ int proto_ext_unload(proto_ext_framework_t *fw, const char *name)
             return 0;
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+    AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 }
 
 int proto_ext_start(proto_ext_framework_t *fw, const char *name)
 {
     if (!fw || !name)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_start: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_start: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, name) == 0) {
@@ -229,15 +229,15 @@ int proto_ext_start(proto_ext_framework_t *fw, const char *name)
             return 0;
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+    AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 }
 
 int proto_ext_stop(proto_ext_framework_t *fw, const char *name)
 {
     if (!fw || !name)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_stop: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_stop: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, name) == 0) {
@@ -250,7 +250,7 @@ int proto_ext_stop(proto_ext_framework_t *fw, const char *name)
             return 0;
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+    AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 }
 
 int proto_ext_send_message(proto_ext_framework_t *fw, const char *adapter_name,
@@ -258,13 +258,13 @@ int proto_ext_send_message(proto_ext_framework_t *fw, const char *adapter_name,
 {
     if (!fw || !adapter_name || !message)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_send_message: IO error");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_send_message: IO error");
+        return AIRY_ERR_UNKNOWN;
         }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, adapter_name) == 0) {
             if (fw->adapters[i].state != PROTO_EXT_STATE_RUNNING)
-                AGENTRT_ERROR(AGENTRT_ERR_NULL_POINTER, "null pointer");
+                AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
 
             if (fw->adapters[i].callbacks.encode_message) {
                 void *encoded = NULL;
@@ -272,7 +272,7 @@ int proto_ext_send_message(proto_ext_framework_t *fw, const char *adapter_name,
                 int rc = fw->adapters[i].callbacks.encode_message(fw->adapters[i].adapter_context,
                                                                   message, &encoded, &encoded_size);
                 if (rc != 0) {
-                    AGENTRT_FREE(encoded);
+                    AIRY_FREE(encoded);
                     fw->adapters[i].error_count++;
                     return rc;
                 }
@@ -283,13 +283,13 @@ int proto_ext_send_message(proto_ext_framework_t *fw, const char *adapter_name,
                     char *response = NULL;
                     int send_rc = fw->adapters[i].callbacks.handle_request(
                         fw->adapters[i].adapter_context, "send", params_json, &response);
-                    AGENTRT_FREE(response);
+                    AIRY_FREE(response);
                     if (send_rc != 0) {
                         fw->adapters[i].error_count++;
                     }
                 }
 
-                AGENTRT_FREE(encoded);
+                AIRY_FREE(encoded);
             }
 
             fw->adapters[i].messages_processed++;
@@ -298,7 +298,7 @@ int proto_ext_send_message(proto_ext_framework_t *fw, const char *adapter_name,
             return 0;
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+    AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 }
 
 int proto_ext_handle_request(proto_ext_framework_t *fw, const char *adapter_name,
@@ -306,15 +306,15 @@ int proto_ext_handle_request(proto_ext_framework_t *fw, const char *adapter_name
 {
     if (!fw || !adapter_name || !response_json)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_handle_request: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_handle_request: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, adapter_name) == 0) {
             if (fw->adapters[i].state != PROTO_EXT_STATE_RUNNING)
-                AGENTRT_ERROR(AGENTRT_ERR_NULL_POINTER, "null pointer");
+                AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
             if (!fw->adapters[i].callbacks.handle_request)
-                AGENTRT_ERROR(AGENTRT_ERR_OUT_OF_MEMORY, "out of memory");
+                AIRY_ERROR(AIRY_ERR_OUT_OF_MEMORY, "out of memory");
 
             int rc = fw->adapters[i].callbacks.handle_request(fw->adapters[i].adapter_context,
                                                               method, params_json, response_json);
@@ -328,7 +328,7 @@ int proto_ext_handle_request(proto_ext_framework_t *fw, const char *adapter_name
             return rc;
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+    AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 }
 
 int proto_ext_auto_route(proto_ext_framework_t *fw, const unified_message_t *message,
@@ -336,15 +336,15 @@ int proto_ext_auto_route(proto_ext_framework_t *fw, const unified_message_t *mes
 {
     if (!fw || !message || !adapter_name)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_auto_route: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_auto_route: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (fw->adapters[i].state != PROTO_EXT_STATE_RUNNING)
             continue;
         if (fw->adapters[i].descriptor.protocol_type == message->protocol) {
-            *adapter_name = AGENTRT_STRDUP(fw->adapters[i].descriptor.name);
+            *adapter_name = AIRY_STRDUP(fw->adapters[i].descriptor.name);
             return 0;
         }
     }
@@ -353,12 +353,12 @@ int proto_ext_auto_route(proto_ext_framework_t *fw, const unified_message_t *mes
         if (fw->adapters[i].state != PROTO_EXT_STATE_RUNNING)
             continue;
         if (fw->adapters[i].descriptor.protocol_type == PROTOCOL_CUSTOM) {
-            *adapter_name = AGENTRT_STRDUP(fw->adapters[i].descriptor.name);
+            *adapter_name = AIRY_STRDUP(fw->adapters[i].descriptor.name);
             return 0;
         }
     }
 
-    AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+    AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 }
 
 int proto_ext_negotiate(proto_ext_framework_t *fw, const char *adapter_name,
@@ -366,20 +366,20 @@ int proto_ext_negotiate(proto_ext_framework_t *fw, const char *adapter_name,
 {
     if (!fw || !adapter_name)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_negotiate: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_negotiate: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, adapter_name) == 0) {
             if (!fw->adapters[i].callbacks.negotiate_version) {
-                *agreed_version = AGENTRT_STRDUP(fw->adapters[i].descriptor.version);
+                *agreed_version = AIRY_STRDUP(fw->adapters[i].descriptor.version);
                 return 0;
             }
             return fw->adapters[i].callbacks.negotiate_version(fw->adapters[i].adapter_context,
                                                                client_version, agreed_version);
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+    AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 }
 
 int proto_ext_add_middleware(proto_ext_framework_t *fw, const char *name,
@@ -388,24 +388,24 @@ int proto_ext_add_middleware(proto_ext_framework_t *fw, const char *name,
 {
     if (!fw || !name || !middleware)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_add_middleware: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_add_middleware: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     if (fw->middleware_count >= PROTO_EXT_MAX_MIDDLEWARE)
-        AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+        AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 
     if (fw->middleware_count >= fw->middleware_capacity) {
         size_t new_cap = fw->middleware_capacity * 2;
         proto_middleware_t *new_mw =
-            AGENTRT_REALLOC(fw->middlewares, new_cap * sizeof(proto_middleware_t));
+            AIRY_REALLOC(fw->middlewares, new_cap * sizeof(proto_middleware_t));
         if (!new_mw)
-            AGENTRT_ERROR(AGENTRT_ERR_NULL_POINTER, "null pointer");
+            AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
         fw->middlewares = new_mw;
         fw->middleware_capacity = new_cap;
     }
 
     proto_middleware_t *mw = &fw->middlewares[fw->middleware_count];
-    AGENTRT_STRNCPY_TERM(mw->name, name, PROTO_EXT_MAX_NAME_LEN);
+    AIRY_STRNCPY_TERM(mw->name, name, PROTO_EXT_MAX_NAME_LEN);
     mw->name[PROTO_EXT_MAX_NAME_LEN - 1] = '\0';
     mw->process = middleware;
     mw->priority = priority;
@@ -428,8 +428,8 @@ int proto_ext_remove_middleware(proto_ext_framework_t *fw, const char *name)
 {
     if (!fw || !name)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_remove_middleware: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_remove_middleware: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     for (size_t i = 0; i < fw->middleware_count; i++) {
         if (strcmp(fw->middlewares[i].name, name) == 0) {
@@ -439,15 +439,15 @@ int proto_ext_remove_middleware(proto_ext_framework_t *fw, const char *name)
             return 0;
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+    AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 }
 
 int proto_ext_enable_middleware(proto_ext_framework_t *fw, const char *name)
 {
     if (!fw || !name)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_enable_middleware: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_enable_middleware: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     for (size_t i = 0; i < fw->middleware_count; i++) {
         if (strcmp(fw->middlewares[i].name, name) == 0) {
@@ -455,15 +455,15 @@ int proto_ext_enable_middleware(proto_ext_framework_t *fw, const char *name)
             return 0;
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+    AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 }
 
 int proto_ext_disable_middleware(proto_ext_framework_t *fw, const char *name)
 {
     if (!fw || !name)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_disable_middleware: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_disable_middleware: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     for (size_t i = 0; i < fw->middleware_count; i++) {
         if (strcmp(fw->middlewares[i].name, name) == 0) {
@@ -471,7 +471,7 @@ int proto_ext_disable_middleware(proto_ext_framework_t *fw, const char *name)
             return 0;
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+    AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 }
 
 int proto_ext_process_middleware_chain(proto_ext_framework_t *fw, const unified_message_t *request,
@@ -479,8 +479,8 @@ int proto_ext_process_middleware_chain(proto_ext_framework_t *fw, const unified_
 {
     if (!fw || !request || !response)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_process_middleware_chain: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_process_middleware_chain: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     for (size_t i = 0; i < fw->middleware_count; i++) {
@@ -498,12 +498,12 @@ int proto_ext_get_adapter_stats(proto_ext_framework_t *fw, const char *name,
 {
     if (!fw || !name || !stats)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_get_adapter_stats: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_get_adapter_stats: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, name) == 0) {
-            AGENTRT_STRNCPY_TERM(stats->name, fw->adapters[i].descriptor.name, PROTO_EXT_MAX_NAME_LEN);
+            AIRY_STRNCPY_TERM(stats->name, fw->adapters[i].descriptor.name, PROTO_EXT_MAX_NAME_LEN);
             stats->state = fw->adapters[i].state;
             stats->error_count = fw->adapters[i].error_count;
             stats->last_activity_ms = fw->adapters[i].last_activity_ms;
@@ -511,20 +511,20 @@ int proto_ext_get_adapter_stats(proto_ext_framework_t *fw, const char *name,
             return 0;
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+    AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 }
 
 int proto_ext_list_adapters(proto_ext_framework_t *fw, char **names_json)
 {
     if (!fw || !names_json)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_list_adapters: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_list_adapters: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     size_t buf_size = 4096 + fw->adapter_count * 128;
-    char *buf = AGENTRT_MALLOC(buf_size);
+    char *buf = AIRY_MALLOC(buf_size);
     if (!buf)
-        AGENTRT_ERROR(AGENTRT_ERR_NULL_POINTER, "null pointer");
+        AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
 
     size_t offset = snprintf(buf, buf_size, "{\"adapters\":[");
     for (size_t i = 0; i < fw->adapter_count; i++) {
@@ -565,8 +565,8 @@ int proto_ext_list_capabilities(proto_ext_framework_t *fw, char **caps_json)
 {
     if (!fw || !caps_json)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_list_capabilities: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_list_capabilities: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     uint32_t all_caps = 0;
@@ -577,9 +577,9 @@ int proto_ext_list_capabilities(proto_ext_framework_t *fw, char **caps_json)
     }
 
     size_t buf_size = 2048;
-    char *buf = AGENTRT_MALLOC(buf_size);
+    char *buf = AIRY_MALLOC(buf_size);
     if (!buf)
-        AGENTRT_ERROR(AGENTRT_ERR_NULL_POINTER, "null pointer");
+        AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
 
     size_t offset = snprintf(buf, buf_size, "{\"capabilities\":[");
 
@@ -633,18 +633,18 @@ int proto_ext_find_by_capability(proto_ext_framework_t *fw, uint32_t capability,
 {
     if (!fw || !adapter_names || !count)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_find_by_capability: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_find_by_capability: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     size_t found = 0;
-    char **results = AGENTRT_CALLOC(fw->adapter_count, sizeof(char *));
+    char **results = AIRY_CALLOC(fw->adapter_count, sizeof(char *));
     if (!results)
-        AGENTRT_ERROR(AGENTRT_ERR_NULL_POINTER, "null pointer");
+        AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
 
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (fw->adapters[i].descriptor.capabilities & capability) {
-            results[found++] = AGENTRT_STRDUP(fw->adapters[i].descriptor.name);
+            results[found++] = AIRY_STRDUP(fw->adapters[i].descriptor.name);
         }
     }
 
@@ -684,7 +684,7 @@ static char *json_extract_string(const char *json, const char *key)
     if (!end)
         return NULL;
     size_t len = end - p;
-    char *result = AGENTRT_MALLOC(len + 1);
+    char *result = AIRY_MALLOC(len + 1);
     __builtin_memcpy(result, p, len);
     result[len] = '\0';
     return result;
@@ -695,7 +695,7 @@ static int json_extract_int(const char *json, const char *key, int default_val)
     char *s = json_extract_string(json, key);
     if (s) {
         int v = (int)strtol(s, NULL, 10);
-        AGENTRT_FREE(s);
+        AIRY_FREE(s);
         return v;
     }
     return default_val;
@@ -705,20 +705,20 @@ int proto_ext_load_from_config(proto_ext_framework_t *fw, const char *config_jso
 {
     if (!fw || !config_json)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_load_from_config: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_load_from_config: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     const char *adapters_start = strstr(config_json, "\"adapters\"");
     if (!adapters_start) {
         adapters_start = strstr(config_json, "\"extensions\"");
         if (!adapters_start)
-            AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+            AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
     }
 
     const char *array_start = strchr(adapters_start, '[');
     if (!array_start)
-        AGENTRT_ERROR(AGENTRT_ERR_NULL_POINTER, "null pointer");
+        AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
 
     int loaded_count = 0;
     const char *p = array_start + 1;
@@ -731,7 +731,7 @@ int proto_ext_load_from_config(proto_ext_framework_t *fw, const char *config_jso
             break;
 
         size_t obj_len = obj_end - obj_start + 1;
-        char *obj_buf = AGENTRT_MALLOC(obj_len + 1);
+        char *obj_buf = AIRY_MALLOC(obj_len + 1);
         __builtin_memcpy(obj_buf, obj_start, obj_len);
         obj_buf[obj_len] = '\0';
 
@@ -748,19 +748,19 @@ int proto_ext_load_from_config(proto_ext_framework_t *fw, const char *config_jso
                                                   .capabilities = caps,
                                                   .priority = priority,
                                                   .hot_loadable = true};
-            AGENTRT_STRNCPY_TERM(desc_struct.name, name, PROTO_EXT_MAX_NAME_LEN);
+            AIRY_STRNCPY_TERM(desc_struct.name, name, PROTO_EXT_MAX_NAME_LEN);
             if (version)
-                AGENTRT_STRNCPY_TERM(desc_struct.version, version, PROTO_EXT_MAX_VERSION_LEN);
+                AIRY_STRNCPY_TERM(desc_struct.version, version, PROTO_EXT_MAX_VERSION_LEN);
             else {
-                AGENTRT_STRNCPY_TERM(desc_struct.version, "1.0.0", PROTO_EXT_MAX_VERSION_LEN);
+                AIRY_STRNCPY_TERM(desc_struct.version, "1.0.0", PROTO_EXT_MAX_VERSION_LEN);
             }
             if (desc)
-                AGENTRT_STRNCPY_TERM(desc_struct.description, desc, sizeof(desc_struct.description));
+                AIRY_STRNCPY_TERM(desc_struct.description, desc, sizeof(desc_struct.description));
             else {
-                AGENTRT_STRNCPY_TERM(desc_struct.description, "Loaded from config", sizeof(desc_struct.description));
+                AIRY_STRNCPY_TERM(desc_struct.description, "Loaded from config", sizeof(desc_struct.description));
             }
             if (author)
-                AGENTRT_STRNCPY_TERM(desc_struct.author, author, sizeof(desc_struct.author));
+                AIRY_STRNCPY_TERM(desc_struct.author, author, sizeof(desc_struct.author));
 
             proto_ext_callbacks_t empty_cbs = {0};
 
@@ -771,11 +771,11 @@ int proto_ext_load_from_config(proto_ext_framework_t *fw, const char *config_jso
             }
         }
 
-        AGENTRT_FREE(name);
-        AGENTRT_FREE(version);
-        AGENTRT_FREE(desc);
-        AGENTRT_FREE(author);
-        AGENTRT_FREE(obj_buf);
+        AIRY_FREE(name);
+        AIRY_FREE(version);
+        AIRY_FREE(desc);
+        AIRY_FREE(author);
+        AIRY_FREE(obj_buf);
         p = obj_end + 1;
         while (*p && (*p == ',' || *p == ' ' || *p == '\n' || *p == '\r'))
             p++;
@@ -807,8 +807,8 @@ static int fw_adapter_encode(void *ctx, const void *msg, void **out_data, size_t
 {
     if (!msg || !out_data || !out_size)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_encode: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_encode: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     unified_message_t *umsg = (unified_message_t *)msg;
     size_t in_len =
@@ -816,12 +816,12 @@ static int fw_adapter_encode(void *ctx, const void *msg, void **out_data, size_t
     if (in_len == 0) {
         *out_data = NULL;
         *out_size = 0;
-        AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+        AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
     }
 
-    *out_data = AGENTRT_MALLOC(in_len);
+    *out_data = AIRY_MALLOC(in_len);
     if (!*out_data)
-        AGENTRT_ERROR(AGENTRT_ERR_NULL_POINTER, "null pointer");
+        AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
     __builtin_memcpy(*out_data, umsg->payload ? umsg->payload : "", in_len);
     *out_size = in_len;
     return 0;
@@ -831,15 +831,15 @@ static int fw_adapter_decode(void *ctx, const void *data, size_t size, void *out
 {
     if (!data || !out_msg || size == 0)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_decode: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_decode: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     unified_message_t *msg = (unified_message_t *)out_msg;
-    AGENTRT_MEMSET(msg, 0, sizeof(*msg));
-    msg->payload = AGENTRT_MALLOC(size + 1);
+    AIRY_MEMSET(msg, 0, sizeof(*msg));
+    msg->payload = AIRY_MALLOC(size + 1);
     if (!msg->payload)
-        AGENTRT_ERROR(AGENTRT_ERR_NULL_POINTER, "null pointer");
+        AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
     __builtin_memcpy((void *)msg->payload, data, size);
     ((char *)msg->payload)[size] = '\0';
     msg->payload_size = size;
@@ -855,8 +855,8 @@ static int fw_adapter_get_stats(void *ctx, char *stats_json, size_t max_size)
 {
     if (!stats_json || max_size < 64)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_get_stats: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_get_stats: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     int written = snprintf(stats_json, max_size,
                            "{\"adapter\":\"protocol_extension_framework\",\"status\":\"active\"}");
@@ -867,11 +867,11 @@ static int fw_adapter_connect(void *ctx, const char *endpoint)
 {
     if (!endpoint)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_connect: IO error");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_connect: IO error");
+        return AIRY_ERR_UNKNOWN;
         }
     if (!g_framework_instance)
-        AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+        AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
     for (size_t i = 0; i < g_framework_instance->adapter_count; i++) {
         if (g_framework_instance->adapters[i].state == PROTO_EXT_STATE_INITIALIZED) {
             g_framework_instance->adapters[i].state = PROTO_EXT_STATE_RUNNING;
@@ -879,13 +879,13 @@ static int fw_adapter_connect(void *ctx, const char *endpoint)
             return 0;
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_NULL_POINTER, "null pointer");
+    AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
 }
 
 static int fw_adapter_disconnect(void *ctx)
 {
     if (!g_framework_instance)
-        AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+        AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
     for (size_t i = 0; i < g_framework_instance->adapter_count; i++) {
         if (g_framework_instance->adapters[i].state == PROTO_EXT_STATE_RUNNING) {
             g_framework_instance->adapters[i].state = PROTO_EXT_STATE_LOADED;
@@ -898,11 +898,11 @@ static int fw_adapter_send(void *ctx, const void *data, size_t size)
 {
     if (!data || size == 0)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_send: IO error");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_send: IO error");
+        return AIRY_ERR_UNKNOWN;
         }
     if (!g_framework_instance)
-        AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+        AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
     for (size_t i = 0; i < g_framework_instance->adapter_count; i++) {
         if (g_framework_instance->adapters[i].state == PROTO_EXT_STATE_RUNNING) {
             g_framework_instance->adapters[i].messages_processed++;
@@ -911,18 +911,18 @@ static int fw_adapter_send(void *ctx, const void *data, size_t size)
             return 0;
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_NULL_POINTER, "null pointer");
+    AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
 }
 
 static int fw_adapter_receive(void *ctx, void **data, size_t *size, uint32_t timeout_ms)
 {
     if (!data || !size)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "fw_adapter_receive: timeout");
-        return AGENTRT_ERR_TIMEOUT;
+        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "fw_adapter_receive: timeout");
+        return AIRY_ERR_TIMEOUT;
         }
     if (!g_framework_instance)
-        AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+        AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
     *data = NULL;
     *size = 0;
     for (size_t i = 0; i < g_framework_instance->adapter_count; i++) {
@@ -930,18 +930,18 @@ static int fw_adapter_receive(void *ctx, void **data, size_t *size, uint32_t tim
             return 0;
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_NULL_POINTER, "null pointer");
+    AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
 }
 
 static int fw_adapter_handle_request(void *ctx, const void *req, void **resp)
 {
     if (!req || !resp)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_handle_request: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_handle_request: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     if (!g_framework_instance)
-        AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+        AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
     size_t running = 0;
     for (size_t i = 0; i < g_framework_instance->adapter_count; i++) {
         if (g_framework_instance->adapters[i].state == PROTO_EXT_STATE_RUNNING) {
@@ -961,14 +961,14 @@ static int fw_adapter_handle_request(void *ctx, const void *req, void **resp)
              g_framework_instance->adapter_count, running,
              (unsigned long long)g_framework_instance->total_messages);
 
-    *resp = AGENTRT_STRDUP(stats_json);
+    *resp = AIRY_STRDUP(stats_json);
     return *resp ? 0 : -1;
 }
 
 static int fw_adapter_get_version(void *ctx, char *buf, size_t max_size)
 {
     if (!buf || max_size == 0)
-        return AGENTRT_ENOMEM;
+        return AIRY_ENOMEM;
     const char *ver = "1.0.0";
     size_t len = strlen(ver);
     if (len >= max_size)

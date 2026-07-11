@@ -15,8 +15,8 @@
  * @see unified_protocol.h
  */
 
-#ifndef AGENTRT_CHINA_ECO_ADAPTER_H
-#define AGENTRT_CHINA_ECO_ADAPTER_H
+#ifndef AIRY_RT_CHINA_ECO_ADAPTER_H
+#define AIRY_RT_CHINA_ECO_ADAPTER_H
 
 #include "unified_protocol.h"
 
@@ -140,4 +140,4 @@ int china_eco_sm4_decrypt(china_eco_sm4_context_t *ctx, const void *ciphertext, 
 }
 #endif
 
-#endif /* AGENTRT_CHINA_ECO_ADAPTER_H */
+#endif /* AIRY_RT_CHINA_ECO_ADAPTER_H */

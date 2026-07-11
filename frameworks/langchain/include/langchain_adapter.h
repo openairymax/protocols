@@ -26,10 +26,10 @@
  * @since 2.1.0
  */
 
-#ifndef AGENTRT_LANGCHAIN_ADAPTER_H
-#define AGENTRT_LANGCHAIN_ADAPTER_H
+#ifndef AIRY_RT_LANGCHAIN_ADAPTER_H
+#define AIRY_RT_LANGCHAIN_ADAPTER_H
 
-#include "agentrt_protocol_interface.h"
+#include "airy_protocol_interface.h"
 #include "unified_protocol.h"
 
 #include <stdbool.h>
@@ -297,4 +297,4 @@ void langchain_execution_result_destroy(langchain_execution_result_t *result);
 }
 #endif
 
-#endif /* AGENTRT_LANGCHAIN_ADAPTER_H */
+#endif /* AIRY_RT_LANGCHAIN_ADAPTER_H */

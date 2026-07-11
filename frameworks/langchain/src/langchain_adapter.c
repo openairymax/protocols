@@ -45,21 +45,21 @@ langchain_adapter_context_t *langchain_adapter_create(const langchain_config_t *
         return NULL;
 
     langchain_adapter_context_t *ctx =
-        (langchain_adapter_context_t *)AGENTRT_CALLOC(1, sizeof(langchain_adapter_context_t));
+        (langchain_adapter_context_t *)AIRY_CALLOC(1, sizeof(langchain_adapter_context_t));
     if (!ctx)
         return NULL;
 
     __builtin_memcpy(&ctx->config, config, sizeof(langchain_config_t));
     if (config->base_url)
-        ctx->config.base_url = AGENTRT_STRDUP(config->base_url);
+        ctx->config.base_url = AIRY_STRDUP(config->base_url);
     if (config->api_key)
-        ctx->config.api_key = AGENTRT_STRDUP(config->api_key);
+        ctx->config.api_key = AIRY_STRDUP(config->api_key);
     if (config->default_llm_model)
-        ctx->config.default_llm_model = AGENTRT_STRDUP(config->default_llm_model);
+        ctx->config.default_llm_model = AIRY_STRDUP(config->default_llm_model);
     if (config->tracing_endpoint)
-        ctx->config.tracing_endpoint = AGENTRT_STRDUP(config->tracing_endpoint);
+        ctx->config.tracing_endpoint = AIRY_STRDUP(config->tracing_endpoint);
     if (config->cache_backend_url)
-        ctx->config.cache_backend_url = AGENTRT_STRDUP(config->cache_backend_url);
+        ctx->config.cache_backend_url = AIRY_STRDUP(config->cache_backend_url);
 
     ctx->is_initialized = true;
     ctx->tool_count = 0;
@@ -78,11 +78,11 @@ void langchain_adapter_destroy(langchain_adapter_context_t *ctx)
     if (!ctx)
         return;
 
-    AGENTRT_FREE(ctx->config.base_url);
-    AGENTRT_FREE(ctx->config.api_key);
-    AGENTRT_FREE(ctx->config.default_llm_model);
-    AGENTRT_FREE(ctx->config.tracing_endpoint);
-    AGENTRT_FREE(ctx->config.cache_backend_url);
+    AIRY_FREE(ctx->config.base_url);
+    AIRY_FREE(ctx->config.api_key);
+    AIRY_FREE(ctx->config.default_llm_model);
+    AIRY_FREE(ctx->config.tracing_endpoint);
+    AIRY_FREE(ctx->config.cache_backend_url);
 
     for (size_t i = 0; i < ctx->tool_count; i++)
         langchain_tool_def_destroy(&ctx->tools[i]);
@@ -91,17 +91,17 @@ void langchain_adapter_destroy(langchain_adapter_context_t *ctx)
         langchain_chain_instance_destroy(&ctx->chains[i]);
 
     for (size_t i = 0; i < ctx->agent_count; i++) {
-        AGENTRT_FREE(ctx->agents[i].id);
-        AGENTRT_FREE(ctx->agents[i].name);
-        AGENTRT_FREE(ctx->agents[i].description);
-        AGENTRT_FREE(ctx->agents[i].llm_provider);
+        AIRY_FREE(ctx->agents[i].id);
+        AIRY_FREE(ctx->agents[i].name);
+        AIRY_FREE(ctx->agents[i].description);
+        AIRY_FREE(ctx->agents[i].llm_provider);
     }
 
     for (size_t i = 0; i < ctx->memory_count; i++)
         langchain_memory_destroy(&ctx->memories[i]);
 
-    AGENTRT_MEMSET(ctx, 0, sizeof(langchain_adapter_context_t));
-    AGENTRT_FREE(ctx);
+    AIRY_MEMSET(ctx, 0, sizeof(langchain_adapter_context_t));
+    AIRY_FREE(ctx);
 }
 
 bool langchain_adapter_is_initialized(const langchain_adapter_context_t *ctx)
@@ -118,17 +118,17 @@ int langchain_register_tool(langchain_adapter_context_t *ctx, const langchain_to
                             langchain_tool_executor_fn executor, void *user_data)
 {
     if (!ctx || !tool || !tool->id)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     if (ctx->tool_count >= LANGCHAIN_MAX_TOOLS)
-        return AGENTRT_ERR_OVERFLOW;
+        return AIRY_ERR_OVERFLOW;
 
-    AGENTRT_MEMSET(&ctx->tools[ctx->tool_count], 0, sizeof(langchain_tool_def_t));
-    ctx->tools[ctx->tool_count].id = AGENTRT_STRDUP(tool->id);
-    ctx->tools[ctx->tool_count].name = tool->name ? AGENTRT_STRDUP(tool->name) : NULL;
+    AIRY_MEMSET(&ctx->tools[ctx->tool_count], 0, sizeof(langchain_tool_def_t));
+    ctx->tools[ctx->tool_count].id = AIRY_STRDUP(tool->id);
+    ctx->tools[ctx->tool_count].name = tool->name ? AIRY_STRDUP(tool->name) : NULL;
     ctx->tools[ctx->tool_count].description =
-        tool->description ? AGENTRT_STRDUP(tool->description) : NULL;
+        tool->description ? AIRY_STRDUP(tool->description) : NULL;
     ctx->tools[ctx->tool_count].function_schema_json =
-        tool->function_schema_json ? AGENTRT_STRDUP(tool->function_schema_json) : NULL;
+        tool->function_schema_json ? AIRY_STRDUP(tool->function_schema_json) : NULL;
     ctx->tools[ctx->tool_count].tool_type = tool->tool_type;
     ctx->tools[ctx->tool_count].is_async = tool->is_async;
 
@@ -140,23 +140,23 @@ int langchain_list_tools(langchain_adapter_context_t *ctx, langchain_tool_def_t 
                          size_t *count)
 {
     if (!ctx || !tools || !count)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     *tools = NULL;
     *count = 0;
     if (ctx->tool_count == 0)
         return 0;
 
-    *tools = (langchain_tool_def_t *)AGENTRT_CALLOC(ctx->tool_count, sizeof(langchain_tool_def_t));
+    *tools = (langchain_tool_def_t *)AIRY_CALLOC(ctx->tool_count, sizeof(langchain_tool_def_t));
     if (!*tools)
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
 
     for (size_t i = 0; i < ctx->tool_count; i++) {
-        (*tools)[i].id = ctx->tools[i].id ? AGENTRT_STRDUP(ctx->tools[i].id) : NULL;
-        (*tools)[i].name = ctx->tools[i].name ? AGENTRT_STRDUP(ctx->tools[i].name) : NULL;
+        (*tools)[i].id = ctx->tools[i].id ? AIRY_STRDUP(ctx->tools[i].id) : NULL;
+        (*tools)[i].name = ctx->tools[i].name ? AIRY_STRDUP(ctx->tools[i].name) : NULL;
         (*tools)[i].description =
-            ctx->tools[i].description ? AGENTRT_STRDUP(ctx->tools[i].description) : NULL;
+            ctx->tools[i].description ? AIRY_STRDUP(ctx->tools[i].description) : NULL;
         (*tools)[i].function_schema_json = ctx->tools[i].function_schema_json
-                                               ? AGENTRT_STRDUP(ctx->tools[i].function_schema_json)
+                                               ? AIRY_STRDUP(ctx->tools[i].function_schema_json)
                                                : NULL;
         (*tools)[i].tool_type = ctx->tools[i].tool_type;
         (*tools)[i].is_async = ctx->tools[i].is_async;
@@ -170,27 +170,27 @@ int langchain_create_chain(langchain_adapter_context_t *ctx,
                            langchain_chain_instance_t *instance)
 {
     if (!ctx || !definition || !instance)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     static uint32_t chain_counter = 0;
     chain_counter++;
 
-    AGENTRT_MEMSET(instance, 0, sizeof(langchain_chain_instance_t));
+    AIRY_MEMSET(instance, 0, sizeof(langchain_chain_instance_t));
 
     char cid[64];
     snprintf(cid, sizeof(cid), "lc-chain-%08x", chain_counter);
-    instance->id = AGENTRT_STRDUP(cid);
-    instance->input_schema_json = AGENTRT_STRDUP("{}");
-    instance->output_schema_json = AGENTRT_STRDUP("{}");
+    instance->id = AIRY_STRDUP(cid);
+    instance->input_schema_json = AIRY_STRDUP("{}");
+    instance->output_schema_json = AIRY_STRDUP("{}");
     instance->compiled_executable = NULL;
 
     if (ctx->chain_count < LANGCHAIN_MAX_CHAINS) {
         __builtin_memcpy(&ctx->chains[ctx->chain_count], instance, sizeof(langchain_chain_instance_t));
-        ctx->chains[ctx->chain_count].id = AGENTRT_STRDUP(instance->id);
+        ctx->chains[ctx->chain_count].id = AIRY_STRDUP(instance->id);
         ctx->chains[ctx->chain_count].input_schema_json =
-            instance->input_schema_json ? AGENTRT_STRDUP(instance->input_schema_json) : NULL;
+            instance->input_schema_json ? AIRY_STRDUP(instance->input_schema_json) : NULL;
         ctx->chains[ctx->chain_count].output_schema_json =
-            instance->output_schema_json ? AGENTRT_STRDUP(instance->output_schema_json) : NULL;
+            instance->output_schema_json ? AIRY_STRDUP(instance->output_schema_json) : NULL;
         ctx->chain_count++;
     }
 
@@ -290,14 +290,14 @@ static int lc_generate_chain_response(langchain_adapter_context_t *ctx, const ch
                                       size_t buf_len)
 {
     if (!out_buf || !buf_len)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     if (ctx && ctx->llm_callback) {
         char prompt[4096];
         int plen = snprintf(prompt, sizeof(prompt), "[LangChain %s] %s",
                             is_agent_mode ? "Agent" : "Chain", input_json ? input_json : "");
         if (plen <= 0)
-            return AGENTRT_ERR_NOT_FOUND;
+            return AIRY_ERR_NOT_FOUND;
 
         char *llm_response = NULL;
         int rc = ctx->llm_callback(prompt, ctx->config.default_llm_model, &llm_response,
@@ -308,37 +308,37 @@ static int lc_generate_chain_response(langchain_adapter_context_t *ctx, const ch
                 copy_len = buf_len - 1;
             __builtin_memcpy(out_buf, llm_response, copy_len);
             out_buf[copy_len] = '\0';
-            AGENTRT_FREE(llm_response);
+            AIRY_FREE(llm_response);
             return 0;
         }
-        AGENTRT_FREE(llm_response);
-        return AGENTRT_ERR_NULL_POINTER;
+        AIRY_FREE(llm_response);
+        return AIRY_ERR_NULL_POINTER;
     }
 
     out_buf[0] = '\0';
-    return AGENTRT_ERR_OUT_OF_MEMORY;
+    return AIRY_ERR_OUT_OF_MEMORY;
 }
 
 int langchain_execute_chain(langchain_adapter_context_t *ctx, const char *chain_id,
                             const char *input_json, langchain_execution_result_t *result)
 {
     if (!ctx || !result)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     if (!ctx->is_initialized)
-        return AGENTRT_ERR_SYS_NOT_INIT;
+        return AIRY_ERR_SYS_NOT_INIT;
     if (!ctx->llm_callback)
-        return AGENTRT_ERR_OVERFLOW;
+        return AIRY_ERR_OVERFLOW;
 
     ctx->total_chains_executed++;
 
-    AGENTRT_MEMSET(result, 0, sizeof(langchain_execution_result_t));
-    result->chain_id = chain_id ? AGENTRT_STRDUP(chain_id) : NULL;
-    result->input_json = input_json ? AGENTRT_STRDUP(input_json) : NULL;
+    AIRY_MEMSET(result, 0, sizeof(langchain_execution_result_t));
+    result->chain_id = chain_id ? AIRY_STRDUP(chain_id) : NULL;
+    result->input_json = input_json ? AIRY_STRDUP(input_json) : NULL;
 
     time_t start = time(NULL);
 
     char resp_text[LC_MAX_RESPONSE_LEN];
-    AGENTRT_MEMSET(resp_text, 0, sizeof(resp_text));
+    AIRY_MEMSET(resp_text, 0, sizeof(resp_text));
     int rc = lc_generate_chain_response(ctx, input_json, ctx->tool_count, false, resp_text,
                                         sizeof(resp_text));
 
@@ -350,13 +350,13 @@ int langchain_execute_chain(langchain_adapter_context_t *ctx, const char *chain_
                  "\"input_tokens\":%d,\"output_tokens\":%d}",
                  LANGCHAIN_ADAPTER_VERSION, resp_text, lc_word_count(input_json),
                  lc_word_count(resp_text));
-        result->output_json = AGENTRT_STRDUP(output_buf);
+        result->output_json = AIRY_STRDUP(output_buf);
     } else {
         result->output_json =
-            AGENTRT_STRDUP("{\"status\":\"error\",\"message\":\"LLM callback unavailable\"}");
+            AIRY_STRDUP("{\"status\":\"error\",\"message\":\"LLM callback unavailable\"}");
         result->success = false;
-        result->error_message = AGENTRT_STRDUP("No LLM callback configured");
-        return AGENTRT_ERR_OVERFLOW;
+        result->error_message = AIRY_STRDUP("No LLM callback configured");
+        return AIRY_ERR_OVERFLOW;
     }
 
     result->execution_time_ms = difftime(time(NULL), start) * 1000.0;
@@ -376,20 +376,20 @@ int langchain_execute_chain_streaming(langchain_adapter_context_t *ctx, const ch
                                       void *user_data)
 {
     if (!ctx || !stream_handler)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     if (!ctx->is_initialized)
-        return AGENTRT_ERR_SYS_NOT_INIT;
+        return AIRY_ERR_SYS_NOT_INIT;
     if (!ctx->llm_callback)
-        return AGENTRT_ERR_OVERFLOW;
+        return AIRY_ERR_OVERFLOW;
 
     ctx->total_chains_executed++;
 
     char full_response[LC_MAX_RESPONSE_LEN];
-    AGENTRT_MEMSET(full_response, 0, sizeof(full_response));
+    AIRY_MEMSET(full_response, 0, sizeof(full_response));
     int rc = lc_generate_chain_response(ctx, input_json, ctx->tool_count, false, full_response,
                                         sizeof(full_response));
     if (rc != 0)
-        return AGENTRT_ERR_OVERFLOW;
+        return AIRY_ERR_OVERFLOW;
 
     size_t resp_len = strlen(full_response);
     size_t pos = 0;
@@ -423,20 +423,20 @@ int langchain_create_agent(langchain_adapter_context_t *ctx,
                            const langchain_agent_def_t *definition, char *out_agent_id)
 {
     if (!ctx || !out_agent_id)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     if (ctx->agent_count >= LANGCHAIN_MAX_AGENTS)
-        return AGENTRT_ERR_OVERFLOW;
+        return AIRY_ERR_OVERFLOW;
 
     static uint32_t agent_counter = 0;
     agent_counter++;
     snprintf(out_agent_id, 64, "lc-agent-%08x", agent_counter);
 
     langchain_agent_instance_t *agent = &ctx->agents[ctx->agent_count];
-    AGENTRT_MEMSET(agent, 0, sizeof(*agent));
-    agent->id = AGENTRT_STRDUP(out_agent_id);
+    AIRY_MEMSET(agent, 0, sizeof(*agent));
+    agent->id = AIRY_STRDUP(out_agent_id);
 
     if (definition) {
-        agent->name = definition->name ? AGENTRT_STRDUP(definition->name) : NULL;
+        agent->name = definition->name ? AIRY_STRDUP(definition->name) : NULL;
     }
 
     agent->is_available = true;
@@ -449,9 +449,9 @@ int langchain_agent_run(langchain_adapter_context_t *ctx, const char *agent_id,
                         const char *task_input, langchain_execution_result_t *result)
 {
     if (!ctx || !result)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     if (!ctx->llm_callback)
-        return AGENTRT_ERR_OVERFLOW;
+        return AIRY_ERR_OVERFLOW;
 
     langchain_agent_instance_t *found = NULL;
     if (agent_id) {
@@ -465,14 +465,14 @@ int langchain_agent_run(langchain_adapter_context_t *ctx, const char *agent_id,
 
     ctx->total_chains_executed++;
 
-    AGENTRT_MEMSET(result, 0, sizeof(langchain_execution_result_t));
-    result->chain_id = agent_id ? AGENTRT_STRDUP(agent_id) : NULL;
-    result->input_json = task_input ? AGENTRT_STRDUP(task_input) : NULL;
+    AIRY_MEMSET(result, 0, sizeof(langchain_execution_result_t));
+    result->chain_id = agent_id ? AIRY_STRDUP(agent_id) : NULL;
+    result->input_json = task_input ? AIRY_STRDUP(task_input) : NULL;
 
     time_t start = time(NULL);
 
     char resp_text[LC_MAX_RESPONSE_LEN];
-    AGENTRT_MEMSET(resp_text, 0, sizeof(resp_text));
+    AIRY_MEMSET(resp_text, 0, sizeof(resp_text));
     size_t tool_cnt = (found && found->tool_count > 0) ? found->tool_count : ctx->tool_count;
     int rc =
         lc_generate_chain_response(ctx, task_input, tool_cnt, true, resp_text, sizeof(resp_text));
@@ -490,13 +490,13 @@ int langchain_agent_run(langchain_adapter_context_t *ctx, const char *agent_id,
                  resp_text, (int)(tool_cnt > 0 ? tool_cnt + 2 : 3), tool_cnt, input_tokens,
                  output_tokens,
                  ctx->config.default_llm_model ? ctx->config.default_llm_model : "gpt-4o");
-        result->output_json = AGENTRT_STRDUP(output_buf);
+        result->output_json = AIRY_STRDUP(output_buf);
     } else {
         result->output_json =
-            AGENTRT_STRDUP("{\"status\":\"error\",\"message\":\"LLM callback unavailable\"}");
+            AIRY_STRDUP("{\"status\":\"error\",\"message\":\"LLM callback unavailable\"}");
         result->success = false;
-        result->error_message = AGENTRT_STRDUP("No LLM callback configured");
-        return AGENTRT_ERR_OVERFLOW;
+        result->error_message = AIRY_STRDUP("No LLM callback configured");
+        return AIRY_ERR_OVERFLOW;
     }
 
     result->execution_time_ms = difftime(time(NULL), start) * 1000.0;
@@ -513,15 +513,15 @@ int langchain_create_memory(langchain_adapter_context_t *ctx, langchain_memory_t
                             size_t max_entries, langchain_memory_t *out_memory)
 {
     if (!ctx || !out_memory)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     static uint32_t mem_counter = 0;
     mem_counter++;
 
-    AGENTRT_MEMSET(out_memory, 0, sizeof(langchain_memory_t));
+    AIRY_MEMSET(out_memory, 0, sizeof(langchain_memory_t));
     char mid[64];
     snprintf(mid, sizeof(mid), "lc-mem-%08x", mem_counter);
-    out_memory->id = AGENTRT_STRDUP(mid);
+    out_memory->id = AIRY_STRDUP(mid);
     out_memory->type = type;
     out_memory->max_entries = max_entries > 0 ? max_entries : LANGCHAIN_MAX_MEMORY_ENTRIES;
     out_memory->current_entries = 0;
@@ -532,7 +532,7 @@ int langchain_create_memory(langchain_adapter_context_t *ctx, langchain_memory_t
 
     if (ctx->memory_count < LANGCHAIN_MAX_MEMORY_ENTRIES) {
         __builtin_memcpy(&ctx->memories[ctx->memory_count], out_memory, sizeof(langchain_memory_t));
-        ctx->memories[ctx->memory_count].id = AGENTRT_STRDUP(out_memory->id);
+        ctx->memories[ctx->memory_count].id = AIRY_STRDUP(out_memory->id);
         ctx->memory_count++;
     }
 
@@ -544,62 +544,62 @@ int langchain_memory_add(langchain_adapter_context_t *ctx, const char *memory_id
 {
     if (!ctx || !memory_id || !role || !content)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "langchain_memory_add: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "langchain_memory_add: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     for (size_t m = 0; m < ctx->memory_count; m++) {
         if (strcmp(ctx->memories[m].id, memory_id) == 0) {
             langchain_memory_t *mem = &ctx->memories[m];
             if (mem->current_entries >= mem->max_entries)
-                return AGENTRT_ERR_OVERFLOW;
+                return AIRY_ERR_OVERFLOW;
 
             char **msgs =
-                (char **)AGENTRT_REALLOC(mem->messages, (mem->message_count + 1) * sizeof(char *));
+                (char **)AIRY_REALLOC(mem->messages, (mem->message_count + 1) * sizeof(char *));
             if (!msgs)
-                return AGENTRT_ERR_IO;
+                return AIRY_ERR_IO;
             mem->messages = msgs;
 
             char entry[1024];
             snprintf(entry, sizeof(entry), "{\"role\":\"%s\",\"content\":\"%.900s\"}", role,
                      content);
-            mem->messages[mem->message_count] = AGENTRT_STRDUP(entry);
+            mem->messages[mem->message_count] = AIRY_STRDUP(entry);
             mem->message_count++;
             mem->current_entries++;
             mem->last_updated = (uint64_t)(time(NULL));
             return 0;
         }
     }
-    return AGENTRT_ERR_OUT_OF_MEMORY;
+    return AIRY_ERR_OUT_OF_MEMORY;
 }
 
 int langchain_memory_get(langchain_adapter_context_t *ctx, const char *memory_id,
                          langchain_memory_t *snapshot)
 {
     if (!ctx || !memory_id || !snapshot)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     for (size_t m = 0; m < ctx->memory_count; m++) {
         if (strcmp(ctx->memories[m].id, memory_id) == 0) {
             __builtin_memcpy(snapshot, &ctx->memories[m], sizeof(langchain_memory_t));
-            snapshot->id = AGENTRT_STRDUP(ctx->memories[m].id);
+            snapshot->id = AIRY_STRDUP(ctx->memories[m].id);
             snapshot->messages =
-                (char **)AGENTRT_CALLOC(ctx->memories[m].message_count, sizeof(char *));
+                (char **)AIRY_CALLOC(ctx->memories[m].message_count, sizeof(char *));
             for (size_t i = 0; i < ctx->memories[m].message_count; i++)
-                snapshot->messages[i] = AGENTRT_STRDUP(ctx->memories[m].messages[i]);
+                snapshot->messages[i] = AIRY_STRDUP(ctx->memories[m].messages[i]);
             snapshot->summary =
-                ctx->memories[m].summary ? AGENTRT_STRDUP(ctx->memories[m].summary) : NULL;
+                ctx->memories[m].summary ? AIRY_STRDUP(ctx->memories[m].summary) : NULL;
             return 0;
         }
     }
-    return AGENTRT_ERR_OUT_OF_MEMORY;
+    return AIRY_ERR_OUT_OF_MEMORY;
 }
 
 int langchain_set_streaming_handler(langchain_adapter_context_t *ctx,
                                     langchain_streaming_fn handler, void *user_data)
 {
     if (!ctx)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     ctx->streaming_handler = handler;
     ctx->streaming_user_data = user_data;
     return 0;
@@ -609,7 +609,7 @@ int langchain_set_trace_handler(langchain_adapter_context_t *ctx, langchain_trac
                                 void *user_data)
 {
     if (!ctx)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     ctx->trace_handler = handler;
     ctx->trace_user_data = user_data;
     return 0;
@@ -619,7 +619,7 @@ int langchain_set_llm_callback(langchain_adapter_context_t *ctx, langchain_llm_c
                                void *user_data)
 {
     if (!ctx)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     ctx->llm_callback = callback;
     ctx->llm_callback_data = user_data;
     return 0;
@@ -628,7 +628,7 @@ int langchain_set_llm_callback(langchain_adapter_context_t *ctx, langchain_llm_c
 int langchain_get_statistics(langchain_adapter_context_t *ctx, char *stats_json, size_t buffer_size)
 {
     if (!ctx || !stats_json || buffer_size < 64)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     int written = snprintf(
         stats_json, buffer_size,
@@ -658,11 +658,11 @@ int langchain_get_statistics(langchain_adapter_context_t *ctx, char *stats_json,
 static int langchain_proto_init(void *context)
 {
     if (!context)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     langchain_config_t config = langchain_config_default();
     langchain_adapter_context_t *ctx = langchain_adapter_create(&config);
     if (!ctx)
-        return AGENTRT_ERR_INVALID_PARAM;
+        return AIRY_ERR_INVALID_PARAM;
     *(void **)context = ctx;
     return 0;
 }
@@ -676,7 +676,7 @@ static int langchain_proto_destroy(void *context)
 static int langchain_proto_handle_request(void *context, const void *req, void **resp)
 {
     if (!context || !req || !resp)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     langchain_adapter_context_t *ctx = (langchain_adapter_context_t *)context;
     const unified_message_t *msg = (const unified_message_t *)req;
@@ -687,9 +687,9 @@ static int langchain_proto_handle_request(void *context, const void *req, void *
     int ret = langchain_agent_run(ctx, agent_id, raw_request, &result);
 
     if (ret == 0 && result.output_json) {
-        *resp = AGENTRT_STRDUP(result.output_json);
+        *resp = AIRY_STRDUP(result.output_json);
     } else {
-        *resp = AGENTRT_STRDUP("{\"status\":\"error\"}");
+        *resp = AIRY_STRDUP("{\"status\":\"error\"}");
         ret = -1;
     }
 
@@ -700,7 +700,7 @@ static int langchain_proto_handle_request(void *context, const void *req, void *
 static int langchain_proto_get_version(void *context, char *buf, size_t max_size)
 {
     if (!buf || max_size == 0)
-        return AGENTRT_ERR_INVALID_PARAM;
+        return AIRY_ERR_INVALID_PARAM;
     const char *ver = LANGCHAIN_ADAPTER_VERSION;
     size_t len = strlen(ver);
     if (len >= max_size)
@@ -740,72 +740,72 @@ void langchain_tool_def_destroy(langchain_tool_def_t *tool)
 {
     if (!tool)
         return;
-    AGENTRT_FREE(tool->id);
-    AGENTRT_FREE(tool->name);
-    AGENTRT_FREE(tool->description);
-    AGENTRT_FREE(tool->function_schema_json);
-    AGENTRT_MEMSET(tool, 0, sizeof(langchain_tool_def_t));
+    AIRY_FREE(tool->id);
+    AIRY_FREE(tool->name);
+    AIRY_FREE(tool->description);
+    AIRY_FREE(tool->function_schema_json);
+    AIRY_MEMSET(tool, 0, sizeof(langchain_tool_def_t));
 }
 
 void langchain_chain_def_destroy(langchain_chain_def_t *chain)
 {
     if (!chain)
         return;
-    AGENTRT_FREE(chain->id);
-    AGENTRT_FREE(chain->name);
+    AIRY_FREE(chain->id);
+    AIRY_FREE(chain->name);
     for (size_t i = 0; i < chain->step_count; i++)
-        AGENTRT_FREE(chain->step_ids[i]);
-    AGENTRT_FREE(chain->step_ids);
-    AGENTRT_MEMSET(chain, 0, sizeof(langchain_chain_def_t));
+        AIRY_FREE(chain->step_ids[i]);
+    AIRY_FREE(chain->step_ids);
+    AIRY_MEMSET(chain, 0, sizeof(langchain_chain_def_t));
 }
 
 void langchain_chain_instance_destroy(langchain_chain_instance_t *instance)
 {
     if (!instance)
         return;
-    AGENTRT_FREE(instance->id);
-    AGENTRT_FREE(instance->input_schema_json);
-    AGENTRT_FREE(instance->output_schema_json);
-    AGENTRT_FREE(instance->compiled_executable);
-    AGENTRT_MEMSET(instance, 0, sizeof(langchain_chain_instance_t));
+    AIRY_FREE(instance->id);
+    AIRY_FREE(instance->input_schema_json);
+    AIRY_FREE(instance->output_schema_json);
+    AIRY_FREE(instance->compiled_executable);
+    AIRY_MEMSET(instance, 0, sizeof(langchain_chain_instance_t));
 }
 
 void langchain_agent_def_destroy(langchain_agent_def_t *agent)
 {
     if (!agent)
         return;
-    AGENTRT_FREE(agent->id);
-    AGENTRT_FREE(agent->name);
-    AGENTRT_FREE(agent->llm_id);
-    AGENTRT_FREE(agent->memory_id);
+    AIRY_FREE(agent->id);
+    AIRY_FREE(agent->name);
+    AIRY_FREE(agent->llm_id);
+    AIRY_FREE(agent->memory_id);
     for (size_t i = 0; i < agent->tool_count; i++)
-        AGENTRT_FREE(agent->tool_ids[i]);
-    AGENTRT_FREE(agent->tool_ids);
-    AGENTRT_MEMSET(agent, 0, sizeof(langchain_agent_def_t));
+        AIRY_FREE(agent->tool_ids[i]);
+    AIRY_FREE(agent->tool_ids);
+    AIRY_MEMSET(agent, 0, sizeof(langchain_agent_def_t));
 }
 
 void langchain_memory_destroy(langchain_memory_t *mem)
 {
     if (!mem)
         return;
-    AGENTRT_FREE(mem->id);
-    AGENTRT_FREE(mem->summary);
+    AIRY_FREE(mem->id);
+    AIRY_FREE(mem->summary);
     for (size_t i = 0; i < mem->message_count; i++)
-        AGENTRT_FREE(mem->messages[i]);
-    AGENTRT_FREE(mem->messages);
-    AGENTRT_MEMSET(mem, 0, sizeof(langchain_memory_t));
+        AIRY_FREE(mem->messages[i]);
+    AIRY_FREE(mem->messages);
+    AIRY_MEMSET(mem, 0, sizeof(langchain_memory_t));
 }
 
 void langchain_execution_result_destroy(langchain_execution_result_t *result)
 {
     if (!result)
         return;
-    AGENTRT_FREE(result->chain_id);
-    AGENTRT_FREE(result->input_json);
-    AGENTRT_FREE(result->output_json);
-    AGENTRT_FREE(result->error_message);
+    AIRY_FREE(result->chain_id);
+    AIRY_FREE(result->input_json);
+    AIRY_FREE(result->output_json);
+    AIRY_FREE(result->error_message);
     for (size_t i = 0; i < result->intermediate_count; i++)
-        AGENTRT_FREE(result->intermediate_results[i]);
-    AGENTRT_FREE(result->intermediate_results);
-    AGENTRT_MEMSET(result, 0, sizeof(langchain_execution_result_t));
+        AIRY_FREE(result->intermediate_results[i]);
+    AIRY_FREE(result->intermediate_results);
+    AIRY_MEMSET(result, 0, sizeof(langchain_execution_result_t));
 }

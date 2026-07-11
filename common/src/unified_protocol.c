@@ -21,7 +21,7 @@
 #include "error.h"
 
 typedef struct {
-    agentrt_protocol_type_t type;
+    airy_protocol_type_t type;
     const char *name;
     int (*init)(void *context);
     int (*encode)(void *context, const void *msg, void **out_data, size_t *out_size);
@@ -79,7 +79,7 @@ protocol_stack_handle_t protocol_stack_create(const protocol_stack_config_t *con
     }
 
     struct protocol_stack_s *stack =
-        (struct protocol_stack_s *)AGENTRT_CALLOC(1, sizeof(struct protocol_stack_s));
+        (struct protocol_stack_s *)AIRY_CALLOC(1, sizeof(struct protocol_stack_s));
     if (!stack) {
         return NULL;
     }
@@ -88,12 +88,12 @@ protocol_stack_handle_t protocol_stack_create(const protocol_stack_config_t *con
     stack->config = *config;
     {
         size_t name_len = strlen(config->name) + 1;
-        char *name_copy = (char *)AGENTRT_MALLOC(name_len);
+        char *name_copy = (char *)AIRY_MALLOC(name_len);
         if (name_copy) {
             safe_strcpy(name_copy, config->name, name_len);
-            AGENTRT_STRNCPY_TERM(stack->config.name, name_copy, sizeof(stack->config.name));
+            AIRY_STRNCPY_TERM(stack->config.name, name_copy, sizeof(stack->config.name));
             stack->config.name[sizeof(stack->config.name) - 1] = '\0';
-            AGENTRT_FREE(name_copy);
+            AIRY_FREE(name_copy);
         }
     }
 
@@ -122,24 +122,24 @@ void protocol_stack_destroy(protocol_stack_handle_t handle)
         protocol_adapter_node_t *next = node->next;
         if (node->adapter && node->adapter->destroy) {
             node->adapter->destroy(node->context);
-            AGENTRT_FREE(node->adapter);
+            AIRY_FREE(node->adapter);
         }
-        AGENTRT_FREE(node);
+        AIRY_FREE(node);
         node = next;
     }
 
     if (stack->config.custom_config) {
-        AGENTRT_FREE(stack->config.custom_config);
+        AIRY_FREE(stack->config.custom_config);
     }
 
-    AGENTRT_FREE(stack);
+    AIRY_FREE(stack);
 }
 
 int protocol_stack_register_adapter(protocol_stack_handle_t handle, protocol_adapter_t adapter)
 {
     if (!handle) {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_stack_register_adapter: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_stack_register_adapter: failed");
+        return AIRY_ERR_UNKNOWN;
     }
 
     struct protocol_stack_s *stack = (struct protocol_stack_s *)handle;
@@ -160,17 +160,17 @@ int protocol_stack_register_adapter(protocol_stack_handle_t handle, protocol_ada
 
     // 创建新节点
     protocol_adapter_node_t *node =
-        (protocol_adapter_node_t *)AGENTRT_MALLOC(sizeof(protocol_adapter_node_t));
+        (protocol_adapter_node_t *)AIRY_MALLOC(sizeof(protocol_adapter_node_t));
     if (!node) {
-        agentrt_error_push_ex(AGENTRT_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "AGENTRT_MALLOC: allocation failed");
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "AIRY_MALLOC: allocation failed");
+        return AIRY_ERR_OUT_OF_MEMORY;
     }
 
-    node->adapter = (protocol_adapter_t *)AGENTRT_MALLOC(sizeof(protocol_adapter_t));
+    node->adapter = (protocol_adapter_t *)AIRY_MALLOC(sizeof(protocol_adapter_t));
     if (!node->adapter) {
-        AGENTRT_FREE(node);
-        agentrt_error_push_ex(AGENTRT_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "AGENTRT_MALLOC: allocation failed");
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        AIRY_FREE(node);
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "AIRY_MALLOC: allocation failed");
+        return AIRY_ERR_OUT_OF_MEMORY;
     }
     *node->adapter = adapter;
     node->context = NULL;
@@ -179,8 +179,8 @@ int protocol_stack_register_adapter(protocol_stack_handle_t handle, protocol_ada
     if (adapter.init) {
         int result = adapter.init(node->context);
         if (result != 0) {
-            AGENTRT_FREE(node->adapter);
-            AGENTRT_FREE(node);
+            AIRY_FREE(node->adapter);
+            AIRY_FREE(node);
             return result;
         }
     }
@@ -196,8 +196,8 @@ int protocol_stack_register_adapter(protocol_stack_handle_t handle, protocol_ada
 int protocol_stack_send(protocol_stack_handle_t handle, const unified_message_t *message)
 {
     if (!handle || !message) {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_stack_send: IO error");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_stack_send: IO error");
+        return AIRY_ERR_UNKNOWN;
     }
 
     struct protocol_stack_s *stack = (struct protocol_stack_s *)handle;
@@ -211,8 +211,8 @@ int protocol_stack_send(protocol_stack_handle_t handle, const unified_message_t 
     // 查找对应的适配器
     protocol_adapter_node_t *adapter_node = find_adapter_node(handle, message->protocol);
     if (!adapter_node || !adapter_node->adapter) {
-        agentrt_error_push_ex(AGENTRT_ERR_NOT_FOUND, __FILE__, __LINE__, __func__, "route_message: adapter not found");
-        return AGENTRT_ERR_NOT_FOUND;
+        airy_err_push_ex(AIRY_ERR_NOT_FOUND, __FILE__, __LINE__, __func__, "route_message: adapter not found");
+        return AIRY_ERR_NOT_FOUND;
     }
 
     protocol_adapter_t *adapter = adapter_node->adapter;
@@ -235,7 +235,7 @@ int protocol_stack_send(protocol_stack_handle_t handle, const unified_message_t 
         int conn_result = adapter->connect(adapter_node->context, message->endpoint);
         if (conn_result != 0 && conn_result != -2) {
             if (encoded_data != message->payload && encoded_data) {
-                AGENTRT_FREE(encoded_data);
+                AIRY_FREE(encoded_data);
             }
             return conn_result;
         }
@@ -245,7 +245,7 @@ int protocol_stack_send(protocol_stack_handle_t handle, const unified_message_t 
         int send_result = adapter->send(adapter_node->context, encoded_data, encoded_size);
         if (send_result != 0) {
             if (encoded_data != message->payload && encoded_data) {
-                AGENTRT_FREE(encoded_data);
+                AIRY_FREE(encoded_data);
             }
             return send_result;
         }
@@ -257,7 +257,7 @@ int protocol_stack_send(protocol_stack_handle_t handle, const unified_message_t 
     stack->bytes_sent += encoded_size;
 
     if (encoded_data != message->payload && encoded_data) {
-        AGENTRT_FREE(encoded_data);
+        AIRY_FREE(encoded_data);
     }
 
     return 0;
@@ -267,13 +267,13 @@ int protocol_stack_receive(protocol_stack_handle_t handle, unified_message_t *me
                            uint32_t timeout_ms)
 {
     if (!handle || !message) {
-        agentrt_error_push_ex(AGENTRT_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "protocol_stack_receive: timeout");
-        return AGENTRT_ERR_TIMEOUT;
+        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "protocol_stack_receive: timeout");
+        return AIRY_ERR_TIMEOUT;
     }
 
     struct protocol_stack_s *stack = (struct protocol_stack_s *)handle;
 
-    AGENTRT_MEMSET(message, 0, sizeof(unified_message_t));
+    AIRY_MEMSET(message, 0, sizeof(unified_message_t));
 
     protocol_adapter_node_t *adapter_node = stack->adapters;
     while (adapter_node) {
@@ -289,7 +289,7 @@ int protocol_stack_receive(protocol_stack_handle_t handle, unified_message_t *me
                     int dec_result = adapter_node->adapter->decode(
                         adapter_node->context, decoded_data, decoded_size, message);
                     if (dec_result != 0) {
-                        AGENTRT_FREE(decoded_data);
+                        AIRY_FREE(decoded_data);
                         adapter_node = adapter_node->next;
                         continue;
                     }
@@ -314,7 +314,7 @@ int protocol_stack_receive(protocol_stack_handle_t handle, unified_message_t *me
             }
 
             if (decoded_data)
-                AGENTRT_FREE(decoded_data);
+                AIRY_FREE(decoded_data);
         }
         adapter_node = adapter_node->next;
     }
@@ -325,8 +325,8 @@ int protocol_stack_receive(protocol_stack_handle_t handle, unified_message_t *me
         nanosleep(&ts, NULL);
     }
 
-    agentrt_error_push_ex(AGENTRT_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "nanosleep: timeout");
-    return AGENTRT_ERR_TIMEOUT;
+    airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "nanosleep: timeout");
+    return AIRY_ERR_TIMEOUT;
 }
 
 int protocol_stack_set_callback(protocol_stack_handle_t handle,
@@ -334,8 +334,8 @@ int protocol_stack_set_callback(protocol_stack_handle_t handle,
                                 void *user_data)
 {
     if (!handle) {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_stack_set_callback: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_stack_set_callback: failed");
+        return AIRY_ERR_UNKNOWN;
     }
 
     struct protocol_stack_s *stack = (struct protocol_stack_s *)handle;
@@ -348,8 +348,8 @@ int protocol_stack_set_callback(protocol_stack_handle_t handle,
 int protocol_stack_get_stats(protocol_stack_handle_t handle, void *stats)
 {
     if (!handle || !stats) {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_stack_get_stats: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_stack_get_stats: failed");
+        return AIRY_ERR_UNKNOWN;
     }
 
     struct protocol_stack_s *stack = (struct protocol_stack_s *)handle;
@@ -364,7 +364,7 @@ int protocol_stack_get_stats(protocol_stack_handle_t handle, void *stats)
     } protocol_stats_t;
 
     protocol_stats_t *out = (protocol_stats_t *)stats;
-    AGENTRT_MEMSET(out, 0, sizeof(*out));
+    AIRY_MEMSET(out, 0, sizeof(*out));
 
     out->messages_sent = stack->messages_sent;
     out->messages_received = stack->messages_received;
@@ -385,7 +385,7 @@ unified_message_t unified_message_create(protocol_type_t protocol, message_direc
                                          size_t payload_size)
 {
     unified_message_t message;
-    AGENTRT_MEMSET(&message, 0, sizeof(message));
+    AIRY_MEMSET(&message, 0, sizeof(message));
 
     static uint64_t next_message_id = 1;
 
@@ -393,7 +393,7 @@ unified_message_t unified_message_create(protocol_type_t protocol, message_direc
     message.protocol = protocol;
     message.direction = direction;
     if (endpoint) {
-        AGENTRT_STRNCPY_TERM(message.endpoint, endpoint, sizeof(message.endpoint));
+        AIRY_STRNCPY_TERM(message.endpoint, endpoint, sizeof(message.endpoint));
     }
     message.payload = (void *)payload;
     message.payload_size = payload_size;
@@ -408,7 +408,7 @@ void unified_message_destroy(unified_message_t *message)
         return;
 
     // 注意：这里不释放payload，由调用者管理
-    AGENTRT_MEMSET(message, 0, sizeof(unified_message_t));
+    AIRY_MEMSET(message, 0, sizeof(unified_message_t));
 }
 
 const char *protocol_type_to_string(protocol_type_t type)
@@ -465,23 +465,23 @@ static int validate_message(const unified_message_t *message)
 {
     if (!message)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "validate_message: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "validate_message: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     if (message->protocol < PROTOCOL_HTTP || message->protocol > PROTOCOL_CUSTOM) {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "if: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "if: failed");
+        return AIRY_ERR_UNKNOWN;
     }
 
     if (message->direction < DIRECTION_REQUEST || message->direction > DIRECTION_NOTIFICATION) {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "if: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "if: failed");
+        return AIRY_ERR_UNKNOWN;
     }
 
     if (message->endpoint[0] && strlen(message->endpoint) > 1024) {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "if: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "if: failed");
+        return AIRY_ERR_UNKNOWN;
     }
 
     return 0;
@@ -489,5 +489,5 @@ static int validate_message(const unified_message_t *message)
 
 static uint64_t get_current_timestamp(void)
 {
-    return agentrt_time_ns();
+    return airy_time_ns();
 }

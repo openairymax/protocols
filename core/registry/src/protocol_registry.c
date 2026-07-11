@@ -48,7 +48,7 @@ const char *proto_state_to_string(proto_state_t state)
 protocol_registry_t *proto_registry_create(void)
 {
     protocol_registry_t *registry =
-        (protocol_registry_t *)AGENTRT_CALLOC(1, sizeof(protocol_registry_t));
+        (protocol_registry_t *)AIRY_CALLOC(1, sizeof(protocol_registry_t));
     if (!registry)
         return NULL;
 
@@ -67,14 +67,14 @@ void proto_registry_destroy(protocol_registry_t *registry)
         return;
 
     for (size_t i = 0; i < registry->entry_count; i++) {
-        AGENTRT_MEMSET(&registry->entries[i], 0, sizeof(proto_registry_entry_t));
+        AIRY_MEMSET(&registry->entries[i], 0, sizeof(proto_registry_entry_t));
     }
     registry->entry_count = 0;
 
     if (registry == g_registry)
         g_registry = NULL;
 
-    AGENTRT_FREE(registry);
+    AIRY_FREE(registry);
 }
 
 const char *proto_registry_version(void)
@@ -86,18 +86,18 @@ int proto_registry_register(protocol_registry_t *registry, const char *name, con
                             const char *description, proto_category_t category, proto_type_t type,
                             uint32_t capabilities, const protocol_adapter_t *adapter, void *context)
 {
-    AGENTRT_CHECK(registry != NULL, AGENTRT_ERR_NULL_POINTER, "registry is NULL");
-    AGENTRT_CHECK(name != NULL, AGENTRT_ERR_NULL_POINTER, "name is NULL");
+    AIRY_CHECK(registry != NULL, AIRY_ERR_NULL_POINTER, "registry is NULL");
+    AIRY_CHECK(name != NULL, AIRY_ERR_NULL_POINTER, "name is NULL");
     if (registry->entry_count >= PROTO_REGISTRY_MAX_ADAPTERS)
-        return AGENTRT_ERR_OVERFLOW;
+        return AIRY_ERR_OVERFLOW;
 
     for (size_t i = 0; i < registry->entry_count; i++) {
         if (strncmp(registry->entries[i].name, name, PROTO_REGISTRY_NAME_MAX_LEN - 1) == 0)
-            return AGENTRT_ERR_NULL_POINTER;
+            return AIRY_ERR_NULL_POINTER;
     }
 
     proto_registry_entry_t *entry = &registry->entries[registry->entry_count];
-    AGENTRT_MEMSET(entry, 0, sizeof(proto_registry_entry_t));
+    AIRY_MEMSET(entry, 0, sizeof(proto_registry_entry_t));
 
     snprintf(entry->name, PROTO_REGISTRY_NAME_MAX_LEN, "%s", name);
     snprintf(entry->version, sizeof(entry->version), "%s", version ? version : "1.0.0");
@@ -128,8 +128,8 @@ int proto_registry_register(protocol_registry_t *registry, const char *name, con
 
 int proto_registry_unregister(protocol_registry_t *registry, const char *name)
 {
-    AGENTRT_CHECK(registry != NULL, AGENTRT_ERR_NULL_POINTER, "registry is NULL");
-    AGENTRT_CHECK(name != NULL, AGENTRT_ERR_NULL_POINTER, "name is NULL");
+    AIRY_CHECK(registry != NULL, AIRY_ERR_NULL_POINTER, "registry is NULL");
+    AIRY_CHECK(name != NULL, AIRY_ERR_NULL_POINTER, "name is NULL");
 
     for (size_t i = 0; i < registry->entry_count; i++) {
         if (strncmp(registry->entries[i].name, name, PROTO_REGISTRY_NAME_MAX_LEN - 1) == 0) {
@@ -149,7 +149,7 @@ int proto_registry_unregister(protocol_registry_t *registry, const char *name)
             return 0;
         }
     }
-    return AGENTRT_ERR_OUT_OF_MEMORY;
+    return AIRY_ERR_OUT_OF_MEMORY;
 }
 
 proto_registry_entry_t *proto_registry_find(protocol_registry_t *registry, const char *name)
@@ -199,7 +199,7 @@ size_t proto_registry_list_all(protocol_registry_t *registry, proto_registry_ent
     if (!registry || !entries)
         return 0;
 
-    *entries = (proto_registry_entry_t *)AGENTRT_CALLOC(registry->entry_count,
+    *entries = (proto_registry_entry_t *)AIRY_CALLOC(registry->entry_count,
                                                         sizeof(proto_registry_entry_t));
     if (!*entries && registry->entry_count > 0)
         return 0;
@@ -225,7 +225,7 @@ size_t proto_registry_list_by_category(protocol_registry_t *registry, proto_cate
         return 0;
     }
 
-    *entries = (proto_registry_entry_t *)AGENTRT_CALLOC(count, sizeof(proto_registry_entry_t));
+    *entries = (proto_registry_entry_t *)AIRY_CALLOC(count, sizeof(proto_registry_entry_t));
     if (!*entries)
         return 0;
 
@@ -255,7 +255,7 @@ size_t proto_registry_list_active(protocol_registry_t *registry, proto_registry_
         return 0;
     }
 
-    *entries = (proto_registry_entry_t *)AGENTRT_CALLOC(count, sizeof(proto_registry_entry_t));
+    *entries = (proto_registry_entry_t *)AIRY_CALLOC(count, sizeof(proto_registry_entry_t));
     if (!*entries)
         return 0;
 
@@ -271,12 +271,12 @@ size_t proto_registry_list_active(protocol_registry_t *registry, proto_registry_
 
 int proto_registry_set_state(protocol_registry_t *registry, const char *name, proto_state_t state)
 {
-    AGENTRT_CHECK(registry != NULL, AGENTRT_ERR_NULL_POINTER, "registry is NULL");
-    AGENTRT_CHECK(name != NULL, AGENTRT_ERR_NULL_POINTER, "name is NULL");
+    AIRY_CHECK(registry != NULL, AIRY_ERR_NULL_POINTER, "registry is NULL");
+    AIRY_CHECK(name != NULL, AIRY_ERR_NULL_POINTER, "name is NULL");
 
     proto_registry_entry_t *entry = proto_registry_find(registry, name);
     if (!entry)
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
 
     proto_state_t old_state = entry->state;
     entry->state = state;
@@ -295,16 +295,16 @@ int proto_registry_set_state(protocol_registry_t *registry, const char *name, pr
 int proto_registry_add_dependency(protocol_registry_t *registry, const char *name,
                                   const char *dep_name)
 {
-    AGENTRT_CHECK(registry != NULL, AGENTRT_ERR_NULL_POINTER, "registry is NULL");
-    AGENTRT_CHECK(name != NULL, AGENTRT_ERR_NULL_POINTER, "name is NULL");
-    AGENTRT_CHECK(dep_name != NULL, AGENTRT_ERR_NULL_POINTER, "dep_name is NULL");
+    AIRY_CHECK(registry != NULL, AIRY_ERR_NULL_POINTER, "registry is NULL");
+    AIRY_CHECK(name != NULL, AIRY_ERR_NULL_POINTER, "name is NULL");
+    AIRY_CHECK(dep_name != NULL, AIRY_ERR_NULL_POINTER, "dep_name is NULL");
 
     proto_registry_entry_t *entry = proto_registry_find(registry, name);
     if (!entry)
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
 
     if (entry->dependency_count >= PROTO_REGISTRY_MAX_DEPS)
-        return AGENTRT_ERR_OVERFLOW;
+        return AIRY_ERR_OVERFLOW;
 
     snprintf(entry->dependencies[entry->dependency_count].name, PROTO_REGISTRY_NAME_MAX_LEN, "%s",
              dep_name);
@@ -331,17 +331,17 @@ int proto_registry_activate(protocol_registry_t *registry, const char *name)
 {
     if (!registry || !name)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_registry_activate: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_registry_activate: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     proto_registry_entry_t *entry = proto_registry_find(registry, name);
     if (!entry)
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
 
     if (!proto_registry_check_dependencies(entry)) {
         proto_registry_set_state(registry, name, PROTO_STATE_ERROR);
-        return AGENTRT_ERR_IO;
+        return AIRY_ERR_IO;
     }
 
     return proto_registry_set_state(registry, name, PROTO_STATE_ACTIVE);
@@ -349,24 +349,24 @@ int proto_registry_activate(protocol_registry_t *registry, const char *name)
 
 int proto_registry_deactivate(protocol_registry_t *registry, const char *name)
 {
-    AGENTRT_CHECK(registry != NULL, AGENTRT_ERR_NULL_POINTER, "registry is NULL");
-    AGENTRT_CHECK(name != NULL, AGENTRT_ERR_NULL_POINTER, "name is NULL");
+    AIRY_CHECK(registry != NULL, AIRY_ERR_NULL_POINTER, "registry is NULL");
+    AIRY_CHECK(name != NULL, AIRY_ERR_NULL_POINTER, "name is NULL");
 
     proto_registry_entry_t *entry = proto_registry_find(registry, name);
     if (!entry)
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
 
     return proto_registry_set_state(registry, name, PROTO_STATE_READY);
 }
 
 int proto_registry_heartbeat(protocol_registry_t *registry, const char *name)
 {
-    AGENTRT_CHECK(registry != NULL, AGENTRT_ERR_NULL_POINTER, "registry is NULL");
-    AGENTRT_CHECK(name != NULL, AGENTRT_ERR_NULL_POINTER, "name is NULL");
+    AIRY_CHECK(registry != NULL, AIRY_ERR_NULL_POINTER, "registry is NULL");
+    AIRY_CHECK(name != NULL, AIRY_ERR_NULL_POINTER, "name is NULL");
 
     proto_registry_entry_t *entry = proto_registry_find(registry, name);
     if (!entry)
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
 
     entry->last_heartbeat = (uint64_t)(time(NULL));
 
@@ -387,13 +387,13 @@ int proto_registry_record_request(protocol_registry_t *registry, const char *nam
 {
     if (!registry || !name)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_registry_record_request: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_registry_record_request: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     proto_registry_entry_t *entry = proto_registry_find(registry, name);
     if (!entry)
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
 
     entry->request_count++;
     if (!success)
@@ -407,10 +407,10 @@ int proto_registry_record_request(protocol_registry_t *registry, const char *nam
 
 int proto_registry_get_statistics(protocol_registry_t *registry, proto_registry_stats_t *stats)
 {
-    AGENTRT_CHECK(registry != NULL, AGENTRT_ERR_NULL_POINTER, "registry is NULL");
-    AGENTRT_CHECK(stats != NULL, AGENTRT_ERR_NULL_POINTER, "stats is NULL");
+    AIRY_CHECK(registry != NULL, AIRY_ERR_NULL_POINTER, "registry is NULL");
+    AIRY_CHECK(stats != NULL, AIRY_ERR_NULL_POINTER, "stats is NULL");
 
-    AGENTRT_MEMSET(stats, 0, sizeof(proto_registry_stats_t));
+    AIRY_MEMSET(stats, 0, sizeof(proto_registry_stats_t));
 
     stats->total_entries = registry->entry_count;
     stats->total_uptime_sec = 0.0;
@@ -441,9 +441,9 @@ int proto_registry_get_statistics(protocol_registry_t *registry, proto_registry_
 
 int proto_registry_export_json(protocol_registry_t *registry, char *json_buffer, size_t buffer_size)
 {
-    AGENTRT_CHECK(registry != NULL, AGENTRT_ERR_NULL_POINTER, "registry is NULL");
-    AGENTRT_CHECK(json_buffer != NULL, AGENTRT_ERR_NULL_POINTER, "json_buffer is NULL");
-    AGENTRT_CHECK(buffer_size >= 128, AGENTRT_ERR_BUFFER_TOO_SMALL, "buffer_size too small");
+    AIRY_CHECK(registry != NULL, AIRY_ERR_NULL_POINTER, "registry is NULL");
+    AIRY_CHECK(json_buffer != NULL, AIRY_ERR_NULL_POINTER, "json_buffer is NULL");
+    AIRY_CHECK(buffer_size >= 128, AIRY_ERR_BUFFER_TOO_SMALL, "buffer_size too small");
 
     int pos = 0;
     pos += snprintf(json_buffer + pos, buffer_size - pos,
@@ -472,7 +472,7 @@ int proto_registry_export_json(protocol_registry_t *registry, char *json_buffer,
 int proto_registry_set_event_callback(protocol_registry_t *registry,
                                       proto_registry_event_fn callback, void *user_data)
 {
-    AGENTRT_CHECK(registry != NULL, AGENTRT_ERR_NULL_POINTER, "registry is NULL");
+    AIRY_CHECK(registry != NULL, AIRY_ERR_NULL_POINTER, "registry is NULL");
     registry->event_callback = callback;
     registry->event_callback_data = user_data;
     return 0;
@@ -480,7 +480,7 @@ int proto_registry_set_event_callback(protocol_registry_t *registry,
 
 int proto_registry_initialize_builtins(protocol_registry_t *registry)
 {
-    AGENTRT_CHECK(registry != NULL, AGENTRT_ERR_NULL_POINTER, "registry is NULL");
+    AIRY_CHECK(registry != NULL, AIRY_ERR_NULL_POINTER, "registry is NULL");
 
     struct builtin_def {
         const char *name;

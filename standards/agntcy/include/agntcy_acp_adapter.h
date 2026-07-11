@@ -16,8 +16,8 @@
  * @see unified_protocol.h
  */
 
-#ifndef AGENTRT_AGNTCY_ACP_ADAPTER_H
-#define AGENTRT_AGNTCY_ACP_ADAPTER_H
+#ifndef AIRY_RT_AGNTCY_ACP_ADAPTER_H
+#define AIRY_RT_AGNTCY_ACP_ADAPTER_H
 
 #include "unified_protocol.h"
 
@@ -159,4 +159,4 @@ int agntcy_ack_negotiate(agntcy_handle_t *h, const char *agent_id, const agntcy_
 }
 #endif
 
-#endif /* AGENTRT_AGNTCY_ACP_ADAPTER_H */
+#endif /* AIRY_RT_AGNTCY_ACP_ADAPTER_H */

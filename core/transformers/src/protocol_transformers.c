@@ -25,19 +25,19 @@
 
 transform_context_t *transform_context_create(const char *src_proto, const char *tgt_proto)
 {
-    transform_context_t *ctx = AGENTRT_CALLOC(1, sizeof(transform_context_t));
+    transform_context_t *ctx = AIRY_CALLOC(1, sizeof(transform_context_t));
     if (!ctx)
         return NULL;
     if (src_proto)
-        AGENTRT_STRNCPY_TERM(ctx->source_protocol, src_proto, sizeof(ctx->source_protocol));
+        AIRY_STRNCPY_TERM(ctx->source_protocol, src_proto, sizeof(ctx->source_protocol));
     if (tgt_proto)
-        AGENTRT_STRNCPY_TERM(ctx->target_protocol, tgt_proto, sizeof(ctx->target_protocol));
+        AIRY_STRNCPY_TERM(ctx->target_protocol, tgt_proto, sizeof(ctx->target_protocol));
     return ctx;
 }
 
 void transform_context_destroy(transform_context_t *ctx)
 {
-    AGENTRT_FREE(ctx);
+    AIRY_FREE(ctx);
 }
 
 /* ============================================================================
@@ -48,17 +48,17 @@ int transformer_jsonrpc_to_mcp_request(const unified_message_t *source, unified_
                                        void *context)
 {
     if (!source || !target)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
-    AGENTRT_MEMSET(target, 0, sizeof(*target));
+    AIRY_MEMSET(target, 0, sizeof(*target));
     target->protocol = PROTOCOL_CUSTOM;
-    AGENTRT_STRNCPY_TERM(target->protocol_name, "mcp", sizeof(target->protocol_name));
+    AIRY_STRNCPY_TERM(target->protocol_name, "mcp", sizeof(target->protocol_name));
     target->direction = MSG_TYPE_REQUEST;
-    AGENTRT_STRNCPY_TERM(target->method, "tools/call", sizeof(target->method));
+    AIRY_STRNCPY_TERM(target->method, "tools/call", sizeof(target->method));
 
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx && ctx->trace_id[0]) {
-        AGENTRT_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+        AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
     }
 
     char mcp_params[4096] = {0};
@@ -76,7 +76,7 @@ int transformer_jsonrpc_to_mcp_request(const unified_message_t *source, unified_
                     const char *end = strchr(start, '"');
                     if (end) {
                         size_t len = end - start;
-                        name = AGENTRT_STRNDUP(start, len);
+                        name = AIRY_STRNDUP(start, len);
                     }
                 }
             }
@@ -93,10 +93,10 @@ int transformer_jsonrpc_to_mcp_request(const unified_message_t *source, unified_
     snprintf(mcp_params, sizeof(mcp_params), "{\"name\":\"%s\",\"arguments\":%s}",
              name ? name : "unknown", arguments);
 
-    AGENTRT_FREE((void *)name);
+    AIRY_FREE((void *)name);
 
     target->payload_size = strlen(mcp_params) + 1;
-    target->payload = AGENTRT_STRDUP(mcp_params);
+    target->payload = AIRY_STRDUP(mcp_params);
 
     return 0;
 }
@@ -105,19 +105,19 @@ int transformer_mcp_to_jsonrpc_response(const unified_message_t *source, unified
                                         void *context)
 {
     if (!source || !target)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
-    AGENTRT_MEMSET(target, 0, sizeof(*target));
+    AIRY_MEMSET(target, 0, sizeof(*target));
     target->protocol = PROTOCOL_HTTP;
-    AGENTRT_STRNCPY_TERM(target->protocol_name, "jsonrpc", sizeof(target->protocol_name));
+    AIRY_STRNCPY_TERM(target->protocol_name, "jsonrpc", sizeof(target->protocol_name));
     target->direction = source->is_error ? MSG_TYPE_ERROR : MSG_TYPE_RESPONSE;
 
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
     }
 
     if (source->is_error) {
@@ -136,12 +136,12 @@ int transformer_mcp_to_jsonrpc_response(const unified_message_t *source, unified
                     const char *val_end = strchr(content_text, '"');
                     if (val_end) {
                         size_t len = val_end - content_text;
-                        char *tmp = AGENTRT_MALLOC(len + 1);
+                        char *tmp = AIRY_MALLOC(len + 1);
                         __builtin_memcpy(tmp, content_text, len);
                         tmp[len] = '\0';
                         snprintf(output_buf, sizeof(output_buf),
                                  "{\"output\":%s,\"status\":\"success\"}", tmp);
-                        AGENTRT_FREE(tmp);
+                        AIRY_FREE(tmp);
                         content_text = output_buf;
                     } else {
                         snprintf(output_buf, sizeof(output_buf),
@@ -160,7 +160,7 @@ int transformer_mcp_to_jsonrpc_response(const unified_message_t *source, unified
         }
 
         target->payload_size = strlen(content_text) + 1;
-        target->payload = AGENTRT_STRDUP(content_text);
+        target->payload = AIRY_STRDUP(content_text);
     }
 
     return 0;
@@ -170,26 +170,26 @@ int transformer_mcp_tools_list_to_jsonrpc(const unified_message_t *source,
                                           unified_message_t *target, void *context)
 {
     if (!source || !target)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
-    AGENTRT_MEMSET(target, 0, sizeof(*target));
+    AIRY_MEMSET(target, 0, sizeof(*target));
     target->protocol = PROTOCOL_HTTP;
-    AGENTRT_STRNCPY_TERM(target->protocol_name, "jsonrpc", sizeof(target->protocol_name));
+    AIRY_STRNCPY_TERM(target->protocol_name, "jsonrpc", sizeof(target->protocol_name));
     target->direction = MSG_TYPE_RESPONSE;
 
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
     }
 
     if (source->payload) {
         target->payload_size = strlen(source->payload) + 1;
-        target->payload = AGENTRT_STRDUP(source->payload);
+        target->payload = AIRY_STRDUP(source->payload);
     } else {
-        target->payload = AGENTRT_STRDUP("{\"skills\":[]}");
+        target->payload = AIRY_STRDUP("{\"skills\":[]}");
         target->payload_size = strlen(target->payload) + 1;
     }
 
@@ -204,20 +204,20 @@ int transformer_jsonrpc_to_a2a_task(const unified_message_t *source, unified_mes
                                     void *context)
 {
     if (!source || !target)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
-    AGENTRT_MEMSET(target, 0, sizeof(*target));
+    AIRY_MEMSET(target, 0, sizeof(*target));
     target->protocol = PROTOCOL_CUSTOM;
-    AGENTRT_STRNCPY_TERM(target->protocol_name, "a2a", sizeof(target->protocol_name));
+    AIRY_STRNCPY_TERM(target->protocol_name, "a2a", sizeof(target->protocol_name));
     target->direction = MSG_TYPE_REQUEST;
-    AGENTRT_STRNCPY_TERM(target->method, "task/delegate", sizeof(target->method));
+    AIRY_STRNCPY_TERM(target->method, "task/delegate", sizeof(target->method));
 
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx && ctx->agent_id[0]) {
-        AGENTRT_STRNCPY_TERM(target->sender_id, ctx->agent_id, sizeof(target->sender_id));
+        AIRY_STRNCPY_TERM(target->sender_id, ctx->agent_id, sizeof(target->sender_id));
     }
     if (ctx && ctx->trace_id[0]) {
-        AGENTRT_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+        AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
     }
 
     char a2a_payload[8192] = {0};
@@ -244,7 +244,7 @@ int transformer_jsonrpc_to_a2a_task(const unified_message_t *source, unified_mes
              description ? description : "\"\"", input_data);
 
     target->payload_size = strlen(a2a_payload) + 1;
-    target->payload = AGENTRT_STRDUP(a2a_payload);
+    target->payload = AIRY_STRDUP(a2a_payload);
 
     return 0;
 }
@@ -253,26 +253,26 @@ int transformer_a2a_to_jsonrpc_response(const unified_message_t *source, unified
                                         void *context)
 {
     if (!source || !target)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
-    AGENTRT_MEMSET(target, 0, sizeof(*target));
+    AIRY_MEMSET(target, 0, sizeof(*target));
     target->protocol = PROTOCOL_HTTP;
-    AGENTRT_STRNCPY_TERM(target->endpoint, "jsonrpc", sizeof(target->endpoint));
+    AIRY_STRNCPY_TERM(target->endpoint, "jsonrpc", sizeof(target->endpoint));
     target->direction = DIRECTION_RESPONSE;
 
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
     }
 
     if (source->payload) {
         target->payload_size = strlen((const char *)source->payload) + 1;
-        target->payload = AGENTRT_STRDUP((const char *)source->payload);
+        target->payload = AIRY_STRDUP((const char *)source->payload);
     } else {
-        target->payload = AGENTRT_STRDUP("{\"result\":{}}");
+        target->payload = AIRY_STRDUP("{\"result\":{}}");
         target->payload_size = strlen((const char *)target->payload) + 1;
     }
 
@@ -283,22 +283,22 @@ int transformer_jsonrpc_to_a2a_discover(const unified_message_t *source, unified
                                         void *context)
 {
     if (!target)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
-    AGENTRT_MEMSET(target, 0, sizeof(*target));
+    AIRY_MEMSET(target, 0, sizeof(*target));
     target->protocol = PROTOCOL_CUSTOM;
-    AGENTRT_STRNCPY_TERM(target->endpoint, "a2a/agent/discover", sizeof(target->endpoint));
+    AIRY_STRNCPY_TERM(target->endpoint, "a2a/agent/discover", sizeof(target->endpoint));
     target->direction = DIRECTION_REQUEST;
 
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->agent_id[0])
-            AGENTRT_STRNCPY_TERM(target->sender_id, ctx->agent_id, sizeof(target->sender_id));
+            AIRY_STRNCPY_TERM(target->sender_id, ctx->agent_id, sizeof(target->sender_id));
         if (ctx->trace_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
     }
 
-    target->payload = AGENTRT_STRDUP("{}");
+    target->payload = AIRY_STRDUP("{}");
     target->payload_size = 3;
 
     return 0;
@@ -308,26 +308,26 @@ int transformer_a2a_agents_to_jsonrpc(const unified_message_t *source, unified_m
                                       void *context)
 {
     if (!source || !target)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
-    AGENTRT_MEMSET(target, 0, sizeof(*target));
+    AIRY_MEMSET(target, 0, sizeof(*target));
     target->protocol = PROTOCOL_HTTP;
-    AGENTRT_STRNCPY_TERM(target->endpoint, "jsonrpc", sizeof(target->endpoint));
+    AIRY_STRNCPY_TERM(target->endpoint, "jsonrpc", sizeof(target->endpoint));
     target->direction = DIRECTION_RESPONSE;
 
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
     }
 
     if (source->payload) {
         target->payload_size = strlen((const char *)source->payload) + 1;
-        target->payload = AGENTRT_STRDUP((const char *)source->payload);
+        target->payload = AIRY_STRDUP((const char *)source->payload);
     } else {
-        target->payload = AGENTRT_STRDUP("{\"agents\":[]}");
+        target->payload = AIRY_STRDUP("{\"agents\":[]}");
         target->payload_size = strlen((const char *)target->payload) + 1;
     }
 
@@ -342,19 +342,19 @@ int transformer_jsonrpc_to_openai_chat(const unified_message_t *source, unified_
                                        void *context)
 {
     if (!source || !target)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
-    AGENTRT_MEMSET(target, 0, sizeof(*target));
+    AIRY_MEMSET(target, 0, sizeof(*target));
     target->protocol = PROTOCOL_CUSTOM;
-    AGENTRT_STRNCPY_TERM(target->endpoint, "openai/chat/completions", sizeof(target->endpoint));
+    AIRY_STRNCPY_TERM(target->endpoint, "openai/chat/completions", sizeof(target->endpoint));
     target->direction = DIRECTION_REQUEST;
 
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
     }
 
     char openai_payload[16384] = {0};
@@ -386,7 +386,7 @@ int transformer_jsonrpc_to_openai_chat(const unified_message_t *source, unified_
                 const char *arr_end = strrchr(arr_start, ']');
                 if (arr_end) {
                     size_t len = arr_end - arr_start + 1;
-                    AGENTRT_MEMCPY_SAFE(messages_part, arr_start, len, sizeof(messages_part));
+                    AIRY_MEMCPY_SAFE(messages_part, arr_start, len, sizeof(messages_part));
                     messages_part[len] = '\0';
                 }
             }
@@ -403,7 +403,7 @@ int transformer_jsonrpc_to_openai_chat(const unified_message_t *source, unified_
              "\"max_tokens\":%d,\"stream\":false}",
              model, messages_part, temperature, max_tokens);
 
-    target->payload = AGENTRT_STRDUP(openai_payload);
+    target->payload = AIRY_STRDUP(openai_payload);
     target->payload_size = strlen(openai_payload) + 1;
 
     return 0;
@@ -413,23 +413,23 @@ int transformer_openai_chat_to_jsonrpc(const unified_message_t *source, unified_
                                        void *context)
 {
     if (!source || !target)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
-    AGENTRT_MEMSET(target, 0, sizeof(*target));
+    AIRY_MEMSET(target, 0, sizeof(*target));
     target->protocol = PROTOCOL_HTTP;
-    AGENTRT_STRNCPY_TERM(target->endpoint, "jsonrpc", sizeof(target->endpoint));
+    AIRY_STRNCPY_TERM(target->endpoint, "jsonrpc", sizeof(target->endpoint));
     target->direction = DIRECTION_RESPONSE;
 
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
     }
 
     if (!source->payload) {
-        target->payload = AGENTRT_STRDUP(
+        target->payload = AIRY_STRDUP(
             "{\"content\":\"\",\"finish_reason\":\"stop\","
             "\"usage\":{\"prompt_tokens\":0,\"completion_tokens\":0,\"total_tokens\":0}}");
         target->payload_size = strlen((const char *)target->payload) + 1;
@@ -466,7 +466,7 @@ int transformer_openai_chat_to_jsonrpc(const unified_message_t *source, unified_
             const char *obj_end = strchr(obj_start, '}');
             if (obj_end) {
                 size_t len = obj_end - obj_start + 1;
-                AGENTRT_MEMCPY_SAFE(usage_str, obj_start, len, sizeof(usage_str));
+                AIRY_MEMCPY_SAFE(usage_str, obj_start, len, sizeof(usage_str));
                 usage_str[len] = '\0';
             }
         }
@@ -477,7 +477,7 @@ int transformer_openai_chat_to_jsonrpc(const unified_message_t *source, unified_
              "{\"content\":\"%s\",\"finish_reason\":\"%s\",\"usage\":%s}", content, finish_reason,
              usage_str);
 
-    target->payload = AGENTRT_STRDUP(result_buf);
+    target->payload = AIRY_STRDUP(result_buf);
     target->payload_size = strlen(result_buf) + 1;
 
     return 0;
@@ -487,26 +487,26 @@ int transformer_openai_stream_chunk_to_jsonrpc(const unified_message_t *source,
                                                unified_message_t *target, void *context)
 {
     if (!source || !target)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
-    AGENTRT_MEMSET(target, 0, sizeof(*target));
+    AIRY_MEMSET(target, 0, sizeof(*target));
     target->protocol = PROTOCOL_HTTP;
-    AGENTRT_STRNCPY_TERM(target->endpoint, "jsonrpc/llm.stream.chunk", sizeof(target->endpoint));
+    AIRY_STRNCPY_TERM(target->endpoint, "jsonrpc/llm.stream.chunk", sizeof(target->endpoint));
     target->direction = DIRECTION_NOTIFICATION;
 
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
     }
 
     if (source->payload) {
         target->payload_size = strlen((const char *)source->payload) + 1;
-        target->payload = AGENTRT_STRDUP((const char *)source->payload);
+        target->payload = AIRY_STRDUP((const char *)source->payload);
     } else {
-        target->payload = AGENTRT_STRDUP("{\"delta\":\"\"}");
+        target->payload = AIRY_STRDUP("{\"delta\":\"\"}");
         target->payload_size = strlen((const char *)target->payload) + 1;
     }
 
@@ -517,19 +517,19 @@ int transformer_jsonrpc_to_openai_embedding(const unified_message_t *source,
                                             unified_message_t *target, void *context)
 {
     if (!source || !target)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
-    AGENTRT_MEMSET(target, 0, sizeof(*target));
+    AIRY_MEMSET(target, 0, sizeof(*target));
     target->protocol = PROTOCOL_CUSTOM;
-    AGENTRT_STRNCPY_TERM(target->endpoint, "openai/embeddings", sizeof(target->endpoint));
+    AIRY_STRNCPY_TERM(target->endpoint, "openai/embeddings", sizeof(target->endpoint));
     target->direction = DIRECTION_REQUEST;
 
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
     }
 
     const char *text = "";
@@ -553,7 +553,7 @@ int transformer_jsonrpc_to_openai_embedding(const unified_message_t *source,
     char payload_buf[8192];
     snprintf(payload_buf, sizeof(payload_buf), "{\"model\":\"%s\",\"input\":\"%s\"}", model, text);
 
-    target->payload = AGENTRT_STRDUP(payload_buf);
+    target->payload = AIRY_STRDUP(payload_buf);
     target->payload_size = strlen(payload_buf) + 1;
 
     return 0;
@@ -581,23 +581,23 @@ int transformer_jsonrpc_to_openjiuwen(const unified_message_t *source, unified_m
                                       void *context)
 {
     if (!source || !target)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
-    AGENTRT_MEMSET(target, 0, sizeof(*target));
+    AIRY_MEMSET(target, 0, sizeof(*target));
     target->protocol = PROTOCOL_CUSTOM;
-    AGENTRT_STRNCPY_TERM(target->endpoint, "openjiuwen", sizeof(target->endpoint));
+    AIRY_STRNCPY_TERM(target->endpoint, "openjiuwen", sizeof(target->endpoint));
     target->direction = DIRECTION_REQUEST;
 
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
     }
 
     openjiuwen_header_t header;
-    AGENTRT_MEMSET(&header, 0, sizeof(header));
+    AIRY_MEMSET(&header, 0, sizeof(header));
     header.magic = OPENJIUWEN_MAGIC;
     header.version = OPENJIUWEN_VERSION;
     header.msg_type = (uint32_t)(source->direction == DIRECTION_REQUEST ? 1 : 2);
@@ -607,9 +607,9 @@ int transformer_jsonrpc_to_openjiuwen(const unified_message_t *source, unified_m
     header.payload_length = (uint32_t)payload_len;
 
     size_t total_size = sizeof(openjiuwen_header_t) + payload_len + 4;
-    unsigned char *binary_data = AGENTRT_CALLOC(1, total_size);
+    unsigned char *binary_data = AIRY_CALLOC(1, total_size);
     if (!binary_data)
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
 
     __builtin_memcpy(binary_data, &header, sizeof(openjiuwen_header_t));
 
@@ -635,19 +635,19 @@ int transformer_openjiuwen_to_jsonrpc(const unified_message_t *source, unified_m
 {
     if (!source || !target || !source->payload ||
         source->payload_size < sizeof(openjiuwen_header_t)) {
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     }
 
-    AGENTRT_MEMSET(target, 0, sizeof(*target));
+    AIRY_MEMSET(target, 0, sizeof(*target));
     target->protocol = PROTOCOL_HTTP;
-    AGENTRT_STRNCPY_TERM(target->endpoint, "jsonrpc", sizeof(target->endpoint));
+    AIRY_STRNCPY_TERM(target->endpoint, "jsonrpc", sizeof(target->endpoint));
 
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AGENTRT_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
     }
 
     const unsigned char *data = (const unsigned char *)source->payload;
@@ -655,7 +655,7 @@ int transformer_openjiuwen_to_jsonrpc(const unified_message_t *source, unified_m
 
     if (hdr->magic != OPENJIUWEN_MAGIC) {
         target->direction = DIRECTION_RESPONSE;
-        target->payload = AGENTRT_STRDUP("{\"error\":\"Invalid magic\"}");
+        target->payload = AIRY_STRDUP("{\"error\":\"Invalid magic\"}");
         target->payload_size = 22;
         return 0;
     }
@@ -669,7 +669,7 @@ int transformer_openjiuwen_to_jsonrpc(const unified_message_t *source, unified_m
         const char *payload_ptr = (const char *)(data + sizeof(openjiuwen_header_t));
         size_t payload_len = hdr->payload_length;
 
-        char *escaped = AGENTRT_MALLOC(payload_len * 2 + 256);
+        char *escaped = AIRY_MALLOC(payload_len * 2 + 256);
         if (escaped) {
             size_t j = 0;
             j += snprintf(escaped + j, payload_len * 2 + 256 - j, "{\"raw\":\"");
@@ -686,7 +686,7 @@ int transformer_openjiuwen_to_jsonrpc(const unified_message_t *source, unified_m
             target->payload_size = j;
         }
     } else {
-        target->payload = AGENTRT_STRDUP("{}");
+        target->payload = AIRY_STRDUP("{}");
         target->payload_size = 3;
     }
 
@@ -718,7 +718,7 @@ int protocol_auto_transform(const unified_message_t *source, unified_message_t *
                             const char *target_protocol_name)
 {
     if (!source || !target || !target_protocol_name)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     const char *from = source->endpoint[0] ? source->endpoint : "jsonrpc";
 
@@ -740,14 +740,14 @@ int protocol_auto_transform(const unified_message_t *source, unified_message_t *
 int protocol_validate_transformed(const unified_message_t *msg)
 {
     if (!msg)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     if (msg->endpoint[0] == '\0')
-        return AGENTRT_ERR_INVALID_PARAM;
+        return AIRY_ERR_INVALID_PARAM;
     if (msg->payload == NULL && msg->payload_size > 0)
-        return AGENTRT_ERR_INVALID_PARAM;
+        return AIRY_ERR_INVALID_PARAM;
     if (msg->payload != NULL && msg->payload_size < 4)
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
 
     return 0;
 }

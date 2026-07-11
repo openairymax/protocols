@@ -27,11 +27,11 @@ static struct {
 int agntcy_acp_create(agntcy_handle_t **handle)
 {
     if (!handle)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
-    agntcy_handle_t *h = (agntcy_handle_t *)AGENTRT_CALLOC(1, sizeof(agntcy_handle_t));
+    agntcy_handle_t *h = (agntcy_handle_t *)AIRY_CALLOC(1, sizeof(agntcy_handle_t));
     if (!h)
-        AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+        AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 
     h->initialized = true;
     *handle = h;
@@ -44,19 +44,19 @@ void agntcy_acp_destroy(agntcy_handle_t *handle)
         return;
     for (size_t i = 0; i < handle->task_count; i++) {
         if (handle->tasks[i]) {
-            AGENTRT_FREE(handle->tasks[i]->workflow_json);
-            AGENTRT_FREE(handle->tasks[i]);
+            AIRY_FREE(handle->tasks[i]->workflow_json);
+            AIRY_FREE(handle->tasks[i]);
         }
     }
-    AGENTRT_FREE(handle);
+    AIRY_FREE(handle);
 }
 
 int agntcy_agent_register(agntcy_handle_t *h, const agntcy_agent_card_t *card)
 {
     if (!h || !card)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     if (h->agent_count >= AGNTCY_ACP_MAX_AGENTS)
-        AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+        AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 
     for (size_t i = 0; i < h->agent_count; i++) {
         if (strcmp(h->agents[i].agent_id, card->agent_id) == 0) {
@@ -77,7 +77,7 @@ int agntcy_agent_register(agntcy_handle_t *h, const agntcy_agent_card_t *card)
 int agntcy_agent_unregister(agntcy_handle_t *h, const char *agent_id)
 {
     if (!h || !agent_id)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     for (size_t i = 0; i < h->agent_count; i++) {
         if (strcmp(h->agents[i].agent_id, agent_id) == 0) {
@@ -89,14 +89,14 @@ int agntcy_agent_unregister(agntcy_handle_t *h, const char *agent_id)
             return 0;
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+    AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 }
 
 int agntcy_agent_discover(agntcy_handle_t *h, uint32_t cap_mask, agntcy_agent_card_t *results,
                           size_t *count)
 {
     if (!h || !results || !count)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     size_t found = 0;
     for (size_t i = 0; i < h->agent_count && found < *count; i++) {
@@ -115,9 +115,9 @@ int agntcy_channel_open(agntcy_handle_t *h, const char *initiator_id, const char
                         agntcy_channel_t *channel)
 {
     if (!h || !initiator_id || !responder_id || !channel)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     if (h->channel_count >= AGNTCY_ACP_MAX_CHANNELS)
-        AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+        AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 
     bool initiator_found = false, responder_found = false;
     for (size_t i = 0; i < h->agent_count; i++) {
@@ -128,20 +128,20 @@ int agntcy_channel_open(agntcy_handle_t *h, const char *initiator_id, const char
     }
 
     if (!initiator_found || !responder_found)
-        AGENTRT_ERROR(AGENTRT_ERR_NULL_POINTER, "null pointer");
+        AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
 
     snprintf(channel->channel_id, AGNTCY_ACP_CHANNEL_ID_SIZE, "ch-%s-%s-%llu", initiator_id,
              responder_id, (unsigned long long)(uint64_t)(time(NULL) * 1000));
 
     unsigned char rnd[AGNTCY_ACP_TOKEN_SIZE - 1];
-    agentrt_random_bytes(rnd, sizeof(rnd));
+    airy_random_bytes(rnd, sizeof(rnd));
     for (size_t i = 0; i < AGNTCY_ACP_TOKEN_SIZE - 1; i++) {
         channel->session_token[i] = (char)('a' + (rnd[i] % 26));
     }
     channel->session_token[AGNTCY_ACP_TOKEN_SIZE - 1] = '\0';
 
-    AGENTRT_STRNCPY_TERM(channel->initiator_id, initiator_id, sizeof(channel->initiator_id));
-    AGENTRT_STRNCPY_TERM(channel->responder_id, responder_id, sizeof(channel->responder_id));
+    AIRY_STRNCPY_TERM(channel->initiator_id, initiator_id, sizeof(channel->initiator_id));
+    AIRY_STRNCPY_TERM(channel->responder_id, responder_id, sizeof(channel->responder_id));
     channel->established_at = (uint64_t)time(NULL);
     channel->expires_at = channel->established_at + 3600;
     channel->encrypted = true;
@@ -153,7 +153,7 @@ int agntcy_channel_open(agntcy_handle_t *h, const char *initiator_id, const char
 int agntcy_channel_close(agntcy_handle_t *h, const char *channel_id)
 {
     if (!h || !channel_id)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     for (size_t i = 0; i < h->channel_count; i++) {
         if (strcmp(h->channels[i].channel_id, channel_id) == 0) {
@@ -165,14 +165,14 @@ int agntcy_channel_close(agntcy_handle_t *h, const char *channel_id)
             return 0;
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+    AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 }
 
 int agntcy_message_send(agntcy_handle_t *h, const agntcy_message_t *msg, char *response,
                         size_t *resp_size)
 {
     if (!h || !msg || !response || !resp_size)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     h->message_counter++;
 
@@ -189,7 +189,7 @@ int agntcy_message_send(agntcy_handle_t *h, const agntcy_message_t *msg, char *r
     }
 
     if (!channel_valid)
-        AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+        AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 
     if (msg->payload && msg->payload_size > 0) {
         int written = snprintf(response, *resp_size,
@@ -218,7 +218,7 @@ int agntcy_message_send(agntcy_handle_t *h, const agntcy_message_t *msg, char *r
 int agntcy_message_broadcast(agntcy_handle_t *h, const agntcy_message_t *msg)
 {
     if (!h || !msg)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     h->message_counter++;
 
@@ -234,9 +234,9 @@ int agntcy_message_broadcast(agntcy_handle_t *h, const agntcy_message_t *msg)
 int agntcy_task_orchestrate(agntcy_handle_t *h, const char *task_id, const char *workflow_json)
 {
     if (!h || !task_id || !workflow_json)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     if (h->task_count >= AGNTCY_ACP_MAX_TASKS)
-        AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+        AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 
     agntcy_task_t *task = NULL;
     for (size_t i = 0; i < h->task_count; i++) {
@@ -247,16 +247,16 @@ int agntcy_task_orchestrate(agntcy_handle_t *h, const char *task_id, const char 
     }
 
     if (!task) {
-        task = (agntcy_task_t *)AGENTRT_CALLOC(1, sizeof(agntcy_task_t));
+        task = (agntcy_task_t *)AIRY_CALLOC(1, sizeof(agntcy_task_t));
         if (!task)
-            AGENTRT_ERROR(AGENTRT_ERR_NULL_POINTER, "null pointer");
-        AGENTRT_STRNCPY_TERM(task->task_id, task_id, sizeof(task->task_id));
+            AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
+        AIRY_STRNCPY_TERM(task->task_id, task_id, sizeof(task->task_id));
         h->tasks[h->task_count++] = task;
     }
 
-    AGENTRT_FREE(task->workflow_json);
-    task->workflow_json = AGENTRT_STRDUP(workflow_json);
-    AGENTRT_STRNCPY_TERM(task->name, "orchestrated-task", sizeof(task->name));
+    AIRY_FREE(task->workflow_json);
+    task->workflow_json = AIRY_STRDUP(workflow_json);
+    AIRY_STRNCPY_TERM(task->name, "orchestrated-task", sizeof(task->name));
     task->state = AGNTCY_TASK_DISPATCHED;
     task->created_at = (uint64_t)time(NULL);
     task->deadline_at = task->created_at + 3600;
@@ -264,7 +264,7 @@ int agntcy_task_orchestrate(agntcy_handle_t *h, const char *task_id, const char 
 
     for (size_t i = 0; i < h->agent_count && task->assigned_count < AGNTCY_ACP_MAX_AGENTS; i++) {
         if (h->agents[i].online && (h->agents[i].capabilities_mask & AGNTCY_CAP_ORCHESTRATE)) {
-            AGENTRT_STRNCPY_TERM(task->assigned_agent_ids[task->assigned_count], h->agents[i].agent_id, sizeof(task->assigned_agent_ids[task->assigned_count]));
+            AIRY_STRNCPY_TERM(task->assigned_agent_ids[task->assigned_count], h->agents[i].agent_id, sizeof(task->assigned_agent_ids[task->assigned_count]));
             task->assigned_count++;
         }
     }
@@ -276,7 +276,7 @@ int agntcy_task_orchestrate(agntcy_handle_t *h, const char *task_id, const char 
 int agntcy_task_get_state(agntcy_handle_t *h, const char *task_id, agntcy_task_state_t *state)
 {
     if (!h || !task_id || !state)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     for (size_t i = 0; i < h->task_count; i++) {
         if (strcmp(h->tasks[i]->task_id, task_id) == 0) {
@@ -284,7 +284,7 @@ int agntcy_task_get_state(agntcy_handle_t *h, const char *task_id, agntcy_task_s
             return 0;
         }
     }
-    AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+    AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 }
 
 int agntcy_ack_negotiate(agntcy_handle_t *h, const char *agent_id, const agntcy_ack_t *ack_request,
@@ -292,8 +292,8 @@ int agntcy_ack_negotiate(agntcy_handle_t *h, const char *agent_id, const agntcy_
 {
     if (!h || !agent_id || !ack_request || !ack_response)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "agntcy_ack_negotiate: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "agntcy_ack_negotiate: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     bool agent_found = false;
@@ -304,7 +304,7 @@ int agntcy_ack_negotiate(agntcy_handle_t *h, const char *agent_id, const agntcy_
         }
     }
     if (!agent_found)
-        AGENTRT_ERROR(AGENTRT_ERR_INVALID_PARAM, "invalid parameter");
+        AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 
     __builtin_memcpy(ack_response, ack_request, sizeof(agntcy_ack_t));
 
@@ -329,7 +329,7 @@ static int agntcy_proto_init(void *context, const void *config)
     agntcy_handle_t *h = (agntcy_handle_t *)context;
     if (!h) {
         if (agntcy_acp_create(&h) != 0)
-            return AGENTRT_ERR_OUT_OF_MEMORY;
+            return AIRY_ERR_OUT_OF_MEMORY;
     }
     g_agntcy_state.handle = *h;
     g_agntcy_state.proto_initialized = true;
@@ -352,7 +352,7 @@ static int agntcy_proto_handle_request(void *context, const void *req, void **re
 {
     (void)context;
     if (!req || !resp)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     const char *__attribute__((unused)) raw = (const char *)req;
     char buf[4096];
@@ -369,7 +369,7 @@ static int agntcy_proto_handle_request(void *context, const void *req, void **re
              g_agntcy_state.handle.channel_count, g_agntcy_state.handle.task_count,
              (unsigned long long)g_agntcy_state.handle.message_counter);
 
-    *resp = AGENTRT_STRDUP(buf);
+    *resp = AIRY_STRDUP(buf);
     return 0;
 }
 
@@ -383,7 +383,7 @@ static int agntcy_proto_get_version_adapter(void *context, char *version_buf, si
 {
     const char *ver = agntcy_proto_get_version(context);
     if (!version_buf || max_size == 0)
-        return AGENTRT_ERR_INVALID_PARAM;
+        return AIRY_ERR_INVALID_PARAM;
     snprintf(version_buf, max_size, "%s", ver);
     return 0;
 }

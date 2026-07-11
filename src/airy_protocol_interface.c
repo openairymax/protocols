@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
 // @owner: team-B
 /**
- * @file agentrt_protocol_interface.c
+ * @file airy_protocol_interface.c
  * @brief AgentRT Protocol System Unified Interface Implementation
  *
  * 原位置: agentrt/interfaces/src/
  * 迁移至: agentrt/protocols/src/ (2026-04-19 interfaces删除重构)
  */
 
-#include "agentrt_protocol_interface.h"
+#include "airy_protocol_interface.h"
 
 #include "../core/router/include/protocol_router.h"
 #include "error.h"
@@ -57,10 +57,10 @@ static int router_std_add_route(proto_router_iface_t *router, const char *source
 {
     proto_router_impl_t *impl = router_get_impl(router);
     if (!impl || !impl->handle)
-        return AGENTRT_EINVAL;
+        return AIRY_EINVAL;
 
     protocol_rule_t rule;
-    AGENTRT_MEMSET(&rule, 0, sizeof(rule));
+    AIRY_MEMSET(&rule, 0, sizeof(rule));
     rule.source_protocol = source_proto;
     rule.target_protocol = target_proto;
     rule.source_endpoint = source_pattern;
@@ -73,25 +73,25 @@ static int router_std_add_route(proto_router_iface_t *router, const char *source
 
 static int router_std_remove_route(proto_router_iface_t *router, const char *source_pattern)
 {
-    AGENTRT_CHECK(router != NULL, AGENTRT_EINVAL, "router is NULL");
-    AGENTRT_CHECK(source_pattern != NULL, AGENTRT_EINVAL, "source_pattern is NULL");
+    AIRY_CHECK(router != NULL, AIRY_EINVAL, "router is NULL");
+    AIRY_CHECK(source_pattern != NULL, AIRY_EINVAL, "source_pattern is NULL");
     proto_router_impl_t *impl = router_get_impl(router);
-    AGENTRT_CHECK(impl != NULL, AGENTRT_EINVAL, "impl is NULL");
-    AGENTRT_CHECK(impl->handle != NULL, AGENTRT_EINVAL, "impl->handle is NULL");
-    return AGENTRT_ERR_INVALID_PARAM;
+    AIRY_CHECK(impl != NULL, AIRY_EINVAL, "impl is NULL");
+    AIRY_CHECK(impl->handle != NULL, AIRY_EINVAL, "impl->handle is NULL");
+    return AIRY_ERR_INVALID_PARAM;
 }
 
 static int router_std_route(proto_router_iface_t *router, const unified_message_t *message,
                             route_decision_t *decision)
 {
     proto_router_impl_t *impl = router_get_impl(router);
-    AGENTRT_CHECK(impl != NULL, AGENTRT_EINVAL, "impl is NULL");
-    AGENTRT_CHECK(impl->handle != NULL, AGENTRT_EINVAL, "impl->handle is NULL");
-    AGENTRT_CHECK(message != NULL, AGENTRT_EINVAL, "message is NULL");
-    AGENTRT_CHECK(decision != NULL, AGENTRT_EINVAL, "decision is NULL");
+    AIRY_CHECK(impl != NULL, AIRY_EINVAL, "impl is NULL");
+    AIRY_CHECK(impl->handle != NULL, AIRY_EINVAL, "impl->handle is NULL");
+    AIRY_CHECK(message != NULL, AIRY_EINVAL, "message is NULL");
+    AIRY_CHECK(decision != NULL, AIRY_EINVAL, "decision is NULL");
 
     unified_message_t transformed;
-    AGENTRT_MEMSET(&transformed, 0, sizeof(transformed));
+    AIRY_MEMSET(&transformed, 0, sizeof(transformed));
 
     int result = protocol_router_route(impl->handle, message, &transformed);
     if (result == 0) {
@@ -109,7 +109,7 @@ static int router_std_transform(proto_router_iface_t *router, const unified_mess
 {
     proto_router_impl_t *impl = router_get_impl(router);
     if (!impl || !impl->handle || !source || !target)
-        return AGENTRT_EINVAL;
+        return AIRY_EINVAL;
     (void)transformer_name;
 
     return protocol_router_route(impl->handle, source, target);
@@ -120,12 +120,12 @@ static int router_std_batch_route(proto_router_iface_t *router, const unified_me
 {
     proto_router_impl_t *impl = router_get_impl(router);
     if (!impl || !impl->handle || !messages || !decisions || count == 0)
-        return AGENTRT_EINVAL;
+        return AIRY_EINVAL;
 
     unified_message_t *transformed =
-        (unified_message_t *)AGENTRT_CALLOC(count, sizeof(unified_message_t));
+        (unified_message_t *)AIRY_CALLOC(count, sizeof(unified_message_t));
     if (!transformed)
-        return AGENTRT_ENOMEM;
+        return AIRY_ENOMEM;
 
     int result = protocol_router_route_batch(impl->handle, messages, count, transformed);
     if (result >= 0) {
@@ -138,7 +138,7 @@ static int router_std_batch_route(proto_router_iface_t *router, const unified_me
             decisions[i].transformer_name = NULL;
         }
     }
-    AGENTRT_FREE(transformed);
+    AIRY_FREE(transformed);
     return result;
 }
 
@@ -146,7 +146,7 @@ static int router_std_set_default_protocol(proto_router_iface_t *router, protoco
 {
     proto_router_impl_t *impl = router_get_impl(router);
     if (!impl)
-        return AGENTRT_EINVAL;
+        return AIRY_EINVAL;
     impl->default_protocol = proto;
     return 0;
 }
@@ -155,7 +155,7 @@ static int router_std_list_routes(proto_router_iface_t *router, char **routes_js
 {
     proto_router_impl_t *impl = router_get_impl(router);
     if (!impl || !impl->handle || !routes_json)
-        return AGENTRT_EINVAL;
+        return AIRY_EINVAL;
 
     return protocol_router_get_stats(impl->handle, routes_json);
 }
@@ -164,7 +164,7 @@ static int router_std_get_stats(proto_router_iface_t *router, char **stats_json)
 {
     proto_router_impl_t *impl = router_get_impl(router);
     if (!impl || !impl->handle || !stats_json)
-        return AGENTRT_EINVAL;
+        return AIRY_EINVAL;
 
     return protocol_router_get_stats(impl->handle, stats_json);
 }
@@ -172,13 +172,13 @@ static int router_std_get_stats(proto_router_iface_t *router, char **stats_json)
 proto_router_iface_t *proto_router_standard_create(void)
 {
     proto_router_full_t *full =
-        (proto_router_full_t *)AGENTRT_CALLOC(1, sizeof(proto_router_full_t));
+        (proto_router_full_t *)AIRY_CALLOC(1, sizeof(proto_router_full_t));
     if (!full)
         return NULL;
 
     full->impl.handle = protocol_router_create(PROTOCOL_HTTP);
     if (!full->impl.handle) {
-        AGENTRT_FREE(full);
+        AIRY_FREE(full);
         return NULL;
     }
     full->impl.default_protocol = PROTOCOL_HTTP;
@@ -205,7 +205,7 @@ void proto_router_standard_destroy(proto_router_iface_t *router)
     }
     proto_router_full_t *full =
         (proto_router_full_t *)((char *)router - offsetof(proto_router_full_t, iface));
-    AGENTRT_FREE(full);
+    AIRY_FREE(full);
 }
 
 /* ============================================================================
@@ -244,10 +244,10 @@ typedef struct {
 
 static proto_gateway_impl_t *g_gw_impl = NULL;
 
-static void agentrt_proto_gw_log(const proto_gateway_iface_t *gw, const char *operation)
+static void airy_proto_gw_log(const proto_gateway_iface_t *gw, const char *operation)
 {
     if (gw) {
-        AGENTRT_LOG_DEBUG("[proto_gw:%p] %s", (const void *)gw, operation ? operation : "unknown");
+        AIRY_LOG_DEBUG("[proto_gw:%p] %s", (const void *)gw, operation ? operation : "unknown");
     }
 }
 
@@ -258,7 +258,7 @@ static int gw_request_adapter_trampoline(const char *raw_request, size_t request
 {
     gw_request_adapter_ctx_t *ctx = (gw_request_adapter_ctx_t *)user_data;
     if (!ctx || !ctx->public_cb)
-        return AGENTRT_EINVAL;
+        return AIRY_EINVAL;
 
     char *response_json = NULL;
     char request_buf[4096];
@@ -275,9 +275,9 @@ static int gw_request_adapter_trampoline(const char *raw_request, size_t request
         if (response_size)
             *response_size = strlen(response_json);
         if (response_content_type)
-            *response_content_type = AGENTRT_STRDUP("application/json");
+            *response_content_type = AIRY_STRDUP("application/json");
     } else {
-        AGENTRT_FREE(response_json);
+        AIRY_FREE(response_json);
     }
     (void)content_type;
     return result;
@@ -298,11 +298,11 @@ static int gw_std_register_protocol(proto_gateway_iface_t *gw, const char *name,
                                     const proto_adapter_vtable_t *adapter)
 {
     if (!name || !adapter)
-        return AGENTRT_EINVAL;
+        return AIRY_EINVAL;
     if (!g_gw_impl)
-        return AGENTRT_ERR_NOT_FOUND;
+        return AIRY_ERR_NOT_FOUND;
     if (g_gw_impl->protocol_count >= GW_MAX_PROTOCOLS)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     gw_protocol_entry_t *existing = gw_find_protocol(name);
     if (existing) {
@@ -311,41 +311,41 @@ static int gw_std_register_protocol(proto_gateway_iface_t *gw, const char *name,
     }
 
     gw_protocol_entry_t *entry = &g_gw_impl->protocols[g_gw_impl->protocol_count++];
-    AGENTRT_MEMSET(entry, 0, sizeof(*entry));
-    AGENTRT_STRNCPY_TERM(entry->name, name, sizeof(entry->name));
+    AIRY_MEMSET(entry, 0, sizeof(*entry));
+    AIRY_STRNCPY_TERM(entry->name, name, sizeof(entry->name));
     entry->vtable = adapter;
     return 0;
 }
 
 static int gw_std_unregister_protocol(proto_gateway_iface_t *gw, const char *name)
 {
-    agentrt_proto_gw_log(gw, "unregister_protocol");
+    airy_proto_gw_log(gw, "unregister_protocol");
     if (!name)
-        return AGENTRT_EINVAL;
+        return AIRY_EINVAL;
     if (!g_gw_impl)
-        return AGENTRT_ERR_NOT_FOUND;
+        return AIRY_ERR_NOT_FOUND;
 
     for (size_t i = 0; i < g_gw_impl->protocol_count; i++) {
         if (strcmp(g_gw_impl->protocols[i].name, name) == 0) {
-            AGENTRT_FREE(g_gw_impl->protocols[i].adapter_ctx);
+            AIRY_FREE(g_gw_impl->protocols[i].adapter_ctx);
             g_gw_impl->protocols[i].adapter_ctx = NULL;
             __builtin_memmove(&g_gw_impl->protocols[i], &g_gw_impl->protocols[i + 1],
                     (g_gw_impl->protocol_count - i - 1) * sizeof(gw_protocol_entry_t));
             g_gw_impl->protocol_count--;
-            AGENTRT_MEMSET(&g_gw_impl->protocols[g_gw_impl->protocol_count], 0,
+            AIRY_MEMSET(&g_gw_impl->protocols[g_gw_impl->protocol_count], 0,
                    sizeof(gw_protocol_entry_t));
             return 0;
         }
     }
-    return AGENTRT_ERR_NOT_FOUND;
+    return AIRY_ERR_NOT_FOUND;
 }
 
 static int gw_std_detect_protocol(proto_gateway_iface_t *gw, const char *data, size_t len,
                                   char **detected)
 {
-    agentrt_proto_gw_log(gw, "detect_protocol");
+    airy_proto_gw_log(gw, "detect_protocol");
     if (!data || !len || !detected)
-        return AGENTRT_EINVAL;
+        return AIRY_EINVAL;
 
     const char *result = NULL;
     if (len >= 4 && memcmp(data, "\x4F\x4A\x57\x4D", 4) == 0) {
@@ -375,8 +375,8 @@ static int gw_std_detect_protocol(proto_gateway_iface_t *gw, const char *data, s
         result = "unknown";
     }
 
-    *detected = AGENTRT_STRDUP(result);
-    return (*detected) ? 0 : AGENTRT_ENOMEM;
+    *detected = AIRY_STRDUP(result);
+    return (*detected) ? 0 : AIRY_ENOMEM;
 }
 
 static int gw_std_handle_request(proto_gateway_iface_t *gw, const char *raw_request,
@@ -384,23 +384,23 @@ static int gw_std_handle_request(proto_gateway_iface_t *gw, const char *raw_requ
                                  size_t *response_size, char **response_content_type)
 {
     if (!raw_request)
-        return AGENTRT_EINVAL;
+        return AIRY_EINVAL;
 
     char *detected_proto = NULL;
     int detect_result = gw_std_detect_protocol(gw, raw_request, request_size, &detected_proto);
     if (detect_result != 0 || !detected_proto) {
         if (response)
-            *response = AGENTRT_STRDUP("{\"error\":\"Protocol detection failed\"}");
+            *response = AIRY_STRDUP("{\"error\":\"Protocol detection failed\"}");
         if (response_size)
             *response_size = response ? strlen(*response) : 0;
         if (response_content_type)
-            *response_content_type = AGENTRT_STRDUP("application/json");
-        AGENTRT_FREE(detected_proto);
-        return AGENTRT_ERR_IO;
+            *response_content_type = AIRY_STRDUP("application/json");
+        AIRY_FREE(detected_proto);
+        return AIRY_ERR_IO;
     }
 
     gw_protocol_entry_t *entry = gw_find_protocol(detected_proto);
-    AGENTRT_FREE(detected_proto);
+    AIRY_FREE(detected_proto);
 
     if (entry && entry->raw_handler) {
         int result =
@@ -414,30 +414,30 @@ static int gw_std_handle_request(proto_gateway_iface_t *gw, const char *raw_requ
     }
 
     if (response)
-        *response = AGENTRT_STRDUP("{\"error\":\"No handler for protocol\"}");
+        *response = AIRY_STRDUP("{\"error\":\"No handler for protocol\"}");
     if (response_size)
         *response_size = response ? strlen(*response) : 0;
     if (response_content_type)
-        *response_content_type = AGENTRT_STRDUP("application/json");
-    return AGENTRT_ERR_NOT_FOUND;
+        *response_content_type = AIRY_STRDUP("application/json");
+    return AIRY_ERR_NOT_FOUND;
 }
 
 static int gw_std_set_request_handler(proto_gateway_iface_t *gw, proto_gateway_request_cb handler,
                                       void *user_data)
 {
     if (!handler)
-        return AGENTRT_EINVAL;
+        return AIRY_EINVAL;
     if (!g_gw_impl)
-        return AGENTRT_ERR_NOT_FOUND;
+        return AIRY_ERR_NOT_FOUND;
 
     for (size_t i = 0; i < g_gw_impl->protocol_count; i++) {
         gw_protocol_entry_t *entry = &g_gw_impl->protocols[i];
 
         if (!entry->adapter_ctx) {
             entry->adapter_ctx =
-                (gw_request_adapter_ctx_t *)AGENTRT_CALLOC(1, sizeof(gw_request_adapter_ctx_t));
+                (gw_request_adapter_ctx_t *)AIRY_CALLOC(1, sizeof(gw_request_adapter_ctx_t));
             if (!entry->adapter_ctx)
-                return AGENTRT_ERR_OUT_OF_MEMORY;
+                return AIRY_ERR_OUT_OF_MEMORY;
         }
 
         entry->adapter_ctx->public_cb = handler;
@@ -451,11 +451,11 @@ static int gw_std_set_request_handler(proto_gateway_iface_t *gw, proto_gateway_r
 static int gw_std_set_event_callback(proto_gateway_iface_t *gw, proto_gateway_event_cb callback,
                                      void *user_data)
 {
-    agentrt_proto_gw_log(gw, "set_event_callback");
+    airy_proto_gw_log(gw, "set_event_callback");
     if (!callback)
-        return AGENTRT_EINVAL;
+        return AIRY_EINVAL;
     if (!g_gw_impl)
-        return AGENTRT_ERR_NOT_FOUND;
+        return AIRY_ERR_NOT_FOUND;
 
     for (size_t i = 0; i < g_gw_impl->protocol_count; i++) {
         g_gw_impl->protocols[i].event_callback = callback;
@@ -467,7 +467,7 @@ static int gw_std_set_event_callback(proto_gateway_iface_t *gw, proto_gateway_ev
 static int gw_std_list_protocols(proto_gateway_iface_t *gw, char **protocols_json)
 {
     if (!protocols_json)
-        return AGENTRT_EINVAL;
+        return AIRY_EINVAL;
 
     size_t buf_size = 256;
     if (g_gw_impl && g_gw_impl->protocol_count > 0) {
@@ -476,9 +476,9 @@ static int gw_std_list_protocols(proto_gateway_iface_t *gw, char **protocols_jso
         buf_size += 256;
     }
 
-    char *buf = (char *)AGENTRT_MALLOC(buf_size);
+    char *buf = (char *)AIRY_MALLOC(buf_size);
     if (!buf)
-        return AGENTRT_ENOMEM;
+        return AIRY_ENOMEM;
 
     size_t offset = snprintf(buf, buf_size, "{\"protocols\":[");
     if (g_gw_impl && g_gw_impl->protocol_count > 0) {
@@ -502,18 +502,18 @@ static int gw_std_list_protocols(proto_gateway_iface_t *gw, char **protocols_jso
 static int gw_std_get_protocol_stats(proto_gateway_iface_t *gw, const char *name,
                                      proto_stats_t *stats)
 {
-    agentrt_proto_gw_log(gw, "get_protocol_stats");
+    airy_proto_gw_log(gw, "get_protocol_stats");
     if (!stats)
-        return AGENTRT_EINVAL;
-    AGENTRT_MEMSET(stats, 0, sizeof(*stats));
+        return AIRY_EINVAL;
+    AIRY_MEMSET(stats, 0, sizeof(*stats));
 
     if (!g_gw_impl)
-        return AGENTRT_ERR_NOT_FOUND;
+        return AIRY_ERR_NOT_FOUND;
 
     if (name) {
         gw_protocol_entry_t *entry = gw_find_protocol(name);
         if (!entry)
-            return AGENTRT_ERR_NULL_POINTER;
+            return AIRY_ERR_NULL_POINTER;
         stats->messages_sent = entry->request_count;
         stats->errors_total = entry->error_count;
         stats->bytes_sent = entry->total_bytes / 2;
@@ -532,14 +532,14 @@ static int gw_std_get_protocol_stats(proto_gateway_iface_t *gw, const char *name
 
 proto_gateway_iface_t *proto_gateway_standard_create(void)
 {
-    g_gw_impl = (proto_gateway_impl_t *)AGENTRT_CALLOC(1, sizeof(proto_gateway_impl_t));
+    g_gw_impl = (proto_gateway_impl_t *)AIRY_CALLOC(1, sizeof(proto_gateway_impl_t));
     if (!g_gw_impl)
         return NULL;
 
     proto_gateway_iface_t *iface =
-        (proto_gateway_iface_t *)AGENTRT_CALLOC(1, sizeof(proto_gateway_iface_t));
+        (proto_gateway_iface_t *)AIRY_CALLOC(1, sizeof(proto_gateway_iface_t));
     if (!iface) {
-        AGENTRT_FREE(g_gw_impl);
+        AIRY_FREE(g_gw_impl);
         g_gw_impl = NULL;
         return NULL;
     }
@@ -560,16 +560,16 @@ void proto_gateway_standard_destroy(proto_gateway_iface_t *gw)
 {
     if (!gw)
         return;
-    agentrt_proto_gw_log(gw, "destroy");
+    airy_proto_gw_log(gw, "destroy");
     if (g_gw_impl) {
         for (size_t i = 0; i < g_gw_impl->protocol_count; i++) {
-            AGENTRT_FREE(g_gw_impl->protocols[i].adapter_ctx);
+            AIRY_FREE(g_gw_impl->protocols[i].adapter_ctx);
             g_gw_impl->protocols[i].adapter_ctx = NULL;
         }
-        AGENTRT_FREE(g_gw_impl);
+        AIRY_FREE(g_gw_impl);
         g_gw_impl = NULL;
     }
-    AGENTRT_FREE(gw);
+    AIRY_FREE(gw);
 }
 
 /* Global Registration & Discovery API Implementation */
@@ -581,7 +581,7 @@ int proto_interface_register_builtins(void)
 
     protocol_registry_t *registry = proto_registry_create();
     if (!registry)
-        return AGENTRT_EINVAL;
+        return AIRY_EINVAL;
 
     int count = proto_registry_initialize_builtins(registry);
     if (count > 0) {
@@ -590,13 +590,13 @@ int proto_interface_register_builtins(void)
 
         for (size_t i = 0; i < total; i++) {
             proto_adapter_entry_t *entry =
-                (proto_adapter_entry_t *)AGENTRT_CALLOC(1, sizeof(proto_adapter_entry_t));
+                (proto_adapter_entry_t *)AIRY_CALLOC(1, sizeof(proto_adapter_entry_t));
             if (!entry)
                 continue;
 
-            entry->name = AGENTRT_STRDUP(entries[i].name);
-            entry->version = AGENTRT_STRDUP(entries[i].version);
-            entry->description = AGENTRT_STRDUP(entries[i].description);
+            entry->name = AIRY_STRDUP(entries[i].name);
+            entry->version = AIRY_STRDUP(entries[i].version);
+            entry->description = AIRY_STRDUP(entries[i].description);
             entry->type = entries[i].type;
             entry->capabilities = entries[i].capabilities;
             entry->is_builtin = true;
@@ -606,7 +606,7 @@ int proto_interface_register_builtins(void)
             g_adapter_count++;
         }
         if (entries)
-            AGENTRT_FREE(entries);
+            AIRY_FREE(entries);
     }
 
     registered = true;
@@ -629,12 +629,12 @@ const proto_adapter_entry_t *proto_interface_find(const char *name)
 int proto_interface_list_all(char **json_output)
 {
     if (!json_output)
-        return AGENTRT_EINVAL;
+        return AIRY_EINVAL;
 
     size_t buf_size = 512 + g_adapter_count * 256;
-    char *buf = AGENTRT_MALLOC(buf_size);
+    char *buf = AIRY_MALLOC(buf_size);
     if (!buf)
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
 
     size_t offset = snprintf(buf, buf_size, "{\"adapters\":[");
     proto_adapter_entry_t *entry = g_adapter_registry;

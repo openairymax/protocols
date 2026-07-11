@@ -10,7 +10,7 @@
 
 #include "autogen_adapter.h"
 
-#include "agentrt_protocol_interface.h"
+#include "airy_protocol_interface.h"
 #include "error.h"
 #include "memory_compat.h"
 #include "types.h"
@@ -70,21 +70,21 @@ autogen_adapter_context_t *autogen_adapter_create(const autogen_config_t *config
         return NULL;
 
     autogen_adapter_context_t *ctx =
-        (autogen_adapter_context_t *)AGENTRT_CALLOC(1, sizeof(autogen_adapter_context_t));
+        (autogen_adapter_context_t *)AIRY_CALLOC(1, sizeof(autogen_adapter_context_t));
     if (!ctx)
         return NULL;
 
     __builtin_memcpy(&ctx->config, config, sizeof(autogen_config_t));
     if (config->base_url)
-        ctx->config.base_url = AGENTRT_STRDUP(config->base_url);
+        ctx->config.base_url = AIRY_STRDUP(config->base_url);
     if (config->api_key)
-        ctx->config.api_key = AGENTRT_STRDUP(config->api_key);
+        ctx->config.api_key = AIRY_STRDUP(config->api_key);
     if (config->default_llm_model)
-        ctx->config.default_llm_model = AGENTRT_STRDUP(config->default_llm_model);
+        ctx->config.default_llm_model = AIRY_STRDUP(config->default_llm_model);
     if (config->work_dir)
-        ctx->config.work_dir = AGENTRT_STRDUP(config->work_dir);
+        ctx->config.work_dir = AIRY_STRDUP(config->work_dir);
     if (config->cache_dir)
-        ctx->config.cache_dir = AGENTRT_STRDUP(config->cache_dir);
+        ctx->config.cache_dir = AIRY_STRDUP(config->cache_dir);
 
     ctx->initialized = true;
     ctx->agents = NULL;
@@ -104,26 +104,26 @@ void autogen_adapter_destroy(autogen_adapter_context_t *ctx)
     if (!ctx)
         return;
 
-    AGENTRT_FREE(ctx->config.base_url);
-    AGENTRT_FREE(ctx->config.api_key);
-    AGENTRT_FREE(ctx->config.default_llm_model);
-    AGENTRT_FREE(ctx->config.work_dir);
-    AGENTRT_FREE(ctx->config.cache_dir);
+    AIRY_FREE(ctx->config.base_url);
+    AIRY_FREE(ctx->config.api_key);
+    AIRY_FREE(ctx->config.default_llm_model);
+    AIRY_FREE(ctx->config.work_dir);
+    AIRY_FREE(ctx->config.cache_dir);
 
     for (size_t i = 0; i < ctx->agent_count; i++)
         autogen_agent_instance_destroy(&ctx->agents[i]);
-    AGENTRT_FREE(ctx->agents);
+    AIRY_FREE(ctx->agents);
 
     for (size_t i = 0; i < ctx->group_chat_count; i++)
         autogen_group_chat_def_destroy(&ctx->group_chats[i]);
-    AGENTRT_FREE(ctx->group_chats);
+    AIRY_FREE(ctx->group_chats);
 
     for (size_t i = 0; i < ctx->conversation_count; i++)
         autogen_conversation_destroy(&ctx->conversations[i]);
-    AGENTRT_FREE(ctx->conversations);
+    AIRY_FREE(ctx->conversations);
 
-    AGENTRT_MEMSET(ctx, 0, sizeof(autogen_adapter_context_t));
-    AGENTRT_FREE(ctx);
+    AIRY_MEMSET(ctx, 0, sizeof(autogen_adapter_context_t));
+    AIRY_FREE(ctx);
 }
 
 bool autogen_adapter_is_initialized(const autogen_adapter_context_t *ctx)
@@ -140,24 +140,24 @@ int autogen_create_agent(autogen_adapter_context_t *ctx, const autogen_agent_def
                          char *out_agent_id)
 {
     if (!ctx || !definition || !out_agent_id)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     static uint32_t agent_counter = 0;
     agent_counter++;
 
     snprintf(out_agent_id, 64, "ag-agent-%08x", agent_counter);
 
-    autogen_agent_instance_t *agents = (autogen_agent_instance_t *)AGENTRT_REALLOC(
+    autogen_agent_instance_t *agents = (autogen_agent_instance_t *)AIRY_REALLOC(
         ctx->agents, (ctx->agent_count + 1) * sizeof(autogen_agent_instance_t));
     if (!agents) {
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
     }
     ctx->agents = agents;
 
-    AGENTRT_MEMSET(&ctx->agents[ctx->agent_count], 0, sizeof(autogen_agent_instance_t));
-    ctx->agents[ctx->agent_count].agent_id = AGENTRT_STRDUP(out_agent_id);
+    AIRY_MEMSET(&ctx->agents[ctx->agent_count], 0, sizeof(autogen_agent_instance_t));
+    ctx->agents[ctx->agent_count].agent_id = AIRY_STRDUP(out_agent_id);
     ctx->agents[ctx->agent_count].name =
-        definition->name ? AGENTRT_STRDUP(definition->name) : out_agent_id;
+        definition->name ? AIRY_STRDUP(definition->name) : out_agent_id;
     ctx->agents[ctx->agent_count].role = definition->role;
     ctx->agents[ctx->agent_count].is_active = true;
     ctx->agents[ctx->agent_count].messages_sent = 0;
@@ -171,7 +171,7 @@ int autogen_create_agent(autogen_adapter_context_t *ctx, const autogen_agent_def
 int autogen_destroy_agent(autogen_adapter_context_t *ctx, const char *agent_id)
 {
     if (!ctx || !agent_id)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     for (size_t i = 0; i < ctx->agent_count; i++) {
         if (strcmp(ctx->agents[i].agent_id, agent_id) == 0) {
@@ -184,29 +184,29 @@ int autogen_destroy_agent(autogen_adapter_context_t *ctx, const char *agent_id)
             return 0;
         }
     }
-    return AGENTRT_ERR_OUT_OF_MEMORY;
+    return AIRY_ERR_OUT_OF_MEMORY;
 }
 
 int autogen_list_agents(autogen_adapter_context_t *ctx, autogen_agent_instance_t **agents,
                         size_t *count)
 {
     if (!ctx || !agents || !count)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     *agents = NULL;
     *count = 0;
     if (ctx->agent_count == 0)
         return 0;
 
-    *agents = (autogen_agent_instance_t *)AGENTRT_CALLOC(ctx->agent_count,
+    *agents = (autogen_agent_instance_t *)AIRY_CALLOC(ctx->agent_count,
                                                          sizeof(autogen_agent_instance_t));
     if (!*agents)
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
 
     for (size_t i = 0; i < ctx->agent_count; i++) {
         (*agents)[i] = ctx->agents[i];
         (*agents)[i].agent_id =
-            ctx->agents[i].agent_id ? AGENTRT_STRDUP(ctx->agents[i].agent_id) : NULL;
-        (*agents)[i].name = ctx->agents[i].name ? AGENTRT_STRDUP(ctx->agents[i].name) : NULL;
+            ctx->agents[i].agent_id ? AIRY_STRDUP(ctx->agents[i].agent_id) : NULL;
+        (*agents)[i].name = ctx->agents[i].name ? AIRY_STRDUP(ctx->agents[i].name) : NULL;
     }
     *count = ctx->agent_count;
     return 0;
@@ -216,24 +216,24 @@ int autogen_create_group_chat(autogen_adapter_context_t *ctx,
                               const autogen_group_chat_def_t *definition, char *out_group_id)
 {
     if (!ctx || !out_group_id)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     static uint32_t gc_counter = 0;
     gc_counter++;
     snprintf(out_group_id, 64, "ag-group-%08x", gc_counter);
 
-    autogen_group_chat_def_t *gcs = (autogen_group_chat_def_t *)AGENTRT_REALLOC(
+    autogen_group_chat_def_t *gcs = (autogen_group_chat_def_t *)AIRY_REALLOC(
         ctx->group_chats, (ctx->group_chat_count + 1) * sizeof(autogen_group_chat_def_t));
     if (!gcs)
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
     ctx->group_chats = gcs;
 
-    AGENTRT_MEMSET(&ctx->group_chats[ctx->group_chat_count], 0, sizeof(autogen_group_chat_def_t));
-    ctx->group_chats[ctx->group_chat_count].id = AGENTRT_STRDUP(out_group_id);
+    AIRY_MEMSET(&ctx->group_chats[ctx->group_chat_count], 0, sizeof(autogen_group_chat_def_t));
+    ctx->group_chats[ctx->group_chat_count].id = AIRY_STRDUP(out_group_id);
     ctx->group_chats[ctx->group_chat_count].name =
         definition
-            ? (definition->name ? AGENTRT_STRDUP(definition->name) : AGENTRT_STRDUP(out_group_id))
-            : AGENTRT_STRDUP(out_group_id);
+            ? (definition->name ? AIRY_STRDUP(definition->name) : AIRY_STRDUP(out_group_id))
+            : AIRY_STRDUP(out_group_id);
     ctx->group_chats[ctx->group_chat_count].mode =
         definition ? definition->mode : GROUP_CHAT_ROUND_ROBIN;
     ctx->group_chats[ctx->group_chat_count].max_rounds = definition ? definition->max_rounds : 10;
@@ -244,7 +244,7 @@ int autogen_create_group_chat(autogen_adapter_context_t *ctx,
     if (definition && definition->participant_ids) {
         for (size_t p = 0; p < definition->participant_count; p++) {
             ctx->group_chats[ctx->group_chat_count].participant_ids[p] =
-                AGENTRT_STRDUP(definition->participant_ids[p]);
+                AIRY_STRDUP(definition->participant_ids[p]);
         }
         ctx->group_chats[ctx->group_chat_count].participant_count = definition->participant_count;
     }
@@ -319,7 +319,7 @@ static int autogen_generate_response(autogen_adapter_context_t *ctx, const char 
                                      char *out_buf, size_t buf_len)
 {
     if (!out_buf || buf_len == 0)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     if (ctx && ctx->llm_callback) {
         char prompt[4096];
@@ -331,7 +331,7 @@ static int autogen_generate_response(autogen_adapter_context_t *ctx, const char 
             plen = snprintf(prompt, sizeof(prompt), "%s", incoming_msg ? incoming_msg : "");
         }
         if (plen <= 0)
-            return AGENTRT_ERR_NOT_FOUND;
+            return AIRY_ERR_NOT_FOUND;
 
         char *llm_response = NULL;
         int rc = ctx->llm_callback(prompt, ctx->config.default_llm_model, &llm_response,
@@ -342,15 +342,15 @@ static int autogen_generate_response(autogen_adapter_context_t *ctx, const char 
                 copy_len = buf_len - 1;
             __builtin_memcpy(out_buf, llm_response, copy_len);
             out_buf[copy_len] = '\0';
-            AGENTRT_FREE(llm_response);
+            AIRY_FREE(llm_response);
             return 0;
         }
-        AGENTRT_FREE(llm_response);
-        return AGENTRT_ERR_NULL_POINTER;
+        AIRY_FREE(llm_response);
+        return AIRY_ERR_NULL_POINTER;
     }
 
     out_buf[0] = '\0';
-    return AGENTRT_ERR_OUT_OF_MEMORY;
+    return AIRY_ERR_OUT_OF_MEMORY;
 }
 
 int autogen_initiate_chat(autogen_adapter_context_t *ctx, const char *group_id,
@@ -359,20 +359,20 @@ int autogen_initiate_chat(autogen_adapter_context_t *ctx, const char *group_id,
 {
     if (!ctx || !result)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "autogen_initiate_chat: IO error");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "autogen_initiate_chat: IO error");
+        return AIRY_ERR_UNKNOWN;
         }
     if (!ctx->initialized)
-        return AGENTRT_ERR_SYS_NOT_INIT;
+        return AIRY_ERR_SYS_NOT_INIT;
     if (!ctx->llm_callback)
-        return AGENTRT_ERR_OVERFLOW;
+        return AIRY_ERR_OVERFLOW;
 
     ctx->total_chats_initiated++;
 
-    AGENTRT_MEMSET(result, 0, sizeof(autogen_group_chat_result_t));
-    result->group_id = group_id ? AGENTRT_STRDUP(group_id) : NULL;
-    result->initiator_id = sender_id ? AGENTRT_STRDUP(sender_id) : NULL;
-    result->initial_message = message ? AGENTRT_STRDUP(message) : NULL;
+    AIRY_MEMSET(result, 0, sizeof(autogen_group_chat_result_t));
+    result->group_id = group_id ? AIRY_STRDUP(group_id) : NULL;
+    result->initiator_id = sender_id ? AIRY_STRDUP(sender_id) : NULL;
+    result->initial_message = message ? AIRY_STRDUP(message) : NULL;
 
     time_t start = time(NULL);
 
@@ -380,53 +380,53 @@ int autogen_initiate_chat(autogen_adapter_context_t *ctx, const char *group_id,
     conv_counter++;
 
     autogen_conversation_t conv;
-    AGENTRT_MEMSET(&conv, 0, sizeof(conv));
+    AIRY_MEMSET(&conv, 0, sizeof(conv));
     char cid[64];
     snprintf(cid, sizeof(cid), "ag-conv-%08x", conv_counter);
-    conv.conversation_id = AGENTRT_STRDUP(cid);
+    conv.conversation_id = AIRY_STRDUP(cid);
     conv.created_at = (uint64_t)(time(NULL));
     conv.last_activity = conv.created_at;
     conv.is_complete = true;
-    conv.termination_reason = AGENTRT_STRDUP("completed");
+    conv.termination_reason = AIRY_STRDUP("completed");
 
     int chat_rounds = 3 + (int)(message ? strlen(message) % 5 : 3);
     int msg_count = chat_rounds * 2 + 1;
 
     conv.messages =
-        (autogen_message_t *)AGENTRT_CALLOC((size_t)msg_count, sizeof(autogen_message_t));
+        (autogen_message_t *)AIRY_CALLOC((size_t)msg_count, sizeof(autogen_message_t));
     conv.message_count = (size_t)msg_count;
 
     for (int m = 0; m < msg_count; m++) {
-        conv.messages[m].message_id = AGENTRT_MALLOC(32);
+        conv.messages[m].message_id = AIRY_MALLOC(32);
         if (!conv.messages[m].message_id) {
             for (int j = 0; j < m; j++)
-                AGENTRT_FREE(conv.messages[j].message_id);
-            AGENTRT_FREE(conv.messages);
+                AIRY_FREE(conv.messages[j].message_id);
+            AIRY_FREE(conv.messages);
             conv.messages = NULL;
-            return AGENTRT_ERR_OUT_OF_MEMORY;
+            return AIRY_ERR_OUT_OF_MEMORY;
         }
         snprintf(conv.messages[m].message_id, 32, "msg-%04d", m);
         conv.messages[m].sender_id =
-            (m % 2 == 0) ? (sender_id ? AGENTRT_STRDUP(sender_id) : AGENTRT_STRDUP("user"))
-                         : AGENTRT_STRDUP("assistant");
+            (m % 2 == 0) ? (sender_id ? AIRY_STRDUP(sender_id) : AIRY_STRDUP("user"))
+                         : AIRY_STRDUP("assistant");
         conv.messages[m].receiver_id =
-            (m % 2 == 0) ? AGENTRT_STRDUP("assistant")
-                         : (sender_id ? AGENTRT_STRDUP(sender_id) : AGENTRT_STRDUP("user"));
+            (m % 2 == 0) ? AIRY_STRDUP("assistant")
+                         : (sender_id ? AIRY_STRDUP(sender_id) : AIRY_STRDUP("user"));
         conv.messages[m].type = MSG_TYPE_TEXT;
 
         if (m == 0 && message) {
-            conv.messages[m].content = AGENTRT_STRDUP(message);
+            conv.messages[m].content = AIRY_STRDUP(message);
         } else {
             char resp_buf[AUTOGEN_MAX_RESPONSE_LEN];
-            AGENTRT_MEMSET(resp_buf, 0, sizeof(resp_buf));
+            AIRY_MEMSET(resp_buf, 0, sizeof(resp_buf));
             int agent_role_idx = (m / 2) % (ctx->agent_count > 0 ? (int)ctx->agent_count : 1);
             bool is_first_in_round = (m == 1);
             int rc = autogen_generate_response(ctx, message, agent_role_idx, (int)ctx->agent_count,
                                                is_first_in_round, resp_buf, sizeof(resp_buf));
             if (rc == 0 && resp_buf[0]) {
-                conv.messages[m].content = AGENTRT_STRDUP(resp_buf);
+                conv.messages[m].content = AIRY_STRDUP(resp_buf);
             } else {
-                conv.messages[m].content = AGENTRT_STRDUP("[LLM response unavailable]");
+                conv.messages[m].content = AIRY_STRDUP("[LLM response unavailable]");
             }
         }
 
@@ -439,17 +439,17 @@ int autogen_initiate_chat(autogen_adapter_context_t *ctx, const char *group_id,
              "AutoGen group chat completed. Rounds: %d, Messages: %d, "
              "Agents involved: %zu",
              chat_rounds, msg_count, ctx->agent_count);
-    conv.summary = AGENTRT_STRDUP(summary_buf);
+    conv.summary = AIRY_STRDUP(summary_buf);
 
     result->conversation =
-        (autogen_conversation_t *)AGENTRT_CALLOC(1, sizeof(autogen_conversation_t));
+        (autogen_conversation_t *)AIRY_CALLOC(1, sizeof(autogen_conversation_t));
     __builtin_memcpy(result->conversation, &conv, sizeof(autogen_conversation_t));
 
     result->total_time_ms = difftime(time(NULL), start) * 1000.0;
     result->total_rounds = chat_rounds;
     result->total_messages = msg_count;
     result->success = true;
-    result->final_summary = AGENTRT_STRDUP(summary_buf);
+    result->final_summary = AIRY_STRDUP(summary_buf);
 
     ctx->total_messages_exchanged += (uint64_t)msg_count;
 
@@ -463,40 +463,40 @@ int autogen_send_message(autogen_adapter_context_t *ctx, const char *from_agent_
 {
     if (!ctx || !reply)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "autogen_send_message: IO error");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "autogen_send_message: IO error");
+        return AIRY_ERR_UNKNOWN;
         }
     if (!ctx->initialized)
-        return AGENTRT_ERR_SYS_NOT_INIT;
+        return AIRY_ERR_SYS_NOT_INIT;
     if (!ctx->llm_callback)
-        return AGENTRT_ERR_OVERFLOW;
+        return AIRY_ERR_OVERFLOW;
 
     ctx->total_messages_exchanged++;
 
     static uint32_t msg_counter = 0;
     msg_counter++;
 
-    AGENTRT_MEMSET(reply, 0, sizeof(autogen_message_t));
-    reply->message_id = AGENTRT_MALLOC(32);
+    AIRY_MEMSET(reply, 0, sizeof(autogen_message_t));
+    reply->message_id = AIRY_MALLOC(32);
     if (!reply->message_id)
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
     snprintf(reply->message_id, 32, "ag-msg-%08x", msg_counter);
-    reply->sender_id = to_agent_id ? AGENTRT_STRDUP(to_agent_id) : NULL;
-    reply->receiver_id = from_agent_id ? AGENTRT_STRDUP(from_agent_id) : NULL;
+    reply->sender_id = to_agent_id ? AIRY_STRDUP(to_agent_id) : NULL;
+    reply->receiver_id = from_agent_id ? AIRY_STRDUP(from_agent_id) : NULL;
     reply->type = type;
 
     if (content && content[0]) {
         char resp_buf[AUTOGEN_MAX_RESPONSE_LEN];
-        AGENTRT_MEMSET(resp_buf, 0, sizeof(resp_buf));
+        AIRY_MEMSET(resp_buf, 0, sizeof(resp_buf));
         int rc = autogen_generate_response(ctx, content, (int)(msg_counter % 8),
                                            (int)ctx->agent_count, true, resp_buf, sizeof(resp_buf));
         if (rc == 0 && resp_buf[0]) {
-            reply->content = AGENTRT_STRDUP(resp_buf);
+            reply->content = AIRY_STRDUP(resp_buf);
         } else {
-            reply->content = AGENTRT_STRDUP("[LLM response unavailable]");
+            reply->content = AIRY_STRDUP("[LLM response unavailable]");
         }
     } else {
-        reply->content = AGENTRT_STRDUP("ack");
+        reply->content = AIRY_STRDUP("ack");
     }
 
     reply->timestamp = (uint64_t)(time(NULL));
@@ -513,7 +513,7 @@ int autogen_register_tool(autogen_adapter_context_t *ctx, const char *name, cons
                           void *user_data)
 {
     if (!ctx || !name)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     for (size_t i = 0; i < ctx->tool_count; i++) {
         if (strcmp(ctx->tool_names[i], name) == 0) {
@@ -522,23 +522,23 @@ int autogen_register_tool(autogen_adapter_context_t *ctx, const char *name, cons
         }
     }
 
-    autogen_tool_executor_fn *new_exec = (autogen_tool_executor_fn *)AGENTRT_REALLOC(
+    autogen_tool_executor_fn *new_exec = (autogen_tool_executor_fn *)AIRY_REALLOC(
         ctx->tool_executors, (ctx->tool_count + 1) * sizeof(autogen_tool_executor_fn));
     char **new_names =
-        (char **)AGENTRT_REALLOC(ctx->tool_names, (ctx->tool_count + 1) * sizeof(char *));
+        (char **)AIRY_REALLOC(ctx->tool_names, (ctx->tool_count + 1) * sizeof(char *));
 
     if (!new_exec || !new_names) {
         if (new_exec)
-            AGENTRT_FREE(new_exec);
+            AIRY_FREE(new_exec);
         if (new_names)
-            AGENTRT_FREE(new_names);
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+            AIRY_FREE(new_names);
+        return AIRY_ERR_OUT_OF_MEMORY;
     }
 
     ctx->tool_executors = new_exec;
     ctx->tool_names = new_names;
     ctx->tool_names[ctx->tool_count] =
-        AGENTRT_STRDUP(name ? name : (description ? description : "unnamed"));
+        AIRY_STRDUP(name ? name : (description ? description : "unnamed"));
     ctx->tool_executors[ctx->tool_count] = executor;
     ctx->tool_count++;
 
@@ -549,11 +549,11 @@ int autogen_get_conversation(autogen_adapter_context_t *ctx, const char *group_i
                              autogen_conversation_t *conv)
 {
     if (!ctx || !conv)
-        return AGENTRT_ERR_NULL_POINTER;
-    AGENTRT_MEMSET(conv, 0, sizeof(autogen_conversation_t));
+        return AIRY_ERR_NULL_POINTER;
+    AIRY_MEMSET(conv, 0, sizeof(autogen_conversation_t));
 
     if (!group_id)
-        return AGENTRT_ERR_INVALID_PARAM;
+        return AIRY_ERR_INVALID_PARAM;
 
     for (size_t i = 0; i < ctx->conversation_count; i++) {
         if (ctx->conversations[i].conversation_id &&
@@ -572,14 +572,14 @@ int autogen_get_conversation(autogen_adapter_context_t *ctx, const char *group_i
         }
     }
 
-    return AGENTRT_ERR_NULL_POINTER;
+    return AIRY_ERR_NULL_POINTER;
 }
 
 int autogen_set_code_executor(autogen_adapter_context_t *ctx, autogen_code_executor_fn executor,
                               void *user_data)
 {
     if (!ctx)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     ctx->code_executor = executor;
     ctx->code_executor_data = user_data;
     return 0;
@@ -589,7 +589,7 @@ int autogen_set_human_callback(autogen_adapter_context_t *ctx, autogen_human_cal
                                void *user_data)
 {
     if (!ctx)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     ctx->human_callback = callback;
     ctx->human_callback_data = user_data;
     return 0;
@@ -599,7 +599,7 @@ int autogen_set_message_hook(autogen_adapter_context_t *ctx, autogen_message_hoo
                              void *user_data)
 {
     if (!ctx)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     ctx->message_hook = hook;
     ctx->message_hook_data = user_data;
     return 0;
@@ -609,7 +609,7 @@ int autogen_set_llm_callback(autogen_adapter_context_t *ctx, autogen_llm_callbac
                              void *user_data)
 {
     if (!ctx)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     ctx->llm_callback = callback;
     ctx->llm_callback_data = user_data;
     return 0;
@@ -618,7 +618,7 @@ int autogen_set_llm_callback(autogen_adapter_context_t *ctx, autogen_llm_callbac
 int autogen_get_statistics(autogen_adapter_context_t *ctx, char *stats_json, size_t buffer_size)
 {
     if (!ctx || !stats_json || buffer_size < 64)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     int written =
         snprintf(stats_json, buffer_size,
@@ -646,7 +646,7 @@ static int autogen_proto_init(void *context)
     autogen_config_t config = autogen_config_default();
     autogen_adapter_context_t *ctx = autogen_adapter_create(&config);
     if (!ctx)
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
     *(void **)context = ctx;
     return 0;
 }
@@ -664,7 +664,7 @@ __attribute__((unused)) static int autogen_adapter_deinit(void *context)
 {
     autogen_adapter_context_t *ctx = (autogen_adapter_context_t *)context;
     if (!ctx)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     autogen_adapter_destroy(ctx);
     return 0;
 }
@@ -672,13 +672,13 @@ __attribute__((unused)) static int autogen_adapter_deinit(void *context)
 static int autogen_proto_handle_request(void *context, const void *req, void **resp)
 {
     if (!context || !req)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     const char *raw_request = (const char *)req;
 
     autogen_message_t msg = {0};
-    msg.sender_id = AGENTRT_STRDUP("proto-client");
-    msg.content = AGENTRT_STRDUP(raw_request);
+    msg.sender_id = AIRY_STRDUP("proto-client");
+    msg.content = AIRY_STRDUP(raw_request);
     msg.timestamp = (uint64_t)(time(NULL));
     msg.is_visible = true;
 
@@ -688,12 +688,12 @@ static int autogen_proto_handle_request(void *context, const void *req, void **r
 
     if (ret == 0 && resp) {
         if (reply.content) {
-            *resp = AGENTRT_STRDUP(reply.content);
+            *resp = AIRY_STRDUP(reply.content);
         } else {
-            *resp = AGENTRT_STRDUP("{\"status\":\"error\"}");
+            *resp = AIRY_STRDUP("{\"status\":\"error\"}");
         }
     } else if (resp) {
-        *resp = AGENTRT_STRDUP("{\"status\":\"error\"}");
+        *resp = AIRY_STRDUP("{\"status\":\"error\"}");
         ret = -1;
     }
 
@@ -705,7 +705,7 @@ static int autogen_proto_handle_request(void *context, const void *req, void **r
 static int autogen_proto_get_version(void *context, char *buf, size_t max_size)
 {
     if (!buf || max_size == 0)
-        return AGENTRT_ERR_INVALID_PARAM;
+        return AIRY_ERR_INVALID_PARAM;
     const char *ver = autogen_adapter_version();
     size_t len = strlen(ver);
     if (len >= max_size)
@@ -746,78 +746,78 @@ void autogen_agent_def_destroy(autogen_agent_def_t *def)
 {
     if (!def)
         return;
-    AGENTRT_FREE(def->id);
-    AGENTRT_FREE(def->name);
-    AGENTRT_FREE(def->system_message);
-    AGENTRT_FREE(def->llm_config_json);
+    AIRY_FREE(def->id);
+    AIRY_FREE(def->name);
+    AIRY_FREE(def->system_message);
+    AIRY_FREE(def->llm_config_json);
     for (size_t i = 0; i < def->transition_count; i++)
-        AGENTRT_FREE(def->allowed_transitions[i]);
-    AGENTRT_FREE(def->allowed_transitions);
-    AGENTRT_MEMSET(def, 0, sizeof(autogen_agent_def_t));
+        AIRY_FREE(def->allowed_transitions[i]);
+    AIRY_FREE(def->allowed_transitions);
+    AIRY_MEMSET(def, 0, sizeof(autogen_agent_def_t));
 }
 
 void autogen_agent_instance_destroy(autogen_agent_instance_t *inst)
 {
     if (!inst)
         return;
-    AGENTRT_FREE(inst->agent_id);
-    AGENTRT_FREE(inst->name);
-    AGENTRT_MEMSET(inst, 0, sizeof(autogen_agent_instance_t));
+    AIRY_FREE(inst->agent_id);
+    AIRY_FREE(inst->name);
+    AIRY_MEMSET(inst, 0, sizeof(autogen_agent_instance_t));
 }
 
 void autogen_group_chat_def_destroy(autogen_group_chat_def_t *gc)
 {
     if (!gc)
         return;
-    AGENTRT_FREE(gc->id);
-    AGENTRT_FREE(gc->name);
-    AGENTRT_FREE(gc->speaker_selection_prompt);
+    AIRY_FREE(gc->id);
+    AIRY_FREE(gc->name);
+    AIRY_FREE(gc->speaker_selection_prompt);
     for (size_t i = 0; i < gc->participant_count; i++)
-        AGENTRT_FREE(gc->participant_ids[i]);
-    AGENTRT_FREE(gc->participant_ids);
-    AGENTRT_MEMSET(gc, 0, sizeof(autogen_group_chat_def_t));
+        AIRY_FREE(gc->participant_ids[i]);
+    AIRY_FREE(gc->participant_ids);
+    AIRY_MEMSET(gc, 0, sizeof(autogen_group_chat_def_t));
 }
 
 void autogen_message_destroy(autogen_message_t *msg)
 {
     if (!msg)
         return;
-    AGENTRT_FREE(msg->message_id);
-    AGENTRT_FREE(msg->sender_id);
-    AGENTRT_FREE(msg->receiver_id);
-    AGENTRT_FREE(msg->content);
-    AGENTRT_FREE(msg->metadata_json);
+    AIRY_FREE(msg->message_id);
+    AIRY_FREE(msg->sender_id);
+    AIRY_FREE(msg->receiver_id);
+    AIRY_FREE(msg->content);
+    AIRY_FREE(msg->metadata_json);
     for (size_t i = 0; i < msg->tool_call_count; i++)
-        AGENTRT_FREE(msg->tool_calls[i]);
-    AGENTRT_FREE(msg->tool_calls);
-    AGENTRT_MEMSET(msg, 0, sizeof(autogen_message_t));
+        AIRY_FREE(msg->tool_calls[i]);
+    AIRY_FREE(msg->tool_calls);
+    AIRY_MEMSET(msg, 0, sizeof(autogen_message_t));
 }
 
 void autogen_conversation_destroy(autogen_conversation_t *conv)
 {
     if (!conv)
         return;
-    AGENTRT_FREE(conv->conversation_id);
-    AGENTRT_FREE(conv->summary);
-    AGENTRT_FREE(conv->termination_reason);
+    AIRY_FREE(conv->conversation_id);
+    AIRY_FREE(conv->summary);
+    AIRY_FREE(conv->termination_reason);
     for (size_t i = 0; i < conv->message_count; i++)
         autogen_message_destroy(&conv->messages[i]);
-    AGENTRT_FREE(conv->messages);
-    AGENTRT_MEMSET(conv, 0, sizeof(autogen_conversation_t));
+    AIRY_FREE(conv->messages);
+    AIRY_MEMSET(conv, 0, sizeof(autogen_conversation_t));
 }
 
 void autogen_group_chat_result_destroy(autogen_group_chat_result_t *result)
 {
     if (!result)
         return;
-    AGENTRT_FREE(result->group_id);
-    AGENTRT_FREE(result->initiator_id);
-    AGENTRT_FREE(result->initial_message);
+    AIRY_FREE(result->group_id);
+    AIRY_FREE(result->initiator_id);
+    AIRY_FREE(result->initial_message);
     if (result->conversation) {
         autogen_conversation_destroy(result->conversation);
-        AGENTRT_FREE(result->conversation);
+        AIRY_FREE(result->conversation);
     }
-    AGENTRT_FREE(result->final_summary);
-    AGENTRT_FREE(result->error_message);
-    AGENTRT_MEMSET(result, 0, sizeof(autogen_group_chat_result_t));
+    AIRY_FREE(result->final_summary);
+    AIRY_FREE(result->error_message);
+    AIRY_MEMSET(result, 0, sizeof(autogen_group_chat_result_t));
 }

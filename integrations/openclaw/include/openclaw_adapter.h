@@ -22,13 +22,13 @@
  *
  * @since 2.1.0
  * @see unified_protocol.h
- * @see agentrt_protocol_interface.h
+ * @see airy_protocol_interface.h
  */
 
-#ifndef AGENTRT_OPENCLAW_ADAPTER_H
-#define AGENTRT_OPENCLAW_ADAPTER_H
+#ifndef AIRY_RT_OPENCLAW_ADAPTER_H
+#define AIRY_RT_OPENCLAW_ADAPTER_H
 
-#include "agentrt_protocol_interface.h"
+#include "airy_protocol_interface.h"
 #include "unified_protocol.h"
 
 #include <stdbool.h>
@@ -274,4 +274,4 @@ void openclaw_cluster_status_destroy(openclaw_cluster_status_t *status);
 }
 #endif
 
-#endif /* AGENTRT_OPENCLAW_ADAPTER_H */
+#endif /* AIRY_RT_OPENCLAW_ADAPTER_H */

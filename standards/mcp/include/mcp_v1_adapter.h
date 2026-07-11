@@ -21,8 +21,8 @@
  * @see unified_protocol.h
  */
 
-#ifndef AGENTRT_MCP_V1_ADAPTER_H
-#define AGENTRT_MCP_V1_ADAPTER_H
+#ifndef AIRY_MCP_V1_ADAPTER_H
+#define AIRY_MCP_V1_ADAPTER_H
 
 #include "unified_protocol.h"
 
@@ -310,4 +310,4 @@ mcp_transport_t *mcp_v1_get_transport(mcp_v1_context_t *ctx);
 }
 #endif
 
-#endif /* AGENTRT_MCP_V1_ADAPTER_H */
+#endif /* AIRY_MCP_V1_ADAPTER_H */

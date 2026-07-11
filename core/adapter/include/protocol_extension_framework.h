@@ -19,10 +19,10 @@
  * @see unified_protocol.h
  */
 
-#ifndef AGENTRT_PROTOCOL_EXTENSION_FRAMEWORK_H
-#define AGENTRT_PROTOCOL_EXTENSION_FRAMEWORK_H
+#ifndef AIRY_RT_PROTOCOL_EXTENSION_FRAMEWORK_H
+#define AIRY_RT_PROTOCOL_EXTENSION_FRAMEWORK_H
 
-#include "../include/agentrt_protocol_interface.h"
+#include "../include/airy_protocol_interface.h"
 #include "unified_protocol.h"
 
 #include <stdbool.h>
@@ -173,4 +173,4 @@ proto_ext_framework_t *proto_ext_get_global_instance(void);
 }
 #endif
 
-#endif /* AGENTRT_PROTOCOL_EXTENSION_FRAMEWORK_H */
+#endif /* AIRY_RT_PROTOCOL_EXTENSION_FRAMEWORK_H */

@@ -28,10 +28,10 @@
  * @since 2.1.0
  */
 
-#ifndef AGENTRT_AUTOGEN_ADAPTER_H
-#define AGENTRT_AUTOGEN_ADAPTER_H
+#ifndef AIRY_RT_AUTOGEN_ADAPTER_H
+#define AIRY_RT_AUTOGEN_ADAPTER_H
 
-#include "agentrt_protocol_interface.h"
+#include "airy_protocol_interface.h"
 #include "unified_protocol.h"
 
 #include <stdbool.h>
@@ -252,4 +252,4 @@ void autogen_group_chat_result_destroy(autogen_group_chat_result_t *result);
 }
 #endif
 
-#endif /* AGENTRT_AUTOGEN_ADAPTER_H */
+#endif /* AIRY_RT_AUTOGEN_ADAPTER_H */

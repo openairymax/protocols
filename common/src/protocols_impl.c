@@ -37,7 +37,7 @@ typedef struct protocol_manager_s {
 
 protocol_manager_handle_t protocol_manager_create(void)
 {
-    struct protocol_manager_s *mgr = AGENTRT_CALLOC(1, sizeof(struct protocol_manager_s));
+    struct protocol_manager_s *mgr = AIRY_CALLOC(1, sizeof(struct protocol_manager_s));
     return (protocol_manager_handle_t)mgr;
 }
 
@@ -51,7 +51,7 @@ void protocol_manager_destroy(protocol_manager_handle_t manager)
             protocol_stack_destroy(mgr->stacks[i]);
         }
     }
-    AGENTRT_FREE(mgr);
+    AIRY_FREE(mgr);
 }
 
 protocol_stack_handle_t protocol_manager_create_stack(protocol_manager_handle_t manager,
@@ -194,9 +194,9 @@ const char *protocol_get_last_error(void)
 protocol_stack_config_t protocol_stack_config_default(const char *name)
 {
     protocol_stack_config_t cfg;
-    AGENTRT_MEMSET(&cfg, 0, sizeof(cfg));
+    AIRY_MEMSET(&cfg, 0, sizeof(cfg));
     if (name) {
-        AGENTRT_STRNCPY_TERM(cfg.name, name, sizeof(cfg.name));
+        AIRY_STRNCPY_TERM(cfg.name, name, sizeof(cfg.name));
         cfg.name[sizeof(cfg.name) - 1] = '\0';
     }
     cfg.default_protocol = PROTOCOL_HTTP;
@@ -212,5 +212,5 @@ void protocol_stack_config_destroy(protocol_stack_config_t *config)
 {
     if (!config)
         return;
-    AGENTRT_MEMSET(config, 0, sizeof(*config));
+    AIRY_MEMSET(config, 0, sizeof(*config));
 }
