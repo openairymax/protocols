@@ -20,8 +20,8 @@
  * @see unified_protocol.h
  */
 
-#ifndef AGENTRT_A2A_V03_ADAPTER_H
-#define AGENTRT_A2A_V03_ADAPTER_H
+#ifndef AIRY_A2A_V03_ADAPTER_H
+#define AIRY_A2A_V03_ADAPTER_H
 
 #include "unified_protocol.h"
 
@@ -368,4 +368,4 @@ void a2a_negotiation_destroy(a2a_negotiation_t *neg);
 }
 #endif
 
-#endif /* AGENTRT_A2A_V03_ADAPTER_H */
+#endif /* AIRY_A2A_V03_ADAPTER_H */

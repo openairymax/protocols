@@ -60,11 +60,11 @@ static const char *__attribute__((used)) g_storage_names[] = {[CHINA_ECO_OSS_ALI
 int china_eco_create(china_eco_handle_t **handle)
 {
     if (!handle)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
-    china_eco_handle_t *h = (china_eco_handle_t *)AGENTRT_CALLOC(1, sizeof(china_eco_handle_t));
+    china_eco_handle_t *h = (china_eco_handle_t *)AIRY_CALLOC(1, sizeof(china_eco_handle_t));
     if (!h)
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
 
     h->initialized = true;
     *handle = h;
@@ -75,16 +75,16 @@ void china_eco_destroy(china_eco_handle_t *handle)
 {
     if (!handle)
         return;
-    AGENTRT_MEMSET(handle, 0, sizeof(china_eco_handle_t));
-    AGENTRT_FREE(handle);
+    AIRY_MEMSET(handle, 0, sizeof(china_eco_handle_t));
+    AIRY_FREE(handle);
 }
 
 int china_eco_add_llm_provider(china_eco_handle_t *h, const china_eco_llm_provider_t *provider)
 {
     if (!h || !provider)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     if (h->llm_provider_count >= CHINA_ECO_MAX_PROVIDERS)
-        return AGENTRT_ERR_OVERFLOW;
+        return AIRY_ERR_OVERFLOW;
 
     for (size_t i = 0; i < h->llm_provider_count; i++) {
         if (h->llm_providers[i].provider_type == provider->provider_type) {
@@ -100,7 +100,7 @@ int china_eco_add_llm_provider(china_eco_handle_t *h, const china_eco_llm_provid
 int china_eco_remove_llm_provider(china_eco_handle_t *h, china_eco_provider_type_t type)
 {
     if (!h)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     for (size_t i = 0; i < h->llm_provider_count; i++) {
         if (h->llm_providers[i].provider_type == type) {
@@ -112,7 +112,7 @@ int china_eco_remove_llm_provider(china_eco_handle_t *h, china_eco_provider_type
             return 0;
         }
     }
-    return AGENTRT_ERR_NOT_FOUND;
+    return AIRY_ERR_NOT_FOUND;
 }
 
 int china_eco_llm_chat(china_eco_handle_t *h, china_eco_provider_type_t provider,
@@ -120,7 +120,7 @@ int china_eco_llm_chat(china_eco_handle_t *h, china_eco_provider_type_t provider
                        size_t *resp_size)
 {
     if (!h || !messages_json || !response || !resp_size)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     china_eco_llm_provider_t *p = NULL;
     for (size_t i = 0; i < h->llm_provider_count; i++) {
@@ -164,9 +164,9 @@ int china_eco_llm_chat(china_eco_handle_t *h, china_eco_provider_type_t provider
 int china_eco_add_storage_bridge(china_eco_handle_t *h, const china_eco_storage_bridge_t *bridge)
 {
     if (!h || !bridge)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     if (h->storage_bridge_count >= CHINA_ECO_MAX_ENDPOINTS)
-        return AGENTRT_ERR_OVERFLOW;
+        return AIRY_ERR_OVERFLOW;
 
     for (size_t i = 0; i < h->storage_bridge_count; i++) {
         if (h->storage_bridges[i].storage_type == bridge->storage_type) {
@@ -184,7 +184,7 @@ int china_eco_storage_upload(china_eco_handle_t *h, china_eco_storage_type_t sto
                              char *result_url, size_t *url_size)
 {
     if (!h || !data || !object_key || !result_url || !url_size)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     china_eco_storage_bridge_t *bridge = NULL;
     for (size_t i = 0; i < h->storage_bridge_count; i++) {
@@ -211,7 +211,7 @@ int china_eco_storage_download(china_eco_handle_t *h, china_eco_storage_type_t s
                                const char *object_key, void **data, size_t *size)
 {
     if (!h || !object_key || !data || !size)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     *data = NULL;
     *size = 0;
@@ -337,11 +337,11 @@ static void sm3_compress(uint32_t digest[8], const uint8_t block[64])
 int china_eco_sm3_hash(const void *data, size_t size, uint8_t digest[CHINA_ECO_SM3_DIGEST_SIZE])
 {
     if (!digest)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     if (!data && size > 0)
-        return AGENTRT_ERR_INVALID_PARAM;
+        return AIRY_ERR_INVALID_PARAM;
     if (!data || size == 0) {
-        AGENTRT_MEMSET(digest, 0, CHINA_ECO_SM3_DIGEST_SIZE);
+        AIRY_MEMSET(digest, 0, CHINA_ECO_SM3_DIGEST_SIZE);
         return 0;
     }
 
@@ -364,7 +364,7 @@ int china_eco_sm3_hash(const void *data, size_t size, uint8_t digest[CHINA_ECO_S
 
     if (remaining >= 56) {
         sm3_compress(V, final_block);
-        AGENTRT_MEMSET(final_block, 0, 64);
+        AIRY_MEMSET(final_block, 0, 64);
     }
 
     for (int i = 0; i < 8; i++) {
@@ -506,9 +506,9 @@ int china_eco_sm4_encrypt(china_eco_sm4_context_t *ctx, const void *plaintext, s
                           void *ciphertext, size_t *ct_size)
 {
     if (!ctx || !plaintext || !ciphertext || !ct_size)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     if (!ctx->initialized)
-        return AGENTRT_ERR_SYS_NOT_INIT;
+        return AIRY_ERR_SYS_NOT_INIT;
 
     size_t padded_size = ((pt_size + CHINA_ECO_SM4_BLOCK_SIZE) / CHINA_ECO_SM4_BLOCK_SIZE) *
                          CHINA_ECO_SM4_BLOCK_SIZE;
@@ -525,7 +525,7 @@ int china_eco_sm4_encrypt(china_eco_sm4_context_t *ctx, const void *plaintext, s
     __builtin_memcpy(prev_block, ctx->iv, CHINA_ECO_SM4_BLOCK_SIZE);
 
     for (size_t offset = 0; offset < padded_size; offset += CHINA_ECO_SM4_BLOCK_SIZE) {
-        AGENTRT_MEMSET(block, 0, CHINA_ECO_SM4_BLOCK_SIZE);
+        AIRY_MEMSET(block, 0, CHINA_ECO_SM4_BLOCK_SIZE);
         if (offset < pt_size) {
             size_t copy_size = CHINA_ECO_SM4_BLOCK_SIZE;
             if (offset + copy_size > pt_size)
@@ -538,7 +538,7 @@ int china_eco_sm4_encrypt(china_eco_sm4_context_t *ctx, const void *plaintext, s
                     block[j] = pad_val;
             }
         } else {
-            AGENTRT_MEMSET(block, CHINA_ECO_SM4_BLOCK_SIZE, CHINA_ECO_SM4_BLOCK_SIZE);
+            AIRY_MEMSET(block, CHINA_ECO_SM4_BLOCK_SIZE, CHINA_ECO_SM4_BLOCK_SIZE);
         }
 
         for (size_t j = 0; j < CHINA_ECO_SM4_BLOCK_SIZE; j++)
@@ -555,12 +555,12 @@ int china_eco_sm4_decrypt(china_eco_sm4_context_t *ctx, const void *ciphertext, 
                           void *plaintext, size_t *pt_size)
 {
     if (!ctx || !ciphertext || !plaintext || !pt_size)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     if (!ctx->initialized)
-        return AGENTRT_ERR_SYS_NOT_INIT;
+        return AIRY_ERR_SYS_NOT_INIT;
 
     if (ct_size % CHINA_ECO_SM4_BLOCK_SIZE != 0)
-        return AGENTRT_ERR_INVALID_PARAM;
+        return AIRY_ERR_INVALID_PARAM;
     if (ct_size == 0) {
         *pt_size = 0;
         return 0;
@@ -608,7 +608,7 @@ static int china_eco_proto_init(void *context)
     china_eco_handle_t *h = (china_eco_handle_t *)context;
     if (!h) {
         if (china_eco_create(&h) != 0)
-            return AGENTRT_ERR_OUT_OF_MEMORY;
+            return AIRY_ERR_OUT_OF_MEMORY;
     }
     g_china_eco_state.handle = *h;
     g_china_eco_state.proto_initialized = true;
@@ -624,7 +624,7 @@ static int china_eco_proto_destroy(void *context)
 static int china_eco_proto_handle_request(void *context, const void *req, void **resp)
 {
     if (!req || !resp)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     char buf[4096];
     snprintf(buf, sizeof(buf),
@@ -642,7 +642,7 @@ static int china_eco_proto_handle_request(void *context, const void *req, void *
              (unsigned long long)g_china_eco_state.handle.request_counter,
              (unsigned long long)g_china_eco_state.handle.token_total);
 
-    *resp = AGENTRT_STRDUP(buf);
+    *resp = AIRY_STRDUP(buf);
     return 0;
 }
 
@@ -650,7 +650,7 @@ static int china_eco_proto_get_version(void *context, char *version_buf, size_t 
 {
     (void)context;
     if (!version_buf || max_size == 0)
-        return AGENTRT_ERR_INVALID_PARAM;
+        return AIRY_ERR_INVALID_PARAM;
     snprintf(version_buf, max_size, "%s", CHINA_ECO_VERSION);
     return 0;
 }

@@ -11,7 +11,7 @@
 
 #include "mcp_transport.h"
 
-#include "agentrt.h"
+#include "airy_rt.h"
 #include "atomic_compat.h"
 #include "memory_compat.h"
 #include "types.h"
@@ -99,19 +99,19 @@ static int read_line(int fd, char *buf, size_t buf_size, uint32_t timeout_ms)
         int ret = select(fd + 1, &fds, NULL, NULL, &tv);
         if (ret <= 0) {
             if (ret == 0) {
-                AGENTRT_LOG_WARN("read_line timeout after %u ms, fd=%d", timeout_ms, fd);
-                return AGENTRT_ERR_INVALID_PARAM;
+                AIRY_LOG_WARN("read_line timeout after %u ms, fd=%d", timeout_ms, fd);
+                return AIRY_ERR_INVALID_PARAM;
             }
-            AGENTRT_LOG_ERROR("read_line select failed, fd=%d", fd);
-            return AGENTRT_EINVAL;
+            AIRY_LOG_ERROR("read_line select failed, fd=%d", fd);
+            return AIRY_EINVAL;
         }
 
         char c;
         ssize_t n = read(fd, &c, 1);
         if (n <= 0)
             {
-            agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "read: failed");
-            return AGENTRT_ERR_UNKNOWN;
+            airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "read: failed");
+            return AIRY_ERR_UNKNOWN;
             }
 
         if (c == '\n') {
@@ -141,18 +141,18 @@ static int write_all(int fd, const char *buf, size_t len, uint32_t timeout_ms)
         int ret = select(fd + 1, NULL, &fds, NULL, &tv);
         if (ret <= 0) {
             if (ret == 0) {
-                AGENTRT_LOG_WARN("write_all timeout after %u ms, fd=%d, written=%zu/%zu", timeout_ms, fd, written, len);
-                return AGENTRT_ERR_INVALID_PARAM;
+                AIRY_LOG_WARN("write_all timeout after %u ms, fd=%d, written=%zu/%zu", timeout_ms, fd, written, len);
+                return AIRY_ERR_INVALID_PARAM;
             }
-            AGENTRT_LOG_ERROR("write_all select failed, fd=%d", fd);
-            return AGENTRT_EINVAL;
+            AIRY_LOG_ERROR("write_all select failed, fd=%d", fd);
+            return AIRY_EINVAL;
         }
 
         ssize_t n = write(fd, buf + written, len - written);
         if (n <= 0)
             {
-            agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "write: failed");
-            return AGENTRT_ERR_UNKNOWN;
+            airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "write: failed");
+            return AIRY_ERR_UNKNOWN;
             }
         written += (size_t)n;
     }
@@ -162,7 +162,7 @@ static int write_all(int fd, const char *buf, size_t len, uint32_t timeout_ms)
 mcp_transport_config_t mcp_transport_config_stdio_default(void)
 {
     mcp_transport_config_t cfg;
-    AGENTRT_MEMSET(&cfg, 0, sizeof(cfg));
+    AIRY_MEMSET(&cfg, 0, sizeof(cfg));
     cfg.type = MCP_TRANSPORT_STDIO;
     cfg.read_timeout_ms = 30000;
     cfg.write_timeout_ms = 30000;
@@ -175,7 +175,7 @@ mcp_transport_config_t mcp_transport_config_stdio_default(void)
 mcp_transport_config_t mcp_transport_config_http_default(const char *base_url)
 {
     mcp_transport_config_t cfg;
-    AGENTRT_MEMSET(&cfg, 0, sizeof(cfg));
+    AIRY_MEMSET(&cfg, 0, sizeof(cfg));
     cfg.type = MCP_TRANSPORT_HTTP_SSE;
     cfg.read_timeout_ms = 30000;
     cfg.write_timeout_ms = 30000;
@@ -191,13 +191,13 @@ mcp_transport_config_t mcp_transport_config_http_default(const char *base_url)
 mcp_transport_t *mcp_transport_create(const mcp_transport_config_t *config)
 {
     if (!config) {
-        AGENTRT_LOG_ERROR("transport_create called with NULL config");
+        AIRY_LOG_ERROR("transport_create called with NULL config");
         return NULL;
     }
 
-    mcp_transport_t *t = (mcp_transport_t *)AGENTRT_CALLOC(1, sizeof(mcp_transport_t));
+    mcp_transport_t *t = (mcp_transport_t *)AIRY_CALLOC(1, sizeof(mcp_transport_t));
     if (!t) {
-        AGENTRT_LOG_ERROR("transport allocation failed, size=%zu", sizeof(mcp_transport_t));
+        AIRY_LOG_ERROR("transport allocation failed, size=%zu", sizeof(mcp_transport_t));
         return NULL;
     }
 
@@ -214,10 +214,10 @@ mcp_transport_t *mcp_transport_create(const mcp_transport_config_t *config)
     atomic_init(&t->running, 0);
 
     t->recv_buffer_capacity = 65536;
-    t->recv_buffer = (char *)AGENTRT_MALLOC(t->recv_buffer_capacity);
+    t->recv_buffer = (char *)AIRY_MALLOC(t->recv_buffer_capacity);
     if (!t->recv_buffer) {
-        AGENTRT_LOG_ERROR("recv_buffer allocation failed, capacity=%zu", t->recv_buffer_capacity);
-        AGENTRT_FREE(t);
+        AIRY_LOG_ERROR("recv_buffer allocation failed, capacity=%zu", t->recv_buffer_capacity);
+        AIRY_FREE(t);
         return NULL;
     }
     t->recv_buffer_size = 0;
@@ -229,7 +229,7 @@ mcp_transport_t *mcp_transport_create(const mcp_transport_config_t *config)
             config->config.stdio.output_fd > 0 ? config->config.stdio.output_fd : STDOUT_FILENO;
     } else if (t->type == MCP_TRANSPORT_HTTP_SSE) {
         if (config->config.http.base_url) {
-            t->base_url = AGENTRT_STRDUP(config->config.http.base_url);
+            t->base_url = AIRY_STRDUP(config->config.http.base_url);
             const char *url = config->config.http.base_url;
             const char *host_start = url;
             if (strncmp(url, "http://", 7) == 0)
@@ -238,7 +238,7 @@ mcp_transport_t *mcp_transport_create(const mcp_transport_config_t *config)
                 host_start = url + 8;
             const char *path_start = strchr(host_start, '/');
             size_t host_len = path_start ? (size_t)(path_start - host_start) : strlen(host_start);
-            char *host = (char *)AGENTRT_MALLOC(host_len + 1);
+            char *host = (char *)AIRY_MALLOC(host_len + 1);
             if (host) {
                 __builtin_memcpy(host, host_start, host_len);
                 host[host_len] = '\0';
@@ -246,14 +246,14 @@ mcp_transport_t *mcp_transport_create(const mcp_transport_config_t *config)
             }
         }
         if (config->config.http.api_key) {
-            t->api_key = AGENTRT_STRDUP(config->config.http.api_key);
+            t->api_key = AIRY_STRDUP(config->config.http.api_key);
         }
         t->sse_endpoint = config->config.http.sse_endpoint
-                              ? AGENTRT_STRDUP(config->config.http.sse_endpoint)
-                              : AGENTRT_STRDUP("/sse");
+                              ? AIRY_STRDUP(config->config.http.sse_endpoint)
+                              : AIRY_STRDUP("/sse");
         t->post_endpoint = config->config.http.post_endpoint
-                               ? AGENTRT_STRDUP(config->config.http.post_endpoint)
-                               : AGENTRT_STRDUP("/messages");
+                               ? AIRY_STRDUP(config->config.http.post_endpoint)
+                               : AIRY_STRDUP("/messages");
         t->reconnect_interval_ms = config->config.http.reconnect_interval_ms > 0
                                        ? config->config.http.reconnect_interval_ms
                                        : 5000;
@@ -279,21 +279,21 @@ void mcp_transport_destroy(mcp_transport_t *transport)
         close(transport->http_socket);
     }
 
-    AGENTRT_FREE(transport->base_url);
-    AGENTRT_FREE(transport->host_header);
-    AGENTRT_FREE(transport->api_key);
-    AGENTRT_FREE(transport->sse_endpoint);
-    AGENTRT_FREE(transport->post_endpoint);
-    AGENTRT_FREE(transport->recv_buffer);
-    AGENTRT_FREE(transport);
+    AIRY_FREE(transport->base_url);
+    AIRY_FREE(transport->host_header);
+    AIRY_FREE(transport->api_key);
+    AIRY_FREE(transport->sse_endpoint);
+    AIRY_FREE(transport->post_endpoint);
+    AIRY_FREE(transport->recv_buffer);
+    AIRY_FREE(transport);
 }
 
 int mcp_transport_start(mcp_transport_t *transport)
 {
     if (!transport)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_transport_start: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_transport_start: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     if (transport->state == MCP_TRANSPORT_CONNECTED)
         return 0;
@@ -313,19 +313,19 @@ int mcp_transport_start(mcp_transport_t *transport)
     if (transport->type == MCP_TRANSPORT_HTTP_SSE ||
         transport->type == MCP_TRANSPORT_STREAMABLE_HTTP) {
         if (!transport->base_url) {
-            AGENTRT_LOG_ERROR("HTTP transport requires base_url, type=%d", transport->type);
+            AIRY_LOG_ERROR("HTTP transport requires base_url, type=%d", transport->type);
             notify_error(transport, -1, "HTTP transport requires base_url");
             set_state(transport, MCP_TRANSPORT_ERROR);
-            return AGENTRT_EINVAL;
+            return AIRY_EINVAL;
         }
 
         char host[256] = {0};
         int port = 80;
-        char *url_copy = AGENTRT_STRDUP(transport->base_url);
+        char *url_copy = AIRY_STRDUP(transport->base_url);
         if (!url_copy) {
-            AGENTRT_LOG_ERROR("url_copy allocation failed for base_url=%s", transport->base_url);
+            AIRY_LOG_ERROR("url_copy allocation failed for base_url=%s", transport->base_url);
             set_state(transport, MCP_TRANSPORT_ERROR);
-            return AGENTRT_EINVAL;
+            return AIRY_EINVAL;
         }
 
         char *host_start = url_copy;
@@ -347,10 +347,10 @@ int mcp_transport_start(mcp_transport_t *transport)
             *path_sep = '\0';
         }
         snprintf(host, sizeof(host), "%s", host_start);
-        AGENTRT_FREE(url_copy);
+        AIRY_FREE(url_copy);
         url_copy = NULL;
         struct addrinfo hints, *result;
-        AGENTRT_MEMSET(&hints, 0, sizeof(hints));
+        AIRY_MEMSET(&hints, 0, sizeof(hints));
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
 
@@ -359,21 +359,21 @@ int mcp_transport_start(mcp_transport_t *transport)
 
         int gai_err = getaddrinfo(host, port_str, &hints, &result);
         if (gai_err != 0) {
-            AGENTRT_LOG_ERROR("DNS resolution failed: host=%s, port=%s, error=%s", host, port_str, gai_strerror(gai_err));
+            AIRY_LOG_ERROR("DNS resolution failed: host=%s, port=%s, error=%s", host, port_str, gai_strerror(gai_err));
             char err_msg[256];
             snprintf(err_msg, sizeof(err_msg), "DNS resolution failed: %s", gai_strerror(gai_err));
             notify_error(transport, -2, err_msg);
             set_state(transport, MCP_TRANSPORT_ERROR);
-            return AGENTRT_EIO;
+            return AIRY_EIO;
         }
 
         int sock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
         if (sock < 0) {
-            AGENTRT_LOG_ERROR("socket creation failed: host=%s, port=%d, errno=%d", host, port, errno);
+            AIRY_LOG_ERROR("socket creation failed: host=%s, port=%d, errno=%d", host, port, errno);
             notify_error(transport, -3, "Socket creation failed");
             freeaddrinfo(result);
             set_state(transport, MCP_TRANSPORT_ERROR);
-            return AGENTRT_EINVAL;
+            return AIRY_EINVAL;
         }
 
         struct timeval tv;
@@ -383,14 +383,14 @@ int mcp_transport_start(mcp_transport_t *transport)
         setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 
         if (connect(sock, result->ai_addr, result->ai_addrlen) < 0) {
-            AGENTRT_LOG_ERROR("connection failed: host=%s, port=%d, errno=%d", host, port, errno);
+            AIRY_LOG_ERROR("connection failed: host=%s, port=%d, errno=%d", host, port, errno);
             char err_msg[256];
             snprintf(err_msg, sizeof(err_msg), "Connection failed: %s", strerror(errno));
             notify_error(transport, -4, err_msg);
             close(sock);
             freeaddrinfo(result);
             set_state(transport, MCP_TRANSPORT_ERROR);
-            return AGENTRT_EINVAL;
+            return AIRY_EINVAL;
         }
 
         freeaddrinfo(result);
@@ -401,15 +401,15 @@ int mcp_transport_start(mcp_transport_t *transport)
     }
 
     set_state(transport, MCP_TRANSPORT_ERROR);
-    return AGENTRT_EINVAL;
+    return AIRY_EINVAL;
 }
 
 int mcp_transport_stop(mcp_transport_t *transport)
 {
     if (!transport)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_transport_stop: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_transport_stop: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     atomic_store_explicit(&transport->running, 0, memory_order_seq_cst);
@@ -427,12 +427,12 @@ int mcp_transport_send(mcp_transport_t *transport, const char *message, size_t l
 {
     if (!transport || !message || length == 0)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_transport_send: IO error");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_transport_send: IO error");
+        return AIRY_ERR_UNKNOWN;
         }
     if (transport->state != MCP_TRANSPORT_CONNECTED) {
-        AGENTRT_LOG_WARN("send attempted on non-connected transport, state=%d", transport->state);
-        return AGENTRT_ERR_NOT_FOUND;
+        AIRY_LOG_WARN("send attempted on non-connected transport, state=%d", transport->state);
+        return AIRY_ERR_NOT_FOUND;
     }
 
     if (transport->type == MCP_TRANSPORT_STDIO) {
@@ -443,13 +443,13 @@ int mcp_transport_send(mcp_transport_t *transport, const char *message, size_t l
                       transport->write_timeout_ms) < 0) {
             notify_error(transport, -10, "Failed to write message header");
             set_state(transport, MCP_TRANSPORT_ERROR);
-            return AGENTRT_ERR_NULL_POINTER;
+            return AIRY_ERR_NULL_POINTER;
         }
 
         if (write_all(transport->output_fd, message, length, transport->write_timeout_ms) < 0) {
             notify_error(transport, -11, "Failed to write message body");
             set_state(transport, MCP_TRANSPORT_ERROR);
-            return AGENTRT_ERR_NULL_POINTER;
+            return AIRY_ERR_NULL_POINTER;
         }
 
         return 0;
@@ -458,7 +458,7 @@ int mcp_transport_send(mcp_transport_t *transport, const char *message, size_t l
     if (transport->type == MCP_TRANSPORT_HTTP_SSE ||
         transport->type == MCP_TRANSPORT_STREAMABLE_HTTP) {
         if (transport->http_socket < 0)
-            return AGENTRT_ERR_NULL_POINTER;
+            return AIRY_ERR_NULL_POINTER;
 
         char request[4096];
         const char *path = transport->post_endpoint ? transport->post_endpoint : "/messages";
@@ -477,18 +477,18 @@ int mcp_transport_send(mcp_transport_t *transport, const char *message, size_t l
         if (write_all(transport->http_socket, request, (size_t)req_len,
                       transport->write_timeout_ms) < 0) {
             notify_error(transport, -12, "Failed to send HTTP request header");
-            return AGENTRT_ERR_NULL_POINTER;
+            return AIRY_ERR_NULL_POINTER;
         }
 
         if (write_all(transport->http_socket, message, length, transport->write_timeout_ms) < 0) {
             notify_error(transport, -13, "Failed to send HTTP request body");
-            return AGENTRT_ERR_INVALID_PARAM;
+            return AIRY_ERR_INVALID_PARAM;
         }
 
         return 0;
     }
 
-    return AGENTRT_EINVAL;
+    return AIRY_EINVAL;
 }
 
 __attribute__((unused))
@@ -497,12 +497,12 @@ int mcp_transport_receive(mcp_transport_t *transport, char **out_message, size_t
 {
     if (!transport || !out_message || !out_length)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "mcp_transport_receive: timeout");
-        return AGENTRT_ERR_TIMEOUT;
+        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "mcp_transport_receive: timeout");
+        return AIRY_ERR_TIMEOUT;
         }
     if (transport->state != MCP_TRANSPORT_CONNECTED) {
-        AGENTRT_LOG_WARN("send attempted on non-connected transport, state=%d", transport->state);
-        return AGENTRT_ERR_NOT_FOUND;
+        AIRY_LOG_WARN("send attempted on non-connected transport, state=%d", transport->state);
+        return AIRY_ERR_NOT_FOUND;
     }
 
     *out_message = NULL;
@@ -513,32 +513,32 @@ int mcp_transport_receive(mcp_transport_t *transport, char **out_message, size_t
         int hdr_result = read_line(transport->input_fd, header_buf, sizeof(header_buf), timeout_ms);
         if (hdr_result < 0) {
             if (hdr_result == -2)
-                return AGENTRT_ERR_IO;
+                return AIRY_ERR_IO;
             notify_error(transport, -20, "Failed to read message header");
-            return AGENTRT_EINVAL;
+            return AIRY_EINVAL;
         }
 
         size_t content_length = 0;
         if (strncmp(header_buf, "Content-Length: ", 15) == 0) {
             content_length = (size_t)atol(header_buf + 15);
         } else {
-            return AGENTRT_EINVAL;
+            return AIRY_EINVAL;
         }
 
         char empty_line[4];
         read_line(transport->input_fd, empty_line, sizeof(empty_line), timeout_ms);
 
         if (content_length == 0 || content_length > transport->max_message_size) {
-            AGENTRT_LOG_WARN("invalid content_length=%zu, max=%zu", content_length, transport->max_message_size);
+            AIRY_LOG_WARN("invalid content_length=%zu, max=%zu", content_length, transport->max_message_size);
             notify_error(transport, -21, "Invalid content length");
-            return AGENTRT_EINVAL;
+            return AIRY_EINVAL;
         }
 
-        char *body = (char *)AGENTRT_MALLOC(content_length + 1);
+        char *body = (char *)AIRY_MALLOC(content_length + 1);
         if (!body)
             {
-            agentrt_error_push_ex(AGENTRT_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "AGENTRT_MALLOC: allocation failed");
-            return AGENTRT_ERR_OUT_OF_MEMORY;
+            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "AIRY_MALLOC: allocation failed");
+            return AIRY_ERR_OUT_OF_MEMORY;
             }
 
         size_t total_read = 0;
@@ -552,14 +552,14 @@ int mcp_transport_receive(mcp_transport_t *transport, char **out_message, size_t
 
             int ret = select(transport->input_fd + 1, &fds, NULL, NULL, &tv);
             if (ret <= 0) {
-                AGENTRT_FREE(body);
+                AIRY_FREE(body);
                 return ret == 0 ? -2 : -1;
             }
 
             ssize_t n = read(transport->input_fd, body + total_read, content_length - total_read);
             if (n <= 0) {
-                AGENTRT_FREE(body);
-                return AGENTRT_EINVAL;
+                AIRY_FREE(body);
+                return AIRY_EINVAL;
             }
             total_read += (size_t)n;
         }
@@ -573,24 +573,24 @@ int mcp_transport_receive(mcp_transport_t *transport, char **out_message, size_t
     if (transport->type == MCP_TRANSPORT_HTTP_SSE ||
         transport->type == MCP_TRANSPORT_STREAMABLE_HTTP) {
         if (transport->http_socket < 0)
-            return AGENTRT_ERR_NULL_POINTER;
+            return AIRY_ERR_NULL_POINTER;
 
         char line_buf[8192];
         int line_result = read_line(transport->http_socket, line_buf, sizeof(line_buf), timeout_ms);
         if (line_result < 0)
             {
-            agentrt_error_push_ex(AGENTRT_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "read_line: timeout");
-            return AGENTRT_ERR_TIMEOUT;
+            airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "read_line: timeout");
+            return AIRY_ERR_TIMEOUT;
             }
 
         if (strncmp(line_buf, "data: ", 6) == 0) {
             const char *data = line_buf + 6;
             size_t data_len = strlen(data);
-            char *msg = (char *)AGENTRT_MALLOC(data_len + 1);
+            char *msg = (char *)AIRY_MALLOC(data_len + 1);
             if (!msg)
                 {
-                agentrt_error_push_ex(AGENTRT_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "if: allocation failed");
-                return AGENTRT_ERR_OUT_OF_MEMORY;
+                airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "if: allocation failed");
+                return AIRY_ERR_OUT_OF_MEMORY;
                 }
             __builtin_memcpy(msg, data, data_len);
             msg[data_len] = '\0';
@@ -607,10 +607,10 @@ int mcp_transport_receive(mcp_transport_t *transport, char **out_message, size_t
             return mcp_transport_receive(transport, out_message, out_length, timeout_ms);
         }
 
-        return AGENTRT_EINVAL;
+        return AIRY_EINVAL;
     }
 
-    return AGENTRT_EINVAL;
+    return AIRY_EINVAL;
 }
 
 __attribute__((unused))

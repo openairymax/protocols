@@ -28,14 +28,14 @@ struct protocol_handler_router_s {
     uint64_t messages_failed;
 };
 
-int protocol_adapter_create(agentrt_protocol_type_t type, protocol_adapter_t *adapter)
+int protocol_adapter_create(airy_protocol_type_t type, protocol_adapter_t *adapter)
 {
     if (!adapter)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_adapter_create: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_adapter_create: failed");
+        return AIRY_ERR_UNKNOWN;
         }
-    AGENTRT_MEMSET(adapter, 0, sizeof(*adapter));
+    AIRY_MEMSET(adapter, 0, sizeof(*adapter));
     adapter->type = type;
     adapter->init = NULL;
     return 0;
@@ -44,39 +44,39 @@ int protocol_adapter_create(agentrt_protocol_type_t type, protocol_adapter_t *ad
 void protocol_adapter_destroy(protocol_adapter_t adapter)
 {
     if (adapter.context) {
-        AGENTRT_FREE(adapter.context);
+        AIRY_FREE(adapter.context);
     }
 }
 
-int protocol_adapter_send(protocol_adapter_t adapter, const agentrt_message_t *msg)
+int protocol_adapter_send(protocol_adapter_t adapter, const airy_message_t *msg)
 {
     if (!adapter.init)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_adapter_send: IO error");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_adapter_send: IO error");
+        return AIRY_ERR_UNKNOWN;
         }
     if (!msg)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_adapter_send: IO error");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_adapter_send: IO error");
+        return AIRY_ERR_UNKNOWN;
         }
     if (adapter.send) {
         return adapter.send(adapter.context, msg->data, msg->len);
     }
-    return AGENTRT_ERR_NOT_FOUND;
+    return AIRY_ERR_NOT_FOUND;
 }
 
-int protocol_adapter_recv(protocol_adapter_t adapter, agentrt_message_t *msg, size_t max_len)
+int protocol_adapter_recv(protocol_adapter_t adapter, airy_message_t *msg, size_t max_len)
 {
     if (!adapter.init)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_adapter_recv: IO error");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_adapter_recv: IO error");
+        return AIRY_ERR_UNKNOWN;
         }
     if (!msg)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_adapter_recv: IO error");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_adapter_recv: IO error");
+        return AIRY_ERR_UNKNOWN;
         }
     if (adapter.receive) {
         void *data = NULL;
@@ -85,33 +85,33 @@ int protocol_adapter_recv(protocol_adapter_t adapter, agentrt_message_t *msg, si
         if (rc == 0 && data && size > 0) {
             size_t copy_len = size < max_len ? size : max_len;
             msg->len = copy_len;
-            AGENTRT_FREE(data);
+            AIRY_FREE(data);
         }
         return rc;
     }
-    return AGENTRT_ERR_NOT_FOUND;
+    return AIRY_ERR_NOT_FOUND;
 }
 
-const char *protocol_type_name(agentrt_protocol_type_t type)
+const char *protocol_type_name(airy_protocol_type_t type)
 {
     switch (type) {
-    case AGENTRT_PROTOCOL_JSON_RPC:
+    case AIRY_PROTOCOL_JSON_RPC:
         return "JSON-RPC";
-    case AGENTRT_PROTOCOL_MCP:
+    case AIRY_PROTOCOL_MCP:
         return "MCP";
-    case AGENTRT_PROTOCOL_A2A:
+    case AIRY_PROTOCOL_A2A:
         return "A2A";
-    case AGENTRT_PROTOCOL_OPENAI:
+    case AIRY_PROTOCOL_OPENAI:
         return "OpenAI";
-    case AGENTRT_PROTOCOL_OPENJIUWEN:
+    case AIRY_PROTOCOL_OPENJIUWEN:
         return "OpenJiuwen";
-    case AGENTRT_PROTOCOL_CLAUDE:
+    case AIRY_PROTOCOL_CLAUDE:
         return "Claude";
-    case AGENTRT_PROTOCOL_AGNTCY:
+    case AIRY_PROTOCOL_AGNTCY:
         return "AGNTCY";
-    case AGENTRT_PROTOCOL_CHINA_ECO:
+    case AIRY_PROTOCOL_CHINA_ECO:
         return "ChinaEco";
-    case AGENTRT_PROTOCOL_OPENCLAW:
+    case AIRY_PROTOCOL_OPENCLAW:
         return "OpenClaw";
     default:
         return "Unknown";
@@ -122,7 +122,7 @@ protocol_handler_route_result_t protocol_handler_router_create(protocol_handler_
 {
     if (!router)
         return PROTOCOL_HANDLER_ROUTE_ERR_INVALID_ARG;
-    struct protocol_handler_router_s *r = (struct protocol_handler_router_s *)AGENTRT_CALLOC(
+    struct protocol_handler_router_s *r = (struct protocol_handler_router_s *)AIRY_CALLOC(
         1, sizeof(struct protocol_handler_router_s));
     if (!r)
         return PROTOCOL_HANDLER_ROUTE_ERR_INVALID_ARG;
@@ -134,9 +134,9 @@ void protocol_handler_router_destroy(protocol_handler_router_t router)
 {
     if (!router)
         return;
-    AGENTRT_MEMSET(router->handlers, 0, sizeof(router->handlers));
+    AIRY_MEMSET(router->handlers, 0, sizeof(router->handlers));
     router->handler_count = 0;
-    AGENTRT_FREE(router);
+    AIRY_FREE(router);
 }
 
 protocol_handler_route_result_t protocol_handler_router_register(protocol_handler_router_t router,
@@ -155,7 +155,7 @@ protocol_handler_route_result_t protocol_handler_router_register(protocol_handle
         }
     }
 
-    AGENTRT_STRNCPY_TERM(router->handlers[router->handler_count].name, protocol_name, MAX_HANDLER_NAME);
+    AIRY_STRNCPY_TERM(router->handlers[router->handler_count].name, protocol_name, MAX_HANDLER_NAME);
     router->handlers[router->handler_count].name[MAX_HANDLER_NAME - 1] = '\0';
     router->handlers[router->handler_count].context = handler_context;
     router->handlers[router->handler_count].adapter = NULL;

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
 // @owner: team-B
 /**
- * @file agentrt_protocol_interface.h
+ * @file airy_protocol_interface.h
  * @brief AgentRT Protocol System Unified Interface Definition
  *
  * 定义 AgentRT 协议系统的公共接口契约，作为所有协议适配器、网关、SDK 的统一抽象层。
@@ -11,8 +11,8 @@
  * 迁移至: agentrt/protocols/include/ (2026-04-19 interfaces删除重构)
  */
 
-#ifndef AGENTRT_PROTOCOL_INTERFACE_H
-#define AGENTRT_PROTOCOL_INTERFACE_H
+#ifndef AIRY_RT_PROTOCOL_INTERFACE_H
+#define AIRY_RT_PROTOCOL_INTERFACE_H
 
 #include "unified_protocol.h"
 
@@ -227,4 +227,4 @@ protocol_type_t proto_interface_parse_type(const char *name);
 }
 #endif
 
-#endif /* AGENTRT_PROTOCOL_INTERFACE_H */
+#endif /* AIRY_RT_PROTOCOL_INTERFACE_H */

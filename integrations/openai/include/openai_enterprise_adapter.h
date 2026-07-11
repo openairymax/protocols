@@ -22,8 +22,8 @@
  * @see unified_protocol.h
  */
 
-#ifndef AGENTRT_OPENAI_ENTERPRISE_ADAPTER_H
-#define AGENTRT_OPENAI_ENTERPRISE_ADAPTER_H
+#ifndef AIRY_RT_OPENAI_ENTERPRISE_ADAPTER_H
+#define AIRY_RT_OPENAI_ENTERPRISE_ADAPTER_H
 
 #include "unified_protocol.h"
 
@@ -237,4 +237,4 @@ void openai_model_destroy(openai_model_t *model);
 }
 #endif
 
-#endif /* AGENTRT_OPENAI_ENTERPRISE_ADAPTER_H */
+#endif /* AIRY_RT_OPENAI_ENTERPRISE_ADAPTER_H */

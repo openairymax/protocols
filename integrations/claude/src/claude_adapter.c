@@ -6,7 +6,7 @@
  * @brief Anthropic Claude API Adapter Implementation
  *
  * Production implementation using real Claude API via HTTPS.
- * Requires AGENTRT_HAS_CURL to be defined for compilation.
+ * Requires AIRY_HAS_CURL to be defined for compilation.
  *
  * BAN-19 合规：无 curl 时 fail-closed，不使用 mock/模板生成假响应。
  */
@@ -31,7 +31,7 @@
 #include <time.h>
 
 
-#ifdef AGENTRT_HAS_CURL
+#ifdef AIRY_HAS_CURL
 #include <cjson/cJSON.h>
 /* P0.18.2: 引入 cjson_helpers.h 提供 CJSON_PARSE_GUARD/CJSON_AUTO_FREE 宏 */
 #include <cjson_helpers.h>
@@ -41,7 +41,7 @@
 #define CLAUDE_MAX_RESPONSE_LEN 4096
 #define CLAUDE_STREAM_CHUNK_SIZE 10
 
-#ifdef AGENTRT_HAS_CURL
+#ifdef AIRY_HAS_CURL
 
 typedef struct {
     char *data;
@@ -52,7 +52,7 @@ static size_t claude_curl_write_cb(void *ptr, size_t size, size_t nmemb, void *u
 {
     claude_curl_buffer_t *buf = (claude_curl_buffer_t *)userdata;
     size_t total = size * nmemb;
-    char *new_data = (char *)AGENTRT_REALLOC(buf->data, buf->size + total + 1);
+    char *new_data = (char *)AIRY_REALLOC(buf->data, buf->size + total + 1);
     if (!new_data)
         return 0;
     buf->data = new_data;
@@ -66,11 +66,11 @@ static int claude_api_call(const char *api_key, const char *base_url, const char
                            char *out_buf, size_t buf_len)
 {
     if (!api_key || !request_json || !out_buf)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     CURL *curl = curl_easy_init();
     if (!curl)
-        return AGENTRT_ERR_SYS_RESOURCE;
+        return AIRY_ERR_SYS_RESOURCE;
 
     claude_curl_buffer_t response_buf = {.data = NULL, .size = 0};
 
@@ -101,8 +101,8 @@ static int claude_api_call(const char *api_key, const char *base_url, const char
     curl_easy_cleanup(curl);
 
     if (res != CURLE_OK) {
-        AGENTRT_FREE(response_buf.data);
-        return AGENTRT_ERR_IO;
+        AIRY_FREE(response_buf.data);
+        return AIRY_ERR_IO;
     }
 
     if (http_code == 200 && response_buf.data) {
@@ -117,7 +117,7 @@ static int claude_api_call(const char *api_key, const char *base_url, const char
                     if (text && text->valuestring) {
                         snprintf(out_buf, buf_len, "%s", text->valuestring);
                         /* root 由 CJSON_AUTO_FREE 自动释放 */
-                        AGENTRT_FREE(response_buf.data);
+                        AIRY_FREE(response_buf.data);
                         return (int)strlen(out_buf);
                     }
                 }
@@ -126,8 +126,8 @@ static int claude_api_call(const char *api_key, const char *base_url, const char
         } while (0);
     }
 
-    AGENTRT_FREE(response_buf.data);
-    return AGENTRT_ERR_LLM_PROVIDER_FAIL;
+    AIRY_FREE(response_buf.data);
+    return AIRY_ERR_LLM_PROVIDER_FAIL;
 }
 
 #endif
@@ -155,7 +155,7 @@ static const char *claude_model_id_to_api_name(claude_model_id_t id);
 static int claude_generate_response(const char *user_msg, const char *system_ctx, char *out_buf,
                                     size_t buf_len)
 {
-#ifndef AGENTRT_HAS_CURL
+#ifndef AIRY_HAS_CURL
     (void)user_msg;
     (void)system_ctx;
     if (out_buf && buf_len > 0)
@@ -163,13 +163,13 @@ static int claude_generate_response(const char *user_msg, const char *system_ctx
     return -ENOSYS;
 #else
     if (!user_msg || !out_buf || buf_len == 0)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     if (!g_claude_proto_context)
-        return AGENTRT_ERR_INVALID_PARAM;
+        return AIRY_ERR_INVALID_PARAM;
     claude_adapter_context_t *ctx = (claude_adapter_context_t *)g_claude_proto_context;
     if (!ctx->config.api_key || !ctx->config.api_key[0])
-        return AGENTRT_ERR_INVALID_PARAM;
+        return AIRY_ERR_INVALID_PARAM;
 
     cJSON *req = cJSON_CreateObject();
     cJSON_AddStringToObject(req, "model", claude_model_id_to_api_name(ctx->config.default_model));
@@ -191,9 +191,9 @@ static int claude_generate_response(const char *user_msg, const char *system_ctx
     char *req_json = cJSON_PrintUnformatted(req);
     int result =
         claude_api_call(ctx->config.api_key, ctx->config.base_url, req_json, out_buf, buf_len);
-    AGENTRT_FREE(req_json);
+    AIRY_FREE(req_json);
     cJSON_Delete(req);
-    return result > 0 ? result : AGENTRT_ERR_LLM_PROVIDER_FAIL;
+    return result > 0 ? result : AIRY_ERR_LLM_PROVIDER_FAIL;
 #endif
 }
 
@@ -221,12 +221,12 @@ static int claude_estimate_tokens(const char *text)
 static int claude_proto_init(void *context)
 {
     if (!context)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     claude_config_t cfg = claude_config_default();
     claude_adapter_context_t *ctx = claude_adapter_create(&cfg);
     if (!ctx)
-        return AGENTRT_ERR_INVALID_PARAM;
+        return AIRY_ERR_INVALID_PARAM;
 
     g_claude_proto_context = ctx;
     *(void **)context = ctx;
@@ -246,18 +246,18 @@ static int claude_proto_destroy(void *context)
 static int claude_proto_handle_request(void *context, const void *req, void **resp)
 {
     if (!context || !req || !resp)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     claude_adapter_context_t *ctx = (claude_adapter_context_t *)context;
     if (!ctx->initialized)
-        return AGENTRT_ERR_SYS_NOT_INIT;
+        return AIRY_ERR_SYS_NOT_INIT;
 
     const unified_message_t *request = (const unified_message_t *)req;
 
     const char *user_content = "";
     const char *system_content = "";
 
-#ifdef AGENTRT_HAS_CURL
+#ifdef AIRY_HAS_CURL
     if (request->payload) {
         /* P0.18.2: 模式 C — 用 do { ... } while (0) + break 配合 CJSON_PARSE_GUARD */
         do {
@@ -290,19 +290,19 @@ static int claude_proto_handle_request(void *context, const void *req, void **re
         user_content = (const char *)request->body;
 
     char resp_text[CLAUDE_MAX_RESPONSE_LEN];
-    AGENTRT_MEMSET(resp_text, 0, sizeof(resp_text));
+    AIRY_MEMSET(resp_text, 0, sizeof(resp_text));
     claude_generate_response(user_content, system_content, resp_text, sizeof(resp_text));
 
-    unified_message_t *response = (unified_message_t *)AGENTRT_CALLOC(1, sizeof(unified_message_t));
+    unified_message_t *response = (unified_message_t *)AIRY_CALLOC(1, sizeof(unified_message_t));
     if (!response)
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
 
     size_t resp_len = strlen(resp_text);
-    response->payload = AGENTRT_STRDUP(resp_text);
+    response->payload = AIRY_STRDUP(resp_text);
     response->payload_size = resp_len;
     response->status = 200;
     if (request) {
-        AGENTRT_STRNCPY_TERM(response->correlation_id, request->correlation_id, sizeof(response->correlation_id));
+        AIRY_STRNCPY_TERM(response->correlation_id, request->correlation_id, sizeof(response->correlation_id));
     }
 
     ctx->total_requests++;
@@ -318,7 +318,7 @@ static int claude_proto_get_version(void *context, char *buf, size_t max_size)
 {
     (void)context;
     if (!buf || max_size == 0)
-        return AGENTRT_ERR_INVALID_PARAM;
+        return AIRY_ERR_INVALID_PARAM;
     const char *ver = claude_adapter_version();
     size_t len = strlen(ver);
     if (len >= max_size)
@@ -463,20 +463,20 @@ claude_adapter_context_t *claude_adapter_create(const claude_config_t *config)
         return NULL;
 
     claude_adapter_context_t *ctx =
-        (claude_adapter_context_t *)AGENTRT_CALLOC(1, sizeof(claude_adapter_context_t));
+        (claude_adapter_context_t *)AIRY_CALLOC(1, sizeof(claude_adapter_context_t));
     if (!ctx)
         return NULL;
 
     __builtin_memcpy(&ctx->config, config, sizeof(claude_config_t));
 
     if (config->api_key)
-        ctx->config.api_key = AGENTRT_STRDUP(config->api_key);
+        ctx->config.api_key = AIRY_STRDUP(config->api_key);
     if (config->base_url)
-        ctx->config.base_url = AGENTRT_STRDUP(config->base_url);
+        ctx->config.base_url = AIRY_STRDUP(config->base_url);
     if (config->system_prompt)
-        ctx->config.system_prompt = AGENTRT_STRDUP(config->system_prompt);
+        ctx->config.system_prompt = AIRY_STRDUP(config->system_prompt);
     if (config->metadata_json)
-        ctx->config.metadata_json = AGENTRT_STRDUP(config->metadata_json);
+        ctx->config.metadata_json = AIRY_STRDUP(config->metadata_json);
 
     ctx->initialized = true;
     ctx->total_requests = 0;
@@ -494,15 +494,15 @@ void claude_adapter_destroy(claude_adapter_context_t *ctx)
 
     if (ctx->config.api_key) {
         size_t key_len = strlen(ctx->config.api_key);
-        AGENTRT_MEMSET(ctx->config.api_key, 0, key_len);
-        AGENTRT_FREE(ctx->config.api_key);
+        AIRY_MEMSET(ctx->config.api_key, 0, key_len);
+        AIRY_FREE(ctx->config.api_key);
     }
-    AGENTRT_FREE(ctx->config.base_url);
-    AGENTRT_FREE(ctx->config.system_prompt);
-    AGENTRT_FREE(ctx->config.metadata_json);
+    AIRY_FREE(ctx->config.base_url);
+    AIRY_FREE(ctx->config.system_prompt);
+    AIRY_FREE(ctx->config.metadata_json);
 
-    AGENTRT_MEMSET(ctx, 0, sizeof(claude_adapter_context_t));
-    AGENTRT_FREE(ctx);
+    AIRY_MEMSET(ctx, 0, sizeof(claude_adapter_context_t));
+    AIRY_FREE(ctx);
 }
 
 bool claude_adapter_is_initialized(const claude_adapter_context_t *ctx)
@@ -520,13 +520,13 @@ int claude_messages_create(claude_adapter_context_t *ctx, const claude_message_t
                            const char *system_prompt, claude_response_t *response)
 {
     if (!ctx || !response)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     if (!ctx->initialized)
-        return AGENTRT_ERR_SYS_NOT_INIT;
+        return AIRY_ERR_SYS_NOT_INIT;
 
     ctx->total_requests++;
 
-    AGENTRT_MEMSET(response, 0, sizeof(claude_response_t));
+    AIRY_MEMSET(response, 0, sizeof(claude_response_t));
 
     if (ctx->message_handler) {
         const char *model_name = claude_model_id_to_api_name(ctx->config.default_model);
@@ -545,9 +545,9 @@ int claude_messages_create(claude_adapter_context_t *ctx, const claude_message_t
         return ret;
     }
 
-#ifdef AGENTRT_HAS_CURL
+#ifdef AIRY_HAS_CURL
     if (!ctx->config.api_key || !ctx->config.api_key[0])
-        return AGENTRT_ERR_UNKNOWN;
+        return AIRY_ERR_UNKNOWN;
 
     const char *model_name = claude_model_id_to_api_name(ctx->config.default_model);
     const char *user_content = "";
@@ -587,23 +587,23 @@ int claude_messages_create(claude_adapter_context_t *ctx, const claude_message_t
     cJSON_Delete(req);
 
     char api_response[8192];
-    AGENTRT_MEMSET(api_response, 0, sizeof(api_response));
+    AIRY_MEMSET(api_response, 0, sizeof(api_response));
     int api_result = claude_api_call(ctx->config.api_key, ctx->config.base_url, req_json,
                                      api_response, sizeof(api_response));
-    AGENTRT_FREE(req_json);
+    AIRY_FREE(req_json);
 
     if (api_result <= 0)
-        return AGENTRT_ERR_UNKNOWN;
+        return AIRY_ERR_UNKNOWN;
 
     /* P0.18.2: 模式 A — CJSON_PARSE_GUARD 自动释放 + NULL 检查 */
-    CJSON_PARSE_GUARD(root, api_response, { return AGENTRT_ERR_UNKNOWN; });
+    CJSON_PARSE_GUARD(root, api_response, { return AIRY_ERR_UNKNOWN; });
 
     static uint32_t msg_counter = 0;
     msg_counter++;
     char resp_id[64];
     snprintf(resp_id, sizeof(resp_id), "msg_%08x", msg_counter);
-    response->id = AGENTRT_STRDUP(resp_id);
-    response->model = AGENTRT_STRDUP(model_name);
+    response->id = AIRY_STRDUP(resp_id);
+    response->model = AIRY_STRDUP(model_name);
     response->role = CLAUDE_ROLE_ASSISTANT;
     response->stop_reason = CLAUDE_STOP_END_TURN;
 
@@ -613,7 +613,7 @@ int claude_messages_create(claude_adapter_context_t *ctx, const claude_message_t
         block_count = cJSON_GetArraySize(content_arr);
 
     if (block_count > 0) {
-        response->content_blocks = (claude_content_block_t *)AGENTRT_CALLOC(
+        response->content_blocks = (claude_content_block_t *)AIRY_CALLOC(
             (size_t)block_count, sizeof(claude_content_block_t));
         response->block_count = (size_t)block_count;
         for (int i = 0; i < block_count; i++) {
@@ -621,19 +621,19 @@ int claude_messages_create(claude_adapter_context_t *ctx, const claude_message_t
             cJSON *type = cJSON_GetObjectItem(block, "type");
             if (type && type->valuestring && strcmp(type->valuestring, "text") == 0) {
                 cJSON *text = cJSON_GetObjectItem(block, "text");
-                response->content_blocks[i].type = AGENTRT_STRDUP("text");
+                response->content_blocks[i].type = AIRY_STRDUP("text");
                 response->content_blocks[i].content.text =
-                    AGENTRT_STRDUP(text && text->valuestring ? text->valuestring : "");
+                    AIRY_STRDUP(text && text->valuestring ? text->valuestring : "");
             } else if (type && type->valuestring && strcmp(type->valuestring, "tool_use") == 0) {
                 cJSON *id = cJSON_GetObjectItem(block, "id");
                 cJSON *name = cJSON_GetObjectItem(block, "name");
                 cJSON *input = cJSON_GetObjectItem(block, "input");
-                response->content_blocks[i].type = AGENTRT_STRDUP("tool_use");
+                response->content_blocks[i].type = AIRY_STRDUP("tool_use");
                 response->content_blocks[i].content.tool_use.id =
-                    AGENTRT_STRDUP(id && id->valuestring ? id->valuestring : "");
+                    AIRY_STRDUP(id && id->valuestring ? id->valuestring : "");
                 response->content_blocks[i].content.tool_use.name =
-                    AGENTRT_STRDUP(name && name->valuestring ? name->valuestring : "");
-                char *input_str = input ? cJSON_PrintUnformatted(input) : AGENTRT_STRDUP("{}");
+                    AIRY_STRDUP(name && name->valuestring ? name->valuestring : "");
+                char *input_str = input ? cJSON_PrintUnformatted(input) : AIRY_STRDUP("{}");
                 response->content_blocks[i].content.tool_use.input_json = input_str;
                 ctx->total_tool_calls++;
             }
@@ -663,9 +663,9 @@ int claude_messages_stream(claude_adapter_context_t *ctx, const claude_message_t
                            void *user_data)
 {
     if (!ctx || !handler)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     if (!ctx->initialized)
-        return AGENTRT_ERR_SYS_NOT_INIT;
+        return AIRY_ERR_SYS_NOT_INIT;
 
     ctx->total_requests++;
 
@@ -680,7 +680,7 @@ int claude_messages_stream(claude_adapter_context_t *ctx, const claude_message_t
     }
 
     char full_response[CLAUDE_MAX_RESPONSE_LEN];
-    AGENTRT_MEMSET(full_response, 0, sizeof(full_response));
+    AIRY_MEMSET(full_response, 0, sizeof(full_response));
     int gen_result =
         claude_generate_response(user_content, sys_ctx, full_response, sizeof(full_response));
     if (gen_result < 0)
@@ -715,7 +715,7 @@ int claude_messages_stream(claude_adapter_context_t *ctx, const claude_message_t
         pos += cLen;
 
         claude_stream_event_t event;
-        AGENTRT_MEMSET(&event, 0, sizeof(event));
+        AIRY_MEMSET(&event, 0, sizeof(event));
         event.text = chunk_buf;
         event.stop_reason = (pos >= resp_len) ? CLAUDE_STOP_END_TURN : 0;
         event.is_final = (pos >= resp_len);
@@ -731,9 +731,9 @@ int claude_count_tokens(claude_adapter_context_t *ctx, const claude_message_t *m
                         size_t message_count, const char *system_prompt, int *token_count)
 {
     if (!ctx || !token_count)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     if (!ctx->initialized)
-        return AGENTRT_ERR_SYS_NOT_INIT;
+        return AIRY_ERR_SYS_NOT_INIT;
 
     int total_chars = 0;
     if (system_prompt)
@@ -750,17 +750,17 @@ int claude_count_tokens(claude_adapter_context_t *ctx, const claude_message_t *m
 int claude_list_models(claude_adapter_context_t *ctx, claude_model_info_t **models, size_t *count)
 {
     if (!ctx || !models || !count)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
-    *models = (claude_model_info_t *)AGENTRT_CALLOC((size_t)g_builtin_model_count,
+    *models = (claude_model_info_t *)AIRY_CALLOC((size_t)g_builtin_model_count,
                                                     sizeof(claude_model_info_t));
     if (!*models)
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        return AIRY_ERR_OUT_OF_MEMORY;
 
     for (int i = 0; i < g_builtin_model_count; i++) {
         (*models)[i] = g_builtin_models[i];
-        (*models)[i].api_name = AGENTRT_STRDUP(g_builtin_models[i].api_name);
-        (*models)[i].display_name = AGENTRT_STRDUP(g_builtin_models[i].display_name);
+        (*models)[i].api_name = AIRY_STRDUP(g_builtin_models[i].api_name);
+        (*models)[i].display_name = AIRY_STRDUP(g_builtin_models[i].display_name);
     }
 
     *count = (size_t)g_builtin_model_count;
@@ -771,7 +771,7 @@ int claude_set_message_handler(claude_adapter_context_t *ctx, claude_message_han
                                void *user_data)
 {
     if (!ctx)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     ctx->message_handler = handler;
     ctx->message_handler_data = user_data;
     return 0;
@@ -781,7 +781,7 @@ int claude_set_stream_handler(claude_adapter_context_t *ctx, claude_stream_handl
                               void *user_data)
 {
     if (!ctx)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     ctx->stream_handler = handler;
     ctx->stream_handler_data = user_data;
     return 0;
@@ -791,7 +791,7 @@ int claude_set_tool_use_handler(claude_adapter_context_t *ctx, claude_tool_use_h
                                 void *user_data)
 {
     if (!ctx)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
     ctx->tool_use_handler = handler;
     ctx->tool_use_handler_data = user_data;
     return 0;
@@ -800,7 +800,7 @@ int claude_set_tool_use_handler(claude_adapter_context_t *ctx, claude_tool_use_h
 int claude_get_usage_statistics(claude_adapter_context_t *ctx, char *stats_json, size_t buffer_size)
 {
     if (!ctx || !stats_json || buffer_size < 64)
-        return AGENTRT_ERR_NULL_POINTER;
+        return AIRY_ERR_NULL_POINTER;
 
     int written =
         snprintf(stats_json, buffer_size,
@@ -849,62 +849,62 @@ void claude_response_destroy(claude_response_t *resp)
 {
     if (!resp)
         return;
-    AGENTRT_FREE(resp->id);
-    AGENTRT_FREE(resp->model);
+    AIRY_FREE(resp->id);
+    AIRY_FREE(resp->model);
     for (size_t i = 0; i < resp->block_count; i++) {
         if (resp->content_blocks[i].type) {
             if (strcmp(resp->content_blocks[i].type, "text") == 0)
-                AGENTRT_FREE(resp->content_blocks[i].content.text);
+                AIRY_FREE(resp->content_blocks[i].content.text);
             else if (strcmp(resp->content_blocks[i].type, "tool_use") == 0) {
-                AGENTRT_FREE(resp->content_blocks[i].content.tool_use.id);
-                AGENTRT_FREE(resp->content_blocks[i].content.tool_use.name);
-                AGENTRT_FREE(resp->content_blocks[i].content.tool_use.input_json);
+                AIRY_FREE(resp->content_blocks[i].content.tool_use.id);
+                AIRY_FREE(resp->content_blocks[i].content.tool_use.name);
+                AIRY_FREE(resp->content_blocks[i].content.tool_use.input_json);
             } else if (strcmp(resp->content_blocks[i].type, "tool_result") == 0) {
-                AGENTRT_FREE(resp->content_blocks[i].content.tool_result.tool_use_id);
-                AGENTRT_FREE(resp->content_blocks[i].content.tool_result.content);
+                AIRY_FREE(resp->content_blocks[i].content.tool_result.tool_use_id);
+                AIRY_FREE(resp->content_blocks[i].content.tool_result.content);
             }
-            AGENTRT_FREE(resp->content_blocks[i].type);
+            AIRY_FREE(resp->content_blocks[i].type);
         }
     }
-    AGENTRT_FREE(resp->content_blocks);
-    AGENTRT_MEMSET(resp, 0, sizeof(claude_response_t));
+    AIRY_FREE(resp->content_blocks);
+    AIRY_MEMSET(resp, 0, sizeof(claude_response_t));
 }
 
 void claude_message_destroy(claude_message_t *msg)
 {
     if (!msg)
         return;
-    AGENTRT_FREE(msg->id);
-    AGENTRT_FREE(msg->content);
+    AIRY_FREE(msg->id);
+    AIRY_FREE(msg->content);
     for (size_t i = 0; i < msg->breakpoint_count; i++)
-        AGENTRT_FREE(msg->cache_control_breakpoints[i]);
-    AGENTRT_FREE(msg->cache_control_breakpoints);
-    AGENTRT_MEMSET(msg, 0, sizeof(claude_message_t));
+        AIRY_FREE(msg->cache_control_breakpoints[i]);
+    AIRY_FREE(msg->cache_control_breakpoints);
+    AIRY_MEMSET(msg, 0, sizeof(claude_message_t));
 }
 
 void claude_tool_def_destroy(claude_tool_def_t *tool)
 {
     if (!tool)
         return;
-    AGENTRT_FREE(tool->name);
-    AGENTRT_FREE(tool->description);
-    AGENTRT_FREE(tool->input_schema_json);
-    AGENTRT_MEMSET(tool, 0, sizeof(claude_tool_def_t));
+    AIRY_FREE(tool->name);
+    AIRY_FREE(tool->description);
+    AIRY_FREE(tool->input_schema_json);
+    AIRY_MEMSET(tool, 0, sizeof(claude_tool_def_t));
 }
 
 void claude_model_info_destroy(claude_model_info_t *info)
 {
     if (!info)
         return;
-    AGENTRT_FREE(info->api_name);
-    AGENTRT_FREE(info->display_name);
-    AGENTRT_MEMSET(info, 0, sizeof(claude_model_info_t));
+    AIRY_FREE(info->api_name);
+    AIRY_FREE(info->display_name);
+    AIRY_MEMSET(info, 0, sizeof(claude_model_info_t));
 }
 
 void claude_stream_event_destroy(claude_stream_event_t *event)
 {
     if (!event)
         return;
-    AGENTRT_FREE(event->text);
-    AGENTRT_MEMSET(event, 0, sizeof(claude_stream_event_t));
+    AIRY_FREE(event->text);
+    AIRY_MEMSET(event, 0, sizeof(claude_stream_event_t));
 }

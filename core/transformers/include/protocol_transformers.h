@@ -11,13 +11,13 @@
  * - JSON-RPC 2.0 ↔ OpenAI API
  * - JSON-RPC 2.0 ↔ OpenJiuwen
  *
- * 转换规则遵循 Capital_Specifications/agentrt_contract/protocol_contract.md
+ * 转换规则遵循 Capital_Specifications/airy_contract/protocol_contract.md
  *
  * @since 0.1.0
  */
 
-#ifndef AGENTRT_PROTOCOL_TRANSFORMERS_H
-#define AGENTRT_PROTOCOL_TRANSFORMERS_H
+#ifndef AIRY_RT_PROTOCOL_TRANSFORMERS_H
+#define AIRY_RT_PROTOCOL_TRANSFORMERS_H
 
 #include "unified_protocol.h"
 
@@ -193,4 +193,4 @@ const char **protocol_list_transformers(size_t *count);
 }
 #endif
 
-#endif /* AGENTRT_PROTOCOL_TRANSFORMERS_H */
+#endif /* AIRY_RT_PROTOCOL_TRANSFORMERS_H */

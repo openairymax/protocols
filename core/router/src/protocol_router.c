@@ -80,7 +80,7 @@ static int default_decision_func(const unified_message_t *message, const protoco
 protocol_router_handle_t protocol_router_create(protocol_type_t default_protocol)
 {
     struct protocol_router_s *router =
-        (struct protocol_router_s *)AGENTRT_CALLOC(1, sizeof(struct protocol_router_s));
+        (struct protocol_router_s *)AIRY_CALLOC(1, sizeof(struct protocol_router_s));
     if (!router) {
         return NULL;
     }
@@ -113,15 +113,15 @@ void protocol_router_destroy(protocol_router_handle_t router)
         node = next;
     }
 
-    AGENTRT_FREE(r);
+    AIRY_FREE(r);
 }
 
 int protocol_router_add_rule(protocol_router_handle_t router, const protocol_rule_t *rule,
                              message_transformer_t transformer)
 {
     if (!router || !rule) {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_router_add_rule: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_router_add_rule: failed");
+        return AIRY_ERR_UNKNOWN;
     }
 
     struct protocol_router_s *r = (struct protocol_router_s *)router;
@@ -129,8 +129,8 @@ int protocol_router_add_rule(protocol_router_handle_t router, const protocol_rul
     // 创建规则节点
     rule_node_t *node = create_rule_node(rule, transformer);
     if (!node) {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "create_rule_node: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "create_rule_node: failed");
+        return AIRY_ERR_UNKNOWN;
     }
 
     // 添加到链表（按优先级排序）
@@ -150,14 +150,14 @@ int protocol_router_route(protocol_router_handle_t router, const unified_message
                           unified_message_t *transformed)
 {
     if (!router || !message || !transformed) {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_router_route: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_router_route: failed");
+        return AIRY_ERR_UNKNOWN;
     }
 
     struct protocol_router_s *r = (struct protocol_router_s *)router;
     r->total_messages_routed++;
 
-    uint64_t start_time = agentrt_time_ns();
+    uint64_t start_time = airy_time_ns();
 
     // 收集所有规则到临时数组供决策函数使用
     protocol_rule_t *rule_array = NULL;
@@ -199,7 +199,7 @@ int protocol_router_route(protocol_router_handle_t router, const unified_message
         transformed->protocol = r->default_protocol;
 
         {
-            uint64_t end_time = agentrt_time_ns();
+            uint64_t end_time = airy_time_ns();
             if (start_time > 0) {
                 r->total_conversion_time_ns += (end_time - start_time);
             }
@@ -207,7 +207,7 @@ int protocol_router_route(protocol_router_handle_t router, const unified_message
 
         r->messages_routed_success++;
         if (rule_array)
-            AGENTRT_FREE(rule_array);
+            AIRY_FREE(rule_array);
         return 0;
     }
 
@@ -225,11 +225,11 @@ int protocol_router_route(protocol_router_handle_t router, const unified_message
             transformed->protocol = matched_node->rule.target_protocol;
         }
         if (!transformed->endpoint[0] && matched_node->rule.target_endpoint) {
-            AGENTRT_STRNCPY_TERM(transformed->endpoint, matched_node->rule.target_endpoint, sizeof(transformed->endpoint));
+            AIRY_STRNCPY_TERM(transformed->endpoint, matched_node->rule.target_endpoint, sizeof(transformed->endpoint));
         }
     }
 
-    uint64_t end_time = agentrt_time_ns();
+    uint64_t end_time = airy_time_ns();
     if (1) {
         if (start_time > 0) {
             r->total_conversion_time_ns += (end_time - start_time);
@@ -243,7 +243,7 @@ int protocol_router_route(protocol_router_handle_t router, const unified_message
     }
 
     if (rule_array)
-        AGENTRT_FREE(rule_array);
+        AIRY_FREE(rule_array);
     return result;
 }
 
@@ -251,8 +251,8 @@ int protocol_router_route_batch(protocol_router_handle_t router, const unified_m
                                 size_t count, unified_message_t *transformed)
 {
     if (!router || !messages || !transformed || count == 0) {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_router_route_batch: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_router_route_batch: failed");
+        return AIRY_ERR_UNKNOWN;
     }
 
     int success_count = 0;
@@ -270,8 +270,8 @@ int protocol_router_set_decision_func(protocol_router_handle_t router,
                                       route_decision_func_t decision_func)
 {
     if (!router) {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_router_set_decision_func: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_router_set_decision_func: failed");
+        return AIRY_ERR_UNKNOWN;
     }
 
     struct protocol_router_s *r = (struct protocol_router_s *)router;
@@ -283,8 +283,8 @@ int protocol_router_set_decision_func(protocol_router_handle_t router,
 int protocol_router_get_stats(protocol_router_handle_t router, char **stats_json)
 {
     if (!router || !stats_json) {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_router_get_stats: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_router_get_stats: failed");
+        return AIRY_ERR_UNKNOWN;
     }
 
     struct protocol_router_s *r = (struct protocol_router_s *)router;
@@ -308,10 +308,10 @@ int protocol_router_get_stats(protocol_router_handle_t router, char **stats_json
                                r->messages_routed_failed, avg_time, r->rule_count) +
                       1;
 
-    char *buf = (char *)AGENTRT_MALLOC(buf_size);
+    char *buf = (char *)AIRY_MALLOC(buf_size);
     if (!buf) {
-        agentrt_error_push_ex(AGENTRT_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "AGENTRT_MALLOC: allocation failed");
-        return AGENTRT_ERR_OUT_OF_MEMORY;
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "AIRY_MALLOC: allocation failed");
+        return AIRY_ERR_OUT_OF_MEMORY;
     }
 
     snprintf(buf, buf_size, fmt, /* flawfinder: ignore - pre-sized buffer from prior probe */
@@ -354,25 +354,25 @@ int protocol_transformer_default(const unified_message_t *source, unified_messag
                                  void *context)
 {
     if (!source || !target) {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_transformer_default: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_transformer_default: failed");
+        return AIRY_ERR_UNKNOWN;
     }
 
     *target = *source;
 
     if (source->payload && source->payload_size > 0) {
-        void *new_payload = AGENTRT_MALLOC(source->payload_size);
+        void *new_payload = AIRY_MALLOC(source->payload_size);
         if (!new_payload)
             {
-            agentrt_error_push_ex(AGENTRT_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "if: allocation failed");
-            return AGENTRT_ERR_OUT_OF_MEMORY;
+            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "if: allocation failed");
+            return AIRY_ERR_OUT_OF_MEMORY;
             }
         __builtin_memcpy(new_payload, source->payload, source->payload_size);
         target->payload = new_payload;
     }
 
     if (source->body && source->body_length > 0) {
-        void *new_body = AGENTRT_MALLOC(source->body_length);
+        void *new_body = AIRY_MALLOC(source->body_length);
         if (new_body) {
             __builtin_memcpy(new_body, source->body, source->body_length);
             target->body = new_body;
@@ -388,7 +388,7 @@ int protocol_transformer_default(const unified_message_t *source, unified_messag
 
 static rule_node_t *create_rule_node(const protocol_rule_t *rule, message_transformer_t transformer)
 {
-    rule_node_t *node = (rule_node_t *)AGENTRT_CALLOC(1, sizeof(rule_node_t));
+    rule_node_t *node = (rule_node_t *)AIRY_CALLOC(1, sizeof(rule_node_t));
     if (!node) {
         return NULL;
     }
@@ -398,7 +398,7 @@ static rule_node_t *create_rule_node(const protocol_rule_t *rule, message_transf
     // 复制字符串字段
     if (rule->source_endpoint) {
         size_t len = strlen(rule->source_endpoint) + 1;
-        char *copy = (char *)AGENTRT_MALLOC(len);
+        char *copy = (char *)AIRY_MALLOC(len);
         if (copy) {
             safe_strcpy(copy, rule->source_endpoint, len);
             node->rule.source_endpoint = copy;
@@ -407,7 +407,7 @@ static rule_node_t *create_rule_node(const protocol_rule_t *rule, message_transf
 
     if (rule->target_endpoint) {
         size_t len = strlen(rule->target_endpoint) + 1;
-        char *copy = (char *)AGENTRT_MALLOC(len);
+        char *copy = (char *)AIRY_MALLOC(len);
         if (copy) {
             safe_strcpy(copy, rule->target_endpoint, len);
             node->rule.target_endpoint = copy;
@@ -426,18 +426,18 @@ static void destroy_rule_node(rule_node_t *node)
         return;
 
     if (node->rule.source_endpoint) {
-        AGENTRT_FREE((void *)node->rule.source_endpoint);
+        AIRY_FREE((void *)node->rule.source_endpoint);
     }
 
     if (node->rule.target_endpoint) {
-        AGENTRT_FREE((void *)node->rule.target_endpoint);
+        AIRY_FREE((void *)node->rule.target_endpoint);
     }
 
     if (node->rule.transformer_context) {
-        AGENTRT_FREE(node->rule.transformer_context);
+        AIRY_FREE(node->rule.transformer_context);
     }
 
-    AGENTRT_FREE(node);
+    AIRY_FREE(node);
 }
 
 static int match_endpoint(const char *pattern, const char *endpoint)
@@ -630,7 +630,7 @@ static int __attribute__((unused)) match_endpoint_extract(const char *pattern, c
                     return 1;
                 if (info && info->param_count < ROUTER_MAX_PARAMS) {
                     route_param_t *param = &info->params[info->param_count];
-                    AGENTRT_STRNCPY_TERM(param->name, "wildcard", ROUTER_PARAM_NAME_LEN);
+                    AIRY_STRNCPY_TERM(param->name, "wildcard", ROUTER_PARAM_NAME_LEN);
                     const char *rest = e;
                     const char *next_seg = strchr(e, '/');
                     size_t vlen = next_seg ? (size_t)(next_seg - e) : strlen(e);
@@ -650,7 +650,7 @@ static int __attribute__((unused)) match_endpoint_extract(const char *pattern, c
                 p++;
                 if (info && info->param_count < ROUTER_MAX_PARAMS) {
                     route_param_t *param = &info->params[info->param_count];
-                    AGENTRT_STRNCPY_TERM(param->name, "glob", ROUTER_PARAM_NAME_LEN);
+                    AIRY_STRNCPY_TERM(param->name, "glob", ROUTER_PARAM_NAME_LEN);
                     const char *vs = e;
                     while (*e && *e != '/' && *e != '?' && *e != '#')
                         e++;
@@ -718,8 +718,8 @@ static int default_decision_func(const unified_message_t *message, const protoco
                                  size_t rule_count)
 {
     if (!message || !rules || rule_count == 0) {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "default_decision_func: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "default_decision_func: failed");
+        return AIRY_ERR_UNKNOWN;
     }
 
     // 简单决策：按顺序匹配第一个符合的规则

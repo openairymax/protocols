@@ -9,8 +9,8 @@
  * 使用此框架可实现协议无关的通信层。
  */
 
-#ifndef AGENTRT_PROTOCOLS_H
-#define AGENTRT_PROTOCOLS_H
+#ifndef AIRY_RT_PROTOCOLS_H
+#define AIRY_RT_PROTOCOLS_H
 
 #include "unified_protocol.h"
 
@@ -190,4 +190,4 @@ void protocol_stack_config_destroy(protocol_stack_config_t *config);
 
 /** @} */  // end of protocols group
 
-#endif  // AGENTRT_PROTOCOLS_H
+#endif  // AIRY_RT_PROTOCOLS_H

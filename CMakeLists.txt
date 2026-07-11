@@ -28,8 +28,8 @@ if(WIN32)
     set(PROTOCOLS_ENABLE_CHINA_ECO OFF CACHE BOOL "China Eco requires Unix" FORCE)
 endif()
 
-agentrt_print_info("[PROTOCOLS] Configuring protocols module (cJSON: ${AGENTRT_HAS_CJSON})")
-agentrt_print_info("[PROTOCOLS]   MCP: ${PROTOCOLS_ENABLE_MCP}, A2A: ON, Claude: ${PROTOCOLS_ENABLE_CLAUDE}")
+airy_print_info("[PROTOCOLS] Configuring protocols module (cJSON: ${AIRY_HAS_CJSON})")
+airy_print_info("[PROTOCOLS]   MCP: ${PROTOCOLS_ENABLE_MCP}, A2A: ON, Claude: ${PROTOCOLS_ENABLE_CLAUDE}")
 
 option(PROTOCOLS_ENABLE_MCP "Enable MCP protocol adapter" ON)
 if(WIN32)
@@ -100,7 +100,7 @@ endif()
 set(PROTOCOLS_COMMON_SOURCES
     common/src/unified_protocol.c
     common/src/protocols_impl.c
-    src/agentrt_protocol_interface.c
+    src/airy_protocol_interface.c
     src/protocol_toplevel_impl.c
 )
 
@@ -266,54 +266,54 @@ set(PROTOCOLS_ALL_HEADERS
 # ============================================================
 # 创建库目标
 # ============================================================
-add_library(agentrt_protocols ${PROTOCOLS_ALL_SOURCES})
-target_include_directories(agentrt_protocols PUBLIC ${PROTOCOLS_INCLUDE_DIRS})
+add_library(airy_protocols ${PROTOCOLS_ALL_SOURCES})
+target_include_directories(airy_protocols PUBLIC ${PROTOCOLS_INCLUDE_DIRS})
 
-set_target_properties(agentrt_protocols PROPERTIES
+set_target_properties(airy_protocols PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION 0
-    OUTPUT_NAME agentrt_protocols
+    OUTPUT_NAME airy_protocols
     C_STANDARD 11
     C_STANDARD_REQUIRED ON
     POSITION_INDEPENDENT_CODE ON
 )
 
-if(TARGET agentrt_common)
-    target_link_libraries(agentrt_protocols PRIVATE agentrt_common)
+if(TARGET airy_common)
+    target_link_libraries(airy_protocols PRIVATE airy_common)
 endif()
 if(TARGET svc_common)
-    target_link_libraries(agentrt_protocols PRIVATE svc_common)
+    target_link_libraries(airy_protocols PRIVATE svc_common)
 endif()
-target_link_libraries(agentrt_protocols PUBLIC agentrt_compile_defs)
+target_link_libraries(airy_protocols PUBLIC airy_compile_defs)
 
-if(AGENTRT_HAS_CURL)
+if(AIRY_HAS_CURL)
     if(CURL_FOUND)
-        target_link_libraries(agentrt_protocols PRIVATE ${CURL_LIBRARIES})
-        target_include_directories(agentrt_protocols PRIVATE ${CURL_INCLUDE_DIRS})
+        target_link_libraries(airy_protocols PRIVATE ${CURL_LIBRARIES})
+        target_include_directories(airy_protocols PRIVATE ${CURL_INCLUDE_DIRS})
     elseif(LIBCURL_FOUND)
-        target_link_libraries(agentrt_protocols PRIVATE ${LIBCURL_LIBRARIES})
-        target_include_directories(agentrt_protocols PRIVATE ${LIBCURL_INCLUDE_DIRS})
+        target_link_libraries(airy_protocols PRIVATE ${LIBCURL_LIBRARIES})
+        target_include_directories(airy_protocols PRIVATE ${LIBCURL_INCLUDE_DIRS})
     endif()
 endif()
-if(AGENTRT_HAS_CJSON)
+if(AIRY_HAS_CJSON)
     if(cJSON_FOUND)
-        target_link_libraries(agentrt_protocols PRIVATE cjson)
+        target_link_libraries(airy_protocols PRIVATE cjson)
     elseif(CJSON_FOUND)
-        target_link_libraries(agentrt_protocols PRIVATE ${CJSON_LIBRARIES})
-        target_include_directories(agentrt_protocols PRIVATE ${CJSON_INCLUDE_DIRS})
+        target_link_libraries(airy_protocols PRIVATE ${CJSON_LIBRARIES})
+        target_include_directories(airy_protocols PRIVATE ${CJSON_INCLUDE_DIRS})
     endif()
 endif()
 
-target_compile_definitions(agentrt_protocols PRIVATE
+target_compile_definitions(airy_protocols PRIVATE
     PROTOCOLS_VERSION="${PROJECT_VERSION}"
     PROTO_REGISTRY_MAX_ADAPTERS=32
 )
 if(MSVC)
-    target_compile_options(agentrt_protocols PRIVATE /wd4100 /wd4189)
+    target_compile_options(airy_protocols PRIVATE /wd4100 /wd4189)
 endif()
 
 # 安装目标 — 库
-install(TARGETS agentrt_protocols
+install(TARGETS airy_protocols
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
@@ -327,23 +327,23 @@ install(FILES ${PROTOCOLS_ALL_HEADERS}
 # ============================================================
 # 构建信息输出
 # ============================================================
-agentrt_print_info("")
-agentrt_print_info("=== AgentRT Protocols Module v${PROJECT_VERSION} ===")
-agentrt_print_info("  Common sources:   ${PROTOCOLS_COMMON_SOURCES}")
-agentrt_print_info("  Core sources:     ${PROTOCOLS_CORE_SOURCES}")
-agentrt_print_info("  Standard sources: ${PROTOCOLS_STANDARDS_SOURCES}")
-agentrt_print_info("  Integration src:  ${PROTOCOLS_INTEGRATIONS_SOURCES}")
-agentrt_print_info("  Framework sources:${PROTOCOLS_FRAMEWORKS_SOURCES}")
-agentrt_print_info("  Total source files: ${PROTOCOLS_ALL_SOURCES}")
-agentrt_print_info("  Total header files: ${PROTOCOLS_ALL_HEADERS}")
-agentrt_print_info("  OpenClaw:         ${PROTOCOLS_ENABLE_OPENCLAW}")
-agentrt_print_info("  Claude:           ${PROTOCOLS_ENABLE_CLAUDE}")
-agentrt_print_info("  LangChain:        ${PROTOCOLS_ENABLE_LANGCHAIN}")
-agentrt_print_info("  AutoGen:          ${PROTOCOLS_ENABLE_AUTOGEN}")
-agentrt_print_info("  AGNTCY ACP:       ${PROTOCOLS_ENABLE_AGNTCY}")
-agentrt_print_info("  China Eco:        ${PROTOCOLS_ENABLE_CHINA_ECO}")
-agentrt_print_info("==============================================")
-agentrt_print_info("")
+airy_print_info("")
+airy_print_info("=== AgentRT Protocols Module v${PROJECT_VERSION} ===")
+airy_print_info("  Common sources:   ${PROTOCOLS_COMMON_SOURCES}")
+airy_print_info("  Core sources:     ${PROTOCOLS_CORE_SOURCES}")
+airy_print_info("  Standard sources: ${PROTOCOLS_STANDARDS_SOURCES}")
+airy_print_info("  Integration src:  ${PROTOCOLS_INTEGRATIONS_SOURCES}")
+airy_print_info("  Framework sources:${PROTOCOLS_FRAMEWORKS_SOURCES}")
+airy_print_info("  Total source files: ${PROTOCOLS_ALL_SOURCES}")
+airy_print_info("  Total header files: ${PROTOCOLS_ALL_HEADERS}")
+airy_print_info("  OpenClaw:         ${PROTOCOLS_ENABLE_OPENCLAW}")
+airy_print_info("  Claude:           ${PROTOCOLS_ENABLE_CLAUDE}")
+airy_print_info("  LangChain:        ${PROTOCOLS_ENABLE_LANGCHAIN}")
+airy_print_info("  AutoGen:          ${PROTOCOLS_ENABLE_AUTOGEN}")
+airy_print_info("  AGNTCY ACP:       ${PROTOCOLS_ENABLE_AGNTCY}")
+airy_print_info("  China Eco:        ${PROTOCOLS_ENABLE_CHINA_ECO}")
+airy_print_info("==============================================")
+airy_print_info("")
 
 # ============================================================
 # Unit Tests
@@ -379,9 +379,9 @@ if(BUILD_TESTS)
             common/src/unified_protocol.c
             core/transformers/src/protocol_transformers.c
         )
-        target_compile_definitions(test_openclaw_adapter PRIVATE AGENTRT_COMPLIANCE_IMPL)
+        target_compile_definitions(test_openclaw_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
         target_include_directories(test_openclaw_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_openclaw_adapter PRIVATE agentrt_common svc_common m)
+        target_link_libraries(test_openclaw_adapter PRIVATE airy_common svc_common m)
         if(UNIX)
             target_link_libraries(test_openclaw_adapter PRIVATE pthread)
         endif()
@@ -395,9 +395,9 @@ if(BUILD_TESTS)
             common/src/unified_protocol.c
             core/transformers/src/protocol_transformers.c
         )
-        target_compile_definitions(test_agntcy_acp PRIVATE AGENTRT_COMPLIANCE_IMPL)
+        target_compile_definitions(test_agntcy_acp PRIVATE AIRY_COMPLIANCE_IMPL)
         target_include_directories(test_agntcy_acp PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_agntcy_acp PRIVATE agentrt_common svc_common m)
+        target_link_libraries(test_agntcy_acp PRIVATE airy_common svc_common m)
         if(UNIX)
             target_link_libraries(test_agntcy_acp PRIVATE pthread)
         endif()
@@ -411,9 +411,9 @@ if(BUILD_TESTS)
             common/src/unified_protocol.c
             core/transformers/src/protocol_transformers.c
         )
-        target_compile_definitions(test_china_eco_crypto PRIVATE AGENTRT_COMPLIANCE_IMPL)
+        target_compile_definitions(test_china_eco_crypto PRIVATE AIRY_COMPLIANCE_IMPL)
         target_include_directories(test_china_eco_crypto PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_china_eco_crypto PRIVATE agentrt_common svc_common m)
+        target_link_libraries(test_china_eco_crypto PRIVATE airy_common svc_common m)
         if(UNIX)
             target_link_libraries(test_china_eco_crypto PRIVATE pthread)
         endif()

@@ -86,10 +86,10 @@ struct mcp_v1_context_s {
 static char *json_string_escape(const char *str)
 {
     if (!str)
-        return AGENTRT_STRDUP("null");
+        return AIRY_STRDUP("null");
     size_t len = strlen(str);
     size_t escaped_len = len * 2 + 3;
-    char *escaped = AGENTRT_MALLOC(escaped_len);
+    char *escaped = AIRY_MALLOC(escaped_len);
     if (!escaped)
         return NULL;
     size_t j = 0;
@@ -128,7 +128,7 @@ static char *json_string_escape(const char *str)
 
 static char *strdup_safe(const char *s)
 {
-    return s ? AGENTRT_STRDUP(s) : NULL;
+    return s ? AIRY_STRDUP(s) : NULL;
 }
 
 mcp_v1_config_t mcp_v1_config_default(void)
@@ -149,9 +149,9 @@ mcp_v1_config_t mcp_v1_config_default(void)
 
 mcp_v1_context_t *mcp_v1_context_create(const mcp_v1_config_t *config)
 {
-    mcp_v1_context_t *ctx = AGENTRT_CALLOC(1, sizeof(mcp_v1_context_t));
+    mcp_v1_context_t *ctx = AIRY_CALLOC(1, sizeof(mcp_v1_context_t));
     if (!ctx) {
-        AGENTRT_LOG_ERROR("context allocation failed, size=%zu", sizeof(mcp_v1_context_t));
+        AIRY_LOG_ERROR("context allocation failed, size=%zu", sizeof(mcp_v1_context_t));
         return NULL;
     }
 
@@ -164,41 +164,41 @@ mcp_v1_context_t *mcp_v1_context_create(const mcp_v1_config_t *config)
     }
 
     ctx->tool_capacity = 32;
-    ctx->tools = AGENTRT_CALLOC(ctx->tool_capacity, sizeof(mcp_tool_entry_t));
+    ctx->tools = AIRY_CALLOC(ctx->tool_capacity, sizeof(mcp_tool_entry_t));
     if (!ctx->tools) {
-        AGENTRT_LOG_ERROR("tools array allocation failed, capacity=%zu", ctx->tool_capacity);
-        AGENTRT_FREE(ctx);
+        AIRY_LOG_ERROR("tools array allocation failed, capacity=%zu", ctx->tool_capacity);
+        AIRY_FREE(ctx);
         return NULL;
     }
 
     ctx->resource_capacity = 16;
-    ctx->resources = AGENTRT_CALLOC(ctx->resource_capacity, sizeof(mcp_resource_entry_t));
+    ctx->resources = AIRY_CALLOC(ctx->resource_capacity, sizeof(mcp_resource_entry_t));
     if (!ctx->resources) {
-        AGENTRT_LOG_ERROR("resources array allocation failed, capacity=%zu", ctx->resource_capacity);
-        AGENTRT_FREE(ctx->tools);
-        AGENTRT_FREE(ctx);
+        AIRY_LOG_ERROR("resources array allocation failed, capacity=%zu", ctx->resource_capacity);
+        AIRY_FREE(ctx->tools);
+        AIRY_FREE(ctx);
         return NULL;
     }
 
     ctx->template_capacity = 16;
     ctx->resource_templates =
-        AGENTRT_CALLOC(ctx->template_capacity, sizeof(mcp_resource_template_t));
+        AIRY_CALLOC(ctx->template_capacity, sizeof(mcp_resource_template_t));
     if (!ctx->resource_templates) {
-        AGENTRT_LOG_ERROR("resource_templates allocation failed, capacity=%zu", ctx->template_capacity);
-        AGENTRT_FREE(ctx->resources);
-        AGENTRT_FREE(ctx->tools);
-        AGENTRT_FREE(ctx);
+        AIRY_LOG_ERROR("resource_templates allocation failed, capacity=%zu", ctx->template_capacity);
+        AIRY_FREE(ctx->resources);
+        AIRY_FREE(ctx->tools);
+        AIRY_FREE(ctx);
         return NULL;
     }
 
     ctx->prompt_capacity = 16;
-    ctx->prompts = AGENTRT_CALLOC(ctx->prompt_capacity, sizeof(mcp_prompt_entry_t));
+    ctx->prompts = AIRY_CALLOC(ctx->prompt_capacity, sizeof(mcp_prompt_entry_t));
     if (!ctx->prompts) {
-        AGENTRT_LOG_ERROR("prompts array allocation failed, capacity=%zu", ctx->prompt_capacity);
-        AGENTRT_FREE(ctx->resource_templates);
-        AGENTRT_FREE(ctx->resources);
-        AGENTRT_FREE(ctx->tools);
-        AGENTRT_FREE(ctx);
+        AIRY_LOG_ERROR("prompts array allocation failed, capacity=%zu", ctx->prompt_capacity);
+        AIRY_FREE(ctx->resource_templates);
+        AIRY_FREE(ctx->resources);
+        AIRY_FREE(ctx->tools);
+        AIRY_FREE(ctx);
         return NULL;
     }
 
@@ -214,38 +214,38 @@ void mcp_v1_context_destroy(mcp_v1_context_t *ctx)
         return;
 
     for (size_t i = 0; i < ctx->tool_count; i++) {
-        AGENTRT_FREE(ctx->tools[i].tool.name);
-        AGENTRT_FREE(ctx->tools[i].tool.description);
-        AGENTRT_FREE(ctx->tools[i].tool.input_schema_json);
+        AIRY_FREE(ctx->tools[i].tool.name);
+        AIRY_FREE(ctx->tools[i].tool.description);
+        AIRY_FREE(ctx->tools[i].tool.input_schema_json);
     }
-    AGENTRT_FREE(ctx->tools);
+    AIRY_FREE(ctx->tools);
 
     for (size_t i = 0; i < ctx->resource_count; i++) {
-        AGENTRT_FREE(ctx->resources[i].resource.uri);
-        AGENTRT_FREE(ctx->resources[i].resource.name);
-        AGENTRT_FREE(ctx->resources[i].resource.description);
-        AGENTRT_FREE(ctx->resources[i].resource.mime_type);
+        AIRY_FREE(ctx->resources[i].resource.uri);
+        AIRY_FREE(ctx->resources[i].resource.name);
+        AIRY_FREE(ctx->resources[i].resource.description);
+        AIRY_FREE(ctx->resources[i].resource.mime_type);
     }
-    AGENTRT_FREE(ctx->resources);
+    AIRY_FREE(ctx->resources);
 
     for (size_t i = 0; i < ctx->template_count; i++) {
-        AGENTRT_FREE(ctx->resource_templates[i].uri_template);
-        AGENTRT_FREE(ctx->resource_templates[i].name);
-        AGENTRT_FREE(ctx->resource_templates[i].description);
-        AGENTRT_FREE(ctx->resource_templates[i].mime_type);
+        AIRY_FREE(ctx->resource_templates[i].uri_template);
+        AIRY_FREE(ctx->resource_templates[i].name);
+        AIRY_FREE(ctx->resource_templates[i].description);
+        AIRY_FREE(ctx->resource_templates[i].mime_type);
     }
-    AGENTRT_FREE(ctx->resource_templates);
+    AIRY_FREE(ctx->resource_templates);
 
     for (size_t i = 0; i < ctx->prompt_count; i++) {
-        AGENTRT_FREE(ctx->prompts[i].prompt.name);
-        AGENTRT_FREE(ctx->prompts[i].prompt.description);
-        AGENTRT_FREE(ctx->prompts[i].prompt.arguments_schema_json);
+        AIRY_FREE(ctx->prompts[i].prompt.name);
+        AIRY_FREE(ctx->prompts[i].prompt.description);
+        AIRY_FREE(ctx->prompts[i].prompt.arguments_schema_json);
     }
-    AGENTRT_FREE(ctx->prompts);
+    AIRY_FREE(ctx->prompts);
 
-    AGENTRT_FREE(ctx->config.server_name);
-    AGENTRT_FREE(ctx->config.server_version);
-    AGENTRT_FREE(ctx);
+    AIRY_FREE(ctx->config.server_name);
+    AIRY_FREE(ctx->config.server_version);
+    AIRY_FREE(ctx);
 }
 
 int mcp_v1_register_tool(mcp_v1_context_t *ctx, const mcp_tool_t *tool, mcp_tool_handler_t handler,
@@ -253,21 +253,21 @@ int mcp_v1_register_tool(mcp_v1_context_t *ctx, const mcp_tool_t *tool, mcp_tool
 {
     if (!ctx || !tool || !handler)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_register_tool: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_register_tool: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     if (ctx->tool_count >= ctx->config.max_tools) {
-        agentrt_error_push_ex(AGENTRT_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
-        return AGENTRT_ERR_INVALID_PARAM;
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
+        return AIRY_ERR_INVALID_PARAM;
         }
 
     if (ctx->tool_count >= ctx->tool_capacity) {
         size_t new_cap = ctx->tool_capacity * 2;
         mcp_tool_entry_t *new_tools =
-            AGENTRT_REALLOC(ctx->tools, new_cap * sizeof(mcp_tool_entry_t));
+            AIRY_REALLOC(ctx->tools, new_cap * sizeof(mcp_tool_entry_t));
         if (!new_tools) {
-            agentrt_error_push_ex(AGENTRT_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
-            return AGENTRT_ERR_NULL_POINTER;
+            airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
+            return AIRY_ERR_NULL_POINTER;
             }
         ctx->tools = new_tools;
         ctx->tool_capacity = new_cap;
@@ -290,21 +290,21 @@ int mcp_v1_register_resource(mcp_v1_context_t *ctx, const mcp_resource_t *resour
 {
     if (!ctx || !resource)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_register_resource: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_register_resource: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     if (ctx->resource_count >= ctx->config.max_resources) {
-        agentrt_error_push_ex(AGENTRT_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
-        return AGENTRT_ERR_INVALID_PARAM;
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
+        return AIRY_ERR_INVALID_PARAM;
         }
 
     if (ctx->resource_count >= ctx->resource_capacity) {
         size_t new_cap = ctx->resource_capacity * 2;
         mcp_resource_entry_t *new_res =
-            AGENTRT_REALLOC(ctx->resources, new_cap * sizeof(mcp_resource_entry_t));
+            AIRY_REALLOC(ctx->resources, new_cap * sizeof(mcp_resource_entry_t));
         if (!new_res) {
-            agentrt_error_push_ex(AGENTRT_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
-            return AGENTRT_ERR_NULL_POINTER;
+            airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
+            return AIRY_ERR_NULL_POINTER;
             }
         ctx->resources = new_res;
         ctx->resource_capacity = new_cap;
@@ -327,17 +327,17 @@ int mcp_v1_register_resource_template(mcp_v1_context_t *ctx,
 {
     if (!ctx || !template)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_register_resource_template: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_register_resource_template: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     if (ctx->template_count >= ctx->template_capacity) {
         size_t new_cap = ctx->template_capacity * 2;
         mcp_resource_template_t *new_tpl =
-            AGENTRT_REALLOC(ctx->resource_templates, new_cap * sizeof(mcp_resource_template_t));
+            AIRY_REALLOC(ctx->resource_templates, new_cap * sizeof(mcp_resource_template_t));
         if (!new_tpl) {
-            agentrt_error_push_ex(AGENTRT_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
-            return AGENTRT_ERR_NULL_POINTER;
+            airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
+            return AIRY_ERR_NULL_POINTER;
             }
         ctx->resource_templates = new_tpl;
         ctx->template_capacity = new_cap;
@@ -358,21 +358,21 @@ int mcp_v1_register_prompt(mcp_v1_context_t *ctx, const mcp_prompt_t *prompt,
 {
     if (!ctx || !prompt)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_register_prompt: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_register_prompt: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     if (ctx->prompt_count >= MCP_V1_MAX_PROMPTS) {
-        agentrt_error_push_ex(AGENTRT_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
-        return AGENTRT_ERR_INVALID_PARAM;
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
+        return AIRY_ERR_INVALID_PARAM;
         }
 
     if (ctx->prompt_count >= ctx->prompt_capacity) {
         size_t new_cap = ctx->prompt_capacity * 2;
         mcp_prompt_entry_t *new_prompts =
-            AGENTRT_REALLOC(ctx->prompts, new_cap * sizeof(mcp_prompt_entry_t));
+            AIRY_REALLOC(ctx->prompts, new_cap * sizeof(mcp_prompt_entry_t));
         if (!new_prompts) {
-            agentrt_error_push_ex(AGENTRT_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
-            return AGENTRT_ERR_NULL_POINTER;
+            airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
+            return AIRY_ERR_NULL_POINTER;
             }
         ctx->prompts = new_prompts;
         ctx->prompt_capacity = new_cap;
@@ -394,8 +394,8 @@ int mcp_v1_set_sampling_handler(mcp_v1_context_t *ctx, mcp_sampling_handler_t ha
 {
     if (!ctx)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_set_sampling_handler: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_set_sampling_handler: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     ctx->sampling_handler = handler;
     ctx->sampling_user_data = user_data;
@@ -409,8 +409,8 @@ int mcp_v1_set_completion_handler(mcp_v1_context_t *ctx, mcp_completion_handler_
 {
     if (!ctx)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_set_completion_handler: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_set_completion_handler: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     ctx->completion_handler = handler;
     ctx->completion_user_data = user_data;
@@ -424,8 +424,8 @@ int mcp_v1_set_progress_callback(mcp_v1_context_t *ctx, mcp_progress_callback_t 
 {
     if (!ctx)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_set_progress_callback: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_set_progress_callback: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     ctx->progress_callback = callback;
     ctx->progress_user_data = user_data;
@@ -436,8 +436,8 @@ int mcp_v1_set_log_callback(mcp_v1_context_t *ctx, mcp_log_callback_t callback, 
 {
     if (!ctx)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_set_log_callback: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_set_log_callback: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     ctx->log_callback = callback;
     ctx->log_user_data = user_data;
@@ -448,8 +448,8 @@ int mcp_v1_set_log_level(mcp_v1_context_t *ctx, mcp_log_level_t level)
 {
     if (!ctx)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_set_log_level: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_set_log_level: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     ctx->log_level = level;
     return 0;
@@ -459,15 +459,15 @@ int mcp_v1_handle_tools_list(mcp_v1_context_t *ctx, char **response_json)
 {
     if (!ctx || !response_json)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_tools_list: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_tools_list: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     size_t buf_size = 4096 + ctx->tool_count * 512;
-    char *buf = AGENTRT_MALLOC(buf_size);
+    char *buf = AIRY_MALLOC(buf_size);
     if (!buf) {
-        agentrt_error_push_ex(AGENTRT_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
-        return AGENTRT_ERR_NULL_POINTER;
+        airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
+        return AIRY_ERR_NULL_POINTER;
         }
 
     size_t offset = 0;
@@ -482,8 +482,8 @@ int mcp_v1_handle_tools_list(mcp_v1_context_t *ctx, char **response_json)
             buf + offset, buf_size - offset, "{\"name\":%s,\"description\":%s,\"inputSchema\":%s}",
             name, desc,
             ctx->tools[i].tool.input_schema_json ? ctx->tools[i].tool.input_schema_json : "{}");
-        AGENTRT_FREE(name);
-        AGENTRT_FREE(desc);
+        AIRY_FREE(name);
+        AIRY_FREE(desc);
     }
 
     offset += snprintf(buf + offset, buf_size - offset, "]}");
@@ -496,8 +496,8 @@ int mcp_v1_handle_tools_call(mcp_v1_context_t *ctx, const char *name, const char
 {
     if (!ctx || !name || !response_json)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_tools_call: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_tools_call: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     mcp_tool_entry_t *found = NULL;
@@ -509,24 +509,24 @@ int mcp_v1_handle_tools_call(mcp_v1_context_t *ctx, const char *name, const char
     }
 
     if (!found) {
-        AGENTRT_LOG_WARN("tool not found: name=%s, tool_count=%zu", name, ctx->tool_count);
+        AIRY_LOG_WARN("tool not found: name=%s, tool_count=%zu", name, ctx->tool_count);
         char *name_esc = json_string_escape(name);
         const char *safe_name = name_esc ? name_esc : name;
         size_t len = snprintf(
             NULL, 0,
             "{\"isError\":true,\"content\":[{\"type\":\"text\",\"text\":\"Tool not found: %s\"}]}",
             safe_name);
-        char *resp = AGENTRT_MALLOC(len + 1);
+        char *resp = AIRY_MALLOC(len + 1);
         if (resp) {
             snprintf(resp, len + 1,
                      "{\"isError\":true,\"content\":[{\"type\":\"text\",\"text\":\"Tool not found: "
                      "%s\"}]}",
                      safe_name);
         }
-        AGENTRT_FREE(name_esc);
+        AIRY_FREE(name_esc);
         *response_json = resp;
-        agentrt_error_push_ex(AGENTRT_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
-        return AGENTRT_ERR_INVALID_PARAM;
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
+        return AIRY_ERR_INVALID_PARAM;
     }
 
     mcp_content_t *results = NULL;
@@ -536,11 +536,11 @@ int mcp_v1_handle_tools_call(mcp_v1_context_t *ctx, const char *name, const char
     found->handler(name, arguments_json, &results, &result_count, &is_error, found->user_data);
 
     size_t buf_size = 4096 + result_count * 1024;
-    char *buf = AGENTRT_MALLOC(buf_size);
+    char *buf = AIRY_MALLOC(buf_size);
     if (!buf) {
         mcp_content_destroy(results, result_count);
-        agentrt_error_push_ex(AGENTRT_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
-        return AGENTRT_ERR_NULL_POINTER;
+        airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
+        return AIRY_ERR_NULL_POINTER;
     }
 
     size_t offset = 0;
@@ -567,7 +567,7 @@ int mcp_v1_handle_tools_call(mcp_v1_context_t *ctx, const char *name, const char
         char *text_esc = json_string_escape(results[i].text);
         offset += snprintf(buf + offset, buf_size - offset, "{\"type\":\"%s\",\"text\":%s}",
                            type_str, text_esc);
-        AGENTRT_FREE(text_esc);
+        AIRY_FREE(text_esc);
     }
 
     offset += snprintf(buf + offset, buf_size - offset, "]}");
@@ -581,15 +581,15 @@ int mcp_v1_handle_resources_list(mcp_v1_context_t *ctx, char **response_json)
 {
     if (!ctx || !response_json)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_resources_list: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_resources_list: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     size_t buf_size = 4096 + ctx->resource_count * 512;
-    char *buf = AGENTRT_MALLOC(buf_size);
+    char *buf = AIRY_MALLOC(buf_size);
     if (!buf) {
-        agentrt_error_push_ex(AGENTRT_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
-        return AGENTRT_ERR_NULL_POINTER;
+        airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
+        return AIRY_ERR_NULL_POINTER;
         }
 
     size_t offset = 0;
@@ -605,10 +605,10 @@ int mcp_v1_handle_resources_list(mcp_v1_context_t *ctx, char **response_json)
         offset += snprintf(buf + offset, buf_size - offset,
                            "{\"uri\":%s,\"name\":%s,\"description\":%s,\"mimeType\":%s}", uri, name,
                            desc, mime);
-        AGENTRT_FREE(uri);
-        AGENTRT_FREE(name);
-        AGENTRT_FREE(desc);
-        AGENTRT_FREE(mime);
+        AIRY_FREE(uri);
+        AIRY_FREE(name);
+        AIRY_FREE(desc);
+        AIRY_FREE(mime);
     }
 
     offset += snprintf(buf + offset, buf_size - offset, "]}");
@@ -620,8 +620,8 @@ int mcp_v1_handle_resources_read(mcp_v1_context_t *ctx, const char *uri, char **
 {
     if (!ctx || !uri || !response_json)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_resources_read: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_resources_read: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     mcp_resource_entry_t *found = NULL;
@@ -633,18 +633,18 @@ int mcp_v1_handle_resources_read(mcp_v1_context_t *ctx, const char *uri, char **
     }
 
     if (!found || !found->handler) {
-        AGENTRT_LOG_WARN("resource not found or no handler: uri=%s, resource_count=%zu", uri, ctx->resource_count);
+        AIRY_LOG_WARN("resource not found or no handler: uri=%s, resource_count=%zu", uri, ctx->resource_count);
         char *uri_esc = json_string_escape(uri);
         size_t len = snprintf(
             NULL, 0, "{\"contents\":[{\"uri\":%s,\"text\":\"Resource not found\"}]}", uri_esc);
-        char *resp = AGENTRT_MALLOC(len + 1);
+        char *resp = AIRY_MALLOC(len + 1);
         if (resp)
             snprintf(resp, len + 1, "{\"contents\":[{\"uri\":%s,\"text\":\"Resource not found\"}]}",
                      uri_esc);
-        AGENTRT_FREE(uri_esc);
+        AIRY_FREE(uri_esc);
         *response_json = resp;
-        agentrt_error_push_ex(AGENTRT_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
-        return AGENTRT_ERR_INVALID_PARAM;
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
+        return AIRY_ERR_INVALID_PARAM;
     }
 
     char *content = NULL;
@@ -657,16 +657,16 @@ int mcp_v1_handle_resources_read(mcp_v1_context_t *ctx, const char *uri, char **
 
     size_t len = snprintf(NULL, 0, "{\"contents\":[{\"uri\":%s,\"mimeType\":%s,\"text\":%s}]}",
                           uri_esc, mime_esc, content_esc);
-    char *resp = AGENTRT_MALLOC(len + 1);
+    char *resp = AIRY_MALLOC(len + 1);
     if (resp)
         snprintf(resp, len + 1, "{\"contents\":[{\"uri\":%s,\"mimeType\":%s,\"text\":%s}]}",
                  uri_esc, mime_esc, content_esc);
 
-    AGENTRT_FREE(uri_esc);
-    AGENTRT_FREE(content_esc);
-    AGENTRT_FREE(mime_esc);
-    AGENTRT_FREE(content);
-    AGENTRT_FREE(mime_type);
+    AIRY_FREE(uri_esc);
+    AIRY_FREE(content_esc);
+    AIRY_FREE(mime_esc);
+    AIRY_FREE(content);
+    AIRY_FREE(mime_type);
     *response_json = resp;
     return 0;
 }
@@ -675,15 +675,15 @@ int mcp_v1_handle_resources_templates(mcp_v1_context_t *ctx, char **response_jso
 {
     if (!ctx || !response_json)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_resources_templates: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_resources_templates: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     size_t buf_size = 4096 + ctx->template_count * 512;
-    char *buf = AGENTRT_MALLOC(buf_size);
+    char *buf = AIRY_MALLOC(buf_size);
     if (!buf) {
-        agentrt_error_push_ex(AGENTRT_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
-        return AGENTRT_ERR_NULL_POINTER;
+        airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
+        return AIRY_ERR_NULL_POINTER;
         }
 
     size_t offset = 0;
@@ -697,9 +697,9 @@ int mcp_v1_handle_resources_templates(mcp_v1_context_t *ctx, char **response_jso
         char *desc = json_string_escape(ctx->resource_templates[i].description);
         offset += snprintf(buf + offset, buf_size - offset,
                            "{\"uriTemplate\":%s,\"name\":%s,\"description\":%s}", uri, name, desc);
-        AGENTRT_FREE(uri);
-        AGENTRT_FREE(name);
-        AGENTRT_FREE(desc);
+        AIRY_FREE(uri);
+        AIRY_FREE(name);
+        AIRY_FREE(desc);
     }
 
     offset += snprintf(buf + offset, buf_size - offset, "]}");
@@ -711,15 +711,15 @@ int mcp_v1_handle_prompts_list(mcp_v1_context_t *ctx, char **response_json)
 {
     if (!ctx || !response_json)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_prompts_list: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_prompts_list: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     size_t buf_size = 4096 + ctx->prompt_count * 512;
-    char *buf = AGENTRT_MALLOC(buf_size);
+    char *buf = AIRY_MALLOC(buf_size);
     if (!buf) {
-        agentrt_error_push_ex(AGENTRT_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
-        return AGENTRT_ERR_NULL_POINTER;
+        airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
+        return AIRY_ERR_NULL_POINTER;
         }
 
     size_t offset = 0;
@@ -735,8 +735,8 @@ int mcp_v1_handle_prompts_list(mcp_v1_context_t *ctx, char **response_json)
                            ctx->prompts[i].prompt.arguments_schema_json
                                ? ctx->prompts[i].prompt.arguments_schema_json
                                : "[]");
-        AGENTRT_FREE(name);
-        AGENTRT_FREE(desc);
+        AIRY_FREE(name);
+        AIRY_FREE(desc);
     }
 
     offset += snprintf(buf + offset, buf_size - offset, "]}");
@@ -749,8 +749,8 @@ int mcp_v1_handle_prompts_get(mcp_v1_context_t *ctx, const char *name, const cha
 {
     if (!ctx || !name || !response_json)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_prompts_get: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_prompts_get: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     mcp_prompt_entry_t *found = NULL;
@@ -762,10 +762,10 @@ int mcp_v1_handle_prompts_get(mcp_v1_context_t *ctx, const char *name, const cha
     }
 
     if (!found || !found->handler) {
-        AGENTRT_LOG_WARN("prompt not found or no handler: name=%s, prompt_count=%zu", name, ctx->prompt_count);
-        *response_json = AGENTRT_STRDUP("{\"description\":\"Prompt not found\",\"messages\":[]}");
-        agentrt_error_push_ex(AGENTRT_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
-        return AGENTRT_ERR_INVALID_PARAM;
+        AIRY_LOG_WARN("prompt not found or no handler: name=%s, prompt_count=%zu", name, ctx->prompt_count);
+        *response_json = AIRY_STRDUP("{\"description\":\"Prompt not found\",\"messages\":[]}");
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
+        return AIRY_ERR_INVALID_PARAM;
     }
 
     mcp_sampling_message_t *messages = NULL;
@@ -773,17 +773,17 @@ int mcp_v1_handle_prompts_get(mcp_v1_context_t *ctx, const char *name, const cha
     found->handler(name, arguments_json, &messages, &message_count, found->user_data);
 
     size_t buf_size = 4096 + message_count * 1024;
-    char *buf = AGENTRT_MALLOC(buf_size);
+    char *buf = AIRY_MALLOC(buf_size);
     if (!buf) {
-        agentrt_error_push_ex(AGENTRT_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
-        return AGENTRT_ERR_NULL_POINTER;
+        airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
+        return AIRY_ERR_NULL_POINTER;
         }
 
     size_t offset = 0;
     char *name_esc = json_string_escape(name);
     offset += snprintf(buf + offset, buf_size - offset,
                        "{\"description\":\"Prompt: %s\",\"messages\":[", name_esc);
-    AGENTRT_FREE(name_esc);
+    AIRY_FREE(name_esc);
     name_esc = NULL;
 
     for (size_t i = 0; i < message_count && i < 100; i++) {
@@ -795,8 +795,8 @@ int mcp_v1_handle_prompts_get(mcp_v1_context_t *ctx, const char *name, const cha
         offset += snprintf(buf + offset, buf_size - offset,
                            "{\"role\":%s,\"content\":{\"type\":\"text\",\"text\":\"%s\"}}", role,
                            content);
-        AGENTRT_FREE(role);
-        AGENTRT_FREE(content);
+        AIRY_FREE(role);
+        AIRY_FREE(content);
     }
 
     offset += snprintf(buf + offset, buf_size - offset, "]}");
@@ -809,18 +809,18 @@ int mcp_v1_handle_sampling(mcp_v1_context_t *ctx, const mcp_sampling_params_t *p
 {
     if (!ctx || !params || !result)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_sampling: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_sampling: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     if (!ctx->sampling_handler) {
-        AGENTRT_LOG_WARN("sampling handler not registered, cannot handle sampling request");
-        agentrt_error_push_ex(AGENTRT_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
-        return AGENTRT_ERR_INVALID_PARAM;
+        AIRY_LOG_WARN("sampling handler not registered, cannot handle sampling request");
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
+        return AIRY_ERR_INVALID_PARAM;
         }
     if (!(ctx->config.capabilities & MCP_CAP_SAMPLING)) {
-        AGENTRT_LOG_WARN("sampling capability not enabled, caps=0x%x", ctx->config.capabilities);
-        agentrt_error_push_ex(AGENTRT_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
-        return AGENTRT_ERR_NULL_POINTER;
+        AIRY_LOG_WARN("sampling capability not enabled, caps=0x%x", ctx->config.capabilities);
+        airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
+        return AIRY_ERR_NULL_POINTER;
         }
 
     ctx->sampling_handler(params, result, ctx->sampling_user_data);
@@ -832,12 +832,12 @@ int mcp_v1_handle_completion(mcp_v1_context_t *ctx, const mcp_completion_request
 {
     if (!ctx || !request || !result)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_completion: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_completion: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     if (!ctx->completion_handler) {
-        agentrt_error_push_ex(AGENTRT_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
-        return AGENTRT_ERR_INVALID_PARAM;
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
+        return AIRY_ERR_INVALID_PARAM;
         }
 
     ctx->completion_handler(request, result, ctx->completion_user_data);
@@ -849,8 +849,8 @@ int mcp_v1_send_progress(mcp_v1_context_t *ctx, const char *progress_token, doub
 {
     if (!ctx || !progress_token)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_send_progress: IO error");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_send_progress: IO error");
+        return AIRY_ERR_UNKNOWN;
         }
     if (ctx->progress_callback) {
         ctx->progress_callback(progress_token, progress, total, ctx->progress_user_data);
@@ -862,8 +862,8 @@ int mcp_v1_notify_cancelled(mcp_v1_context_t *ctx, const char *request_id, const
 {
     if (!ctx || !request_id)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_notify_cancelled: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_notify_cancelled: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     if (ctx->log_callback) {
         ctx->log_callback(MCP_LOG_INFO, "mcp", reason ? reason : "Request cancelled",
@@ -883,12 +883,12 @@ int mcp_v1_stream_config(mcp_v1_context_t *ctx, const mcp_stream_config_t *confi
 {
     if (!ctx)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_stream_config: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_stream_config: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     if (!config) {
-        agentrt_error_push_ex(AGENTRT_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
-        return AGENTRT_ERR_INVALID_PARAM;
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
+        return AIRY_ERR_INVALID_PARAM;
         }
 
     ctx->stream_config = *config;
@@ -918,9 +918,9 @@ void mcp_stream_event_init(mcp_stream_event_t *event, mcp_stream_event_type_t ty
 {
     if (!event)
         return;
-    AGENTRT_MEMSET(event, 0, sizeof(*event));
+    AIRY_MEMSET(event, 0, sizeof(*event));
     event->type = type;
-    event->event_data = data ? AGENTRT_STRDUP(data) : NULL;
+    event->event_data = data ? AIRY_STRDUP(data) : NULL;
     event->data_size = data ? strlen(data) : 0;
 }
 
@@ -931,13 +931,13 @@ static void emit_sse_line(mcp_stream_callback_t callback, void *user_data, const
         return;
 
     size_t len = strlen(field) + (value ? strlen(value) : 0) + 16;
-    char *sse_line = AGENTRT_MALLOC(len);
+    char *sse_line = AIRY_MALLOC(len);
     if (sse_line) {
         snprintf(sse_line, len, "%s: %s\n", field, value ? value : "");
         mcp_stream_event_t event;
         mcp_stream_event_init(&event, MCP_STREAM_EVENT_CONTENT, sse_line);
         callback(&event, user_data);
-        AGENTRT_FREE(sse_line);
+        AIRY_FREE(sse_line);
     }
 }
 
@@ -960,8 +960,8 @@ int mcp_v1_handle_tools_call_streaming(mcp_v1_context_t *ctx, const char *name,
 {
     if (!ctx || !name || !callback)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_tools_call_streaming: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_tools_call_streaming: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     mcp_stream_event_t start_event;
@@ -969,7 +969,7 @@ int mcp_v1_handle_tools_call_streaming(mcp_v1_context_t *ctx, const char *name,
     start_event.progress = 0;
     start_event.total = 100;
     callback(&start_event, user_data);
-    AGENTRT_FREE(start_event.event_data);
+    AIRY_FREE(start_event.event_data);
     start_event.event_data = NULL;
 
     mcp_tool_entry_t *found = NULL;
@@ -987,7 +987,7 @@ int mcp_v1_handle_tools_call_streaming(mcp_v1_context_t *ctx, const char *name,
             error_json, sizeof(error_json),
             "{\"isError\":true,\"content\":[{\"type\":\"text\",\"text\":\"Tool not found: %s\"}]}",
             name_esc);
-        AGENTRT_FREE(name_esc);
+        AIRY_FREE(name_esc);
         name_esc = NULL;
         emit_sse_event(callback, user_data, "tools/call/result", error_json);
 
@@ -996,9 +996,9 @@ int mcp_v1_handle_tools_call_streaming(mcp_v1_context_t *ctx, const char *name,
         done_event.progress = 0;
         done_event.total = 100;
         callback(&done_event, user_data);
-        AGENTRT_FREE(done_event.event_data);
-        agentrt_error_push_ex(AGENTRT_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
-        return AGENTRT_ERR_INVALID_PARAM;
+        AIRY_FREE(done_event.event_data);
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
+        return AIRY_ERR_INVALID_PARAM;
     }
 
     mcp_content_t *results = NULL;
@@ -1009,7 +1009,7 @@ int mcp_v1_handle_tools_call_streaming(mcp_v1_context_t *ctx, const char *name,
 
     for (size_t i = 0; i < result_count; i++) {
         size_t buf_size = 512 + (results[i].text ? strlen(results[i].text) : 0);
-        char *chunk_json = AGENTRT_MALLOC(buf_size);
+        char *chunk_json = AIRY_MALLOC(buf_size);
         if (chunk_json) {
             const char *type_str = "text";
             switch (results[i].type) {
@@ -1043,7 +1043,7 @@ int mcp_v1_handle_tools_call_streaming(mcp_v1_context_t *ctx, const char *name,
                 char sse_data[1024];
                 snprintf(sse_data, sizeof(sse_data), "%s{\"delta\":{\"text\":\"%s\"}}",
                          offset == 0 ? chunk_json : "", escaped_chunk);
-                AGENTRT_FREE(escaped_chunk);
+                AIRY_FREE(escaped_chunk);
 
                 emit_sse_event(callback, user_data, "tools/call/chunk", sse_data);
                 offset += chunk_size;
@@ -1054,15 +1054,15 @@ int mcp_v1_handle_tools_call_streaming(mcp_v1_context_t *ctx, const char *name,
                 progress_evt.progress = pct;
                 progress_evt.total = 100;
                 callback(&progress_evt, user_data);
-                AGENTRT_FREE(progress_evt.event_data);
+                AIRY_FREE(progress_evt.event_data);
             }
 
-            AGENTRT_FREE(chunk_json);
+            AIRY_FREE(chunk_json);
         }
     }
 
     size_t final_buf_size = 4096 + result_count * 1024;
-    char *final_json = AGENTRT_MALLOC(final_buf_size);
+    char *final_json = AIRY_MALLOC(final_buf_size);
     if (final_json) {
         size_t offset = 0;
         offset += snprintf(final_json + offset, final_buf_size - offset,
@@ -1087,12 +1087,12 @@ int mcp_v1_handle_tools_call_streaming(mcp_v1_context_t *ctx, const char *name,
             char *text_esc = json_string_escape(results[i].text);
             offset += snprintf(final_json + offset, final_buf_size - offset,
                                "{\"type\":\"%s\",\"text\":%s}", type_str, text_esc);
-            AGENTRT_FREE(text_esc);
+            AIRY_FREE(text_esc);
         }
         offset += snprintf(final_json + offset, final_buf_size - offset, "]}");
 
         emit_sse_event(callback, user_data, "tools/call/result", final_json);
-        AGENTRT_FREE(final_json);
+        AIRY_FREE(final_json);
     }
 
     mcp_stream_event_t done_event;
@@ -1101,7 +1101,7 @@ int mcp_v1_handle_tools_call_streaming(mcp_v1_context_t *ctx, const char *name,
     done_event.progress = 100;
     done_event.total = 100;
     callback(&done_event, user_data);
-    AGENTRT_FREE(done_event.event_data);
+    AIRY_FREE(done_event.event_data);
 
     mcp_content_destroy(results, result_count);
     return 0;
@@ -1112,17 +1112,17 @@ int mcp_v1_handle_sampling_streaming(mcp_v1_context_t *ctx, const mcp_sampling_p
 {
     if (!ctx || !params || !callback)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_sampling_streaming: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_handle_sampling_streaming: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     if (!ctx->sampling_handler) {
-        AGENTRT_LOG_WARN("sampling handler not registered for streaming request");
-        agentrt_error_push_ex(AGENTRT_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
-        return AGENTRT_ERR_INVALID_PARAM;
+        AIRY_LOG_WARN("sampling handler not registered for streaming request");
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
+        return AIRY_ERR_INVALID_PARAM;
         }
     if (!(ctx->config.capabilities & MCP_CAP_SAMPLING)) {
-        AGENTRT_LOG_WARN("sampling capability not enabled for streaming, caps=0x%x", ctx->config.capabilities);
-        return AGENTRT_ERR_NULL_POINTER;
+        AIRY_LOG_WARN("sampling capability not enabled for streaming, caps=0x%x", ctx->config.capabilities);
+        return AIRY_ERR_NULL_POINTER;
         }
 
     mcp_stream_event_t start_event;
@@ -1131,11 +1131,11 @@ int mcp_v1_handle_sampling_streaming(mcp_v1_context_t *ctx, const mcp_sampling_p
     start_event.progress = 0;
     start_event.total = 100;
     callback(&start_event, user_data);
-    AGENTRT_FREE(start_event.event_data);
+    AIRY_FREE(start_event.event_data);
     start_event.event_data = NULL;
 
     mcp_sampling_result_t result;
-    AGENTRT_MEMSET(&result, 0, sizeof(result));
+    AIRY_MEMSET(&result, 0, sizeof(result));
 
     ctx->sampling_handler(params, &result, ctx->sampling_user_data);
 
@@ -1160,8 +1160,8 @@ int mcp_v1_handle_sampling_streaming(mcp_v1_context_t *ctx, const mcp_sampling_p
                              "{\"model\":%s,\"delta\":{\"type\":\"text\",\"text\":\"%s\"},"
                              "\"index\":%zu}",
                              model_esc, escaped_chunk, i);
-                    AGENTRT_FREE(escaped_chunk);
-                    AGENTRT_FREE(model_esc);
+                    AIRY_FREE(escaped_chunk);
+                    AIRY_FREE(model_esc);
                     emit_sse_event(callback, user_data, "sampling/chunk", sse_data);
 
                     offset += chunk_size;
@@ -1172,7 +1172,7 @@ int mcp_v1_handle_sampling_streaming(mcp_v1_context_t *ctx, const mcp_sampling_p
                     progress_evt.progress = pct;
                     progress_evt.total = 100;
                     callback(&progress_evt, user_data);
-                    AGENTRT_FREE(progress_evt.event_data);
+                    AIRY_FREE(progress_evt.event_data);
                 }
             }
         }
@@ -1184,9 +1184,9 @@ int mcp_v1_handle_sampling_streaming(mcp_v1_context_t *ctx, const mcp_sampling_p
     snprintf(final_result, sizeof(final_result),
              "{\"model\":%s,\"stopReason\":%s,\"stoppedEarly\":%s}", model_esc, stop_esc,
              result.stopped_early ? "true" : "false");
-    AGENTRT_FREE(model_esc);
+    AIRY_FREE(model_esc);
     model_esc = NULL;
-    AGENTRT_FREE(stop_esc);
+    AIRY_FREE(stop_esc);
     stop_esc = NULL;
     emit_sse_event(callback, user_data, "sampling/result", final_result);
 
@@ -1195,7 +1195,7 @@ int mcp_v1_handle_sampling_streaming(mcp_v1_context_t *ctx, const mcp_sampling_p
     done_event.progress = 100;
     done_event.total = 100;
     callback(&done_event, user_data);
-    AGENTRT_FREE(done_event.event_data);
+    AIRY_FREE(done_event.event_data);
 
     mcp_sampling_result_destroy(&result);
     return 0;
@@ -1206,8 +1206,8 @@ int mcp_v1_route_request(mcp_v1_context_t *ctx, const char *method, const char *
 {
     if (!ctx || !method || !response_json)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_route_request: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_route_request: failed");
+        return AIRY_ERR_UNKNOWN;
         }
 
     ctx->request_counter++;
@@ -1222,7 +1222,7 @@ int mcp_v1_route_request(mcp_v1_context_t *ctx, const char *method, const char *
                 CJSON_PARSE_GUARD(pj, params_json, { break; });
                 cJSON *name_item = cJSON_GetObjectItem(pj, "name");
                 if (cJSON_IsString(name_item) && name_item->valuestring) {
-                    AGENTRT_STRNCPY_TERM(tool_name, name_item->valuestring, sizeof(tool_name));
+                    AIRY_STRNCPY_TERM(tool_name, name_item->valuestring, sizeof(tool_name));
                     tool_name[sizeof(tool_name) - 1] = '\0';
                 }
                 /* pj 由 CJSON_AUTO_FREE 自动释放 */
@@ -1240,7 +1240,7 @@ int mcp_v1_route_request(mcp_v1_context_t *ctx, const char *method, const char *
                 CJSON_PARSE_GUARD(pj, params_json, { break; });
                 cJSON *uri_item = cJSON_GetObjectItem(pj, "uri");
                 if (cJSON_IsString(uri_item) && uri_item->valuestring) {
-                    AGENTRT_STRNCPY_TERM(resource_uri, uri_item->valuestring, sizeof(resource_uri));
+                    AIRY_STRNCPY_TERM(resource_uri, uri_item->valuestring, sizeof(resource_uri));
                 }
                 /* pj 由 CJSON_AUTO_FREE 自动释放 */
             } while (0);
@@ -1259,7 +1259,7 @@ int mcp_v1_route_request(mcp_v1_context_t *ctx, const char *method, const char *
                 CJSON_PARSE_GUARD(pj, params_json, { break; });
                 cJSON *name_item = cJSON_GetObjectItem(pj, "name");
                 if (cJSON_IsString(name_item) && name_item->valuestring) {
-                    AGENTRT_STRNCPY_TERM(prompt_name, name_item->valuestring, sizeof(prompt_name));
+                    AIRY_STRNCPY_TERM(prompt_name, name_item->valuestring, sizeof(prompt_name));
                 }
                 /* pj 由 CJSON_AUTO_FREE 自动释放 */
             } while (0);
@@ -1305,7 +1305,7 @@ int mcp_v1_route_request(mcp_v1_context_t *ctx, const char *method, const char *
                      (ctx->config.capabilities & MCP_CAP_LOGGING) ? "true" : "false",
                      ctx->config.server_name ? ctx->config.server_name : "AgentRT",
                      ctx->config.server_version ? ctx->config.server_version : MCP_V1_VERSION);
-        char *resp = AGENTRT_MALLOC(len + 1);
+        char *resp = AIRY_MALLOC(len + 1);
         if (resp)
             snprintf(resp, len + 1,
                      "{\"protocolVersion\":\"%s\",\"capabilities\":{\"tools\":%s,\"resources\":%s,"
@@ -1323,10 +1323,10 @@ int mcp_v1_route_request(mcp_v1_context_t *ctx, const char *method, const char *
     }
 
     *response_json =
-        AGENTRT_STRDUP("{\"error\":{\"code\":-32601,\"message\":\"Method not found\"}}");
-    AGENTRT_LOG_WARN("method not found in route_request: method=%s, request_counter=%llu", method, (unsigned long long)ctx->request_counter);
-    agentrt_error_push_ex(AGENTRT_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
-    return AGENTRT_ERR_INVALID_PARAM;
+        AIRY_STRDUP("{\"error\":{\"code\":-32601,\"message\":\"Method not found\"}}");
+    AIRY_LOG_WARN("method not found in route_request: method=%s, request_counter=%llu", method, (unsigned long long)ctx->request_counter);
+    airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
+    return AIRY_ERR_INVALID_PARAM;
 }
 
 static int mcp_adapter_init(void *context)
@@ -1334,17 +1334,17 @@ static int mcp_adapter_init(void *context)
     mcp_v1_context_t *ctx = (mcp_v1_context_t *)context;
     if (!ctx)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_init: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_init: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     mcp_v1_config_t config = mcp_v1_config_default();
     mcp_v1_context_t *new_ctx = mcp_v1_context_create(&config);
     if (!new_ctx) {
-        agentrt_error_push_ex(AGENTRT_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
-        return AGENTRT_ERR_INVALID_PARAM;
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
+        return AIRY_ERR_INVALID_PARAM;
         }
     __builtin_memcpy(ctx, new_ctx, sizeof(mcp_v1_context_t));
-    AGENTRT_FREE(new_ctx);
+    AIRY_FREE(new_ctx);
     return 0;
 }
 
@@ -1360,8 +1360,8 @@ static int mcp_adapter_encode(void *context, const void *msg, void **encoded, si
 {
     if (!context || !msg || !encoded || !size)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_encode: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_encode: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     mcp_v1_context_t *ctx = (mcp_v1_context_t *)context;
     const unified_message_t *umsg = (const unified_message_t *)msg;
@@ -1370,7 +1370,7 @@ static int mcp_adapter_encode(void *context, const void *msg, void **encoded, si
     int result =
         mcp_v1_route_request(ctx, umsg->endpoint, (const char *)umsg->payload, &response_json);
     if (result != 0 || !response_json) {
-        AGENTRT_LOG_ERROR("route_request failed in encode: endpoint=%s, result=%d", umsg->endpoint, result);
+        AIRY_LOG_ERROR("route_request failed in encode: endpoint=%s, result=%d", umsg->endpoint, result);
         *encoded = NULL;
         *size = 0;
         return result;
@@ -1385,22 +1385,22 @@ static int mcp_adapter_decode(void *context, const void *data, size_t data_size,
 {
     if (!context || !data || !out_msg)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_decode: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_decode: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     if (data_size == 0) {
-        AGENTRT_LOG_WARN("decode called with zero data_size");
-        agentrt_error_push_ex(AGENTRT_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
-        return AGENTRT_ERR_INVALID_PARAM;
+        AIRY_LOG_WARN("decode called with zero data_size");
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
+        return AIRY_ERR_INVALID_PARAM;
         }
 
     mcp_v1_context_t *ctx = (mcp_v1_context_t *)context;
     unified_message_t *msg = (unified_message_t *)out_msg;
 
-    char *input_copy = AGENTRT_MALLOC(data_size + 1);
+    char *input_copy = AIRY_MALLOC(data_size + 1);
     if (!input_copy) {
-        agentrt_error_push_ex(AGENTRT_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
-        return AGENTRT_ERR_NULL_POINTER;
+        airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
+        return AIRY_ERR_NULL_POINTER;
         }
     __builtin_memcpy(input_copy, data, data_size);
     input_copy[data_size] = '\0';
@@ -1415,7 +1415,7 @@ static int mcp_adapter_decode(void *context, const void *data, size_t data_size,
             char *method_end = strchr(method_start, '"');
             if (method_end) {
                 size_t method_len = (size_t)(method_end - method_start);
-                char *method_buf = AGENTRT_MALLOC(method_len + 1);
+                char *method_buf = AIRY_MALLOC(method_len + 1);
                 if (method_buf) {
                     __builtin_memcpy(method_buf, method_start, method_len);
                     method_buf[method_len] = '\0';
@@ -1429,10 +1429,10 @@ static int mcp_adapter_decode(void *context, const void *data, size_t data_size,
     char *response_json = NULL;
     int result = mcp_v1_route_request(ctx, method, input_copy, &response_json);
     if (method_allocated) {
-        AGENTRT_FREE((void *)method);
+        AIRY_FREE((void *)method);
         method = NULL;
     }
-    AGENTRT_FREE(input_copy);
+    AIRY_FREE(input_copy);
     input_copy = NULL;
 
     if (result == 0 && response_json) {
@@ -1450,18 +1450,18 @@ static int mcp_adapter_connect(void *context, const char *address)
 {
     if (!context)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_connect: IO error");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_connect: IO error");
+        return AIRY_ERR_UNKNOWN;
         }
     mcp_v1_context_t *ctx = (mcp_v1_context_t *)context;
     if (address) {
         char *old_name = (char *)ctx->config.server_name;
-        ctx->config.server_name = AGENTRT_STRDUP(address);
-        AGENTRT_FREE(old_name);
+        ctx->config.server_name = AIRY_STRDUP(address);
+        AIRY_FREE(old_name);
     }
     if (ctx->transport) {
         mcp_transport_config_t tcfg;
-        AGENTRT_MEMSET(&tcfg, 0, sizeof(tcfg));
+        AIRY_MEMSET(&tcfg, 0, sizeof(tcfg));
         tcfg.type = MCP_TRANSPORT_HTTP_SSE;
         tcfg.config.http.base_url = address;
         tcfg.config.http.sse_endpoint = "/sse";
@@ -1477,12 +1477,12 @@ static int mcp_adapter_disconnect(void *context)
 {
     if (!context)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_disconnect: IO error");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_disconnect: IO error");
+        return AIRY_ERR_UNKNOWN;
         }
     mcp_v1_context_t *ctx = (mcp_v1_context_t *)context;
     if (ctx->config.server_name) {
-        AGENTRT_FREE((void *)ctx->config.server_name);
+        AIRY_FREE((void *)ctx->config.server_name);
         ctx->config.server_name = NULL;
     }
     return 0;
@@ -1503,14 +1503,14 @@ static int mcp_adapter_send(void *context, const void *data, size_t size)
 {
     if (!context || !data)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_send: IO error");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_send: IO error");
+        return AIRY_ERR_UNKNOWN;
         }
     mcp_v1_context_t *ctx = (mcp_v1_context_t *)context;
     if (!ctx->transport) {
-        AGENTRT_LOG_WARN("send called but no transport configured");
-        agentrt_error_push_ex(AGENTRT_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
-        return AGENTRT_ERR_INVALID_PARAM;
+        AIRY_LOG_WARN("send called but no transport configured");
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
+        return AIRY_ERR_INVALID_PARAM;
         }
     return mcp_transport_send(ctx->transport, (const char *)data, size);
 }
@@ -1519,13 +1519,13 @@ static int mcp_adapter_receive(void *context, void **data, size_t *size)
 {
     if (!context || !data || !size)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_receive: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_receive: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     mcp_v1_context_t *ctx = (mcp_v1_context_t *)context;
     if (!ctx->transport) {
-        AGENTRT_LOG_WARN("receive called but no transport configured");
-        return AGENTRT_ERR_INVALID_PARAM;
+        AIRY_LOG_WARN("receive called but no transport configured");
+        return AIRY_ERR_INVALID_PARAM;
         }
     char *msg = NULL;
     size_t msg_len = 0;
@@ -1549,8 +1549,8 @@ static int mcp_adapter_get_stats(void *context, char *stats_json, size_t max_siz
     (void)context;
     if (!stats_json || max_size < 64)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_get_stats: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_get_stats: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     int written = snprintf(stats_json, max_size,
                            "{\"adapter_version\":\"%s\",\"protocol\":\"mcp\"}", MCP_V1_VERSION);
@@ -1561,8 +1561,8 @@ static int mcp_adapter_handle_request(void *context, const void *req, void **res
 {
     if (!context || !req || !resp)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_handle_request: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_handle_request: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     mcp_v1_context_t *ctx = (mcp_v1_context_t *)context;
     const unified_message_t *msg = (const unified_message_t *)req;
@@ -1576,9 +1576,9 @@ static int mcp_adapter_handle_request(void *context, const void *req, void **res
     if (result == 0 && response_json) {
         *resp = response_json;
     } else {
-        AGENTRT_FREE(response_json);
+        AIRY_FREE(response_json);
         response_json = NULL;
-        *resp = AGENTRT_STRDUP("{\"error\":\"request failed\"}");
+        *resp = AIRY_STRDUP("{\"error\":\"request failed\"}");
         result = -1;
     }
     return result;
@@ -1589,8 +1589,8 @@ static int mcp_adapter_get_version(void *context, char *buf, size_t max_size)
     (void)context;
     if (!buf || max_size == 0)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_get_version: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_adapter_get_version: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     size_t len = strlen(MCP_V1_VERSION);
     if (len >= max_size)
@@ -1607,7 +1607,7 @@ static uint32_t mcp_adapter_capabilities(void *context)
                       MCP_CAP_SAMPLING);
 }
 
-static protocol_adapter_t mcp_v1_adapter_internal = {.type = AGENTRT_PROTOCOL_MCP,
+static protocol_adapter_t mcp_v1_adapter_internal = {.type = AIRY_PROTOCOL_MCP,
                                                      .name = "MCP v1.0 Protocol Adapter",
                                                      .version = MCP_V1_VERSION,
                                                      .description =
@@ -1637,8 +1637,8 @@ int mcp_v1_set_transport(mcp_v1_context_t *ctx, mcp_transport_t *transport)
 {
     if (!ctx)
         {
-        agentrt_error_push_ex(AGENTRT_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_set_transport: failed");
-        return AGENTRT_ERR_UNKNOWN;
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_set_transport: failed");
+        return AIRY_ERR_UNKNOWN;
         }
     ctx->transport = transport;
     return 0;
@@ -1676,20 +1676,20 @@ void mcp_content_destroy(mcp_content_t *content, size_t count)
     if (!content)
         return;
     for (size_t i = 0; i < count; i++) {
-        AGENTRT_FREE(content[i].text);
-        AGENTRT_FREE(content[i].mime_type);
-        AGENTRT_FREE(content[i].uri);
-        AGENTRT_FREE(content[i].data);
+        AIRY_FREE(content[i].text);
+        AIRY_FREE(content[i].mime_type);
+        AIRY_FREE(content[i].uri);
+        AIRY_FREE(content[i].data);
     }
-    AGENTRT_FREE(content);
+    AIRY_FREE(content);
 }
 
 void mcp_sampling_result_destroy(mcp_sampling_result_t *result)
 {
     if (!result)
         return;
-    AGENTRT_FREE(result->model);
-    AGENTRT_FREE(result->stop_reason);
+    AIRY_FREE(result->model);
+    AIRY_FREE(result->stop_reason);
     mcp_content_destroy(result->content, result->content_count);
 }
 
@@ -1698,7 +1698,7 @@ void mcp_completion_result_destroy(mcp_completion_result_t *result)
     if (!result)
         return;
     for (size_t i = 0; i < result->value_count; i++) {
-        AGENTRT_FREE(result->values[i]);
+        AIRY_FREE(result->values[i]);
     }
-    AGENTRT_FREE(result->values);
+    AIRY_FREE(result->values);
 }

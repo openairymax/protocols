@@ -12,8 +12,8 @@
  */
 
 // @owner: team-B
-#ifndef AGENTRT_UNIFIED_PROTOCOL_H
-#define AGENTRT_UNIFIED_PROTOCOL_H
+#ifndef AIRY_RT_UNIFIED_PROTOCOL_H
+#define AIRY_RT_UNIFIED_PROTOCOL_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -27,23 +27,23 @@ extern "C" {
  * @brief 支持的协议类型
  */
 typedef enum {
-    AGENTRT_PROTOCOL_JSON_RPC = 0,
-    AGENTRT_PROTOCOL_MCP,
-    AGENTRT_PROTOCOL_A2A,
-    AGENTRT_PROTOCOL_OPENAI,
-    AGENTRT_PROTOCOL_OPENJIUWEN,
-    AGENTRT_PROTOCOL_CLAUDE,
-    AGENTRT_PROTOCOL_CHINA_ECO,
-    AGENTRT_PROTOCOL_AGNTCY,
-    AGENTRT_PROTOCOL_OPENCLAW,
-    AGENTRT_PROTOCOL_COUNT
-} agentrt_protocol_type_t;
+    AIRY_PROTOCOL_JSON_RPC = 0,
+    AIRY_PROTOCOL_MCP,
+    AIRY_PROTOCOL_A2A,
+    AIRY_PROTOCOL_OPENAI,
+    AIRY_PROTOCOL_OPENJIUWEN,
+    AIRY_PROTOCOL_CLAUDE,
+    AIRY_PROTOCOL_CHINA_ECO,
+    AIRY_PROTOCOL_AGNTCY,
+    AIRY_PROTOCOL_OPENCLAW,
+    AIRY_PROTOCOL_COUNT
+} airy_protocol_type_t;
 
 /**
  * @brief 协议适配器结构体（所有适配器共享的接口定义）
  */
 typedef struct protocol_adapter_s {
-    agentrt_protocol_type_t type;
+    airy_protocol_type_t type;
     const char *name;
     const char *version;
     const char *description;
@@ -72,11 +72,11 @@ typedef protocol_adapter_t proto_adapter_t;
 typedef struct {
     const void *data;
     size_t len;
-    agentrt_protocol_type_t source_protocol;
-} agentrt_message_t;
+    airy_protocol_type_t source_protocol;
+} airy_message_t;
 
-typedef agentrt_protocol_type_t protocol_type_t;
-typedef agentrt_protocol_type_t proto_type_t;
+typedef airy_protocol_type_t protocol_type_t;
+typedef airy_protocol_type_t proto_type_t;
 
 typedef enum {
     DIRECTION_REQUEST = 0,
@@ -89,28 +89,28 @@ typedef enum {
 #define MSG_TYPE_RESPONSE DIRECTION_RESPONSE
 #define MSG_TYPE_ERROR DIRECTION_ERROR
 
-#define PROTOCOL_CUSTOM AGENTRT_PROTOCOL_COUNT
-#define PROTOCOL_HTTP AGENTRT_PROTOCOL_JSON_RPC
+#define PROTOCOL_CUSTOM AIRY_PROTOCOL_COUNT
+#define PROTOCOL_HTTP AIRY_PROTOCOL_JSON_RPC
 
 #define ENCODING_UTF8_JSON 0
 
-#define PROTO_JSONRPC AGENTRT_PROTOCOL_JSON_RPC
-#define PROTO_MCP AGENTRT_PROTOCOL_MCP
-#define PROTO_A2A AGENTRT_PROTOCOL_A2A
-#define PROTO_OPENAI AGENTRT_PROTOCOL_OPENAI
-#define PROTO_OPENJIUWEN AGENTRT_PROTOCOL_OPENJIUWEN
-#define PROTO_OPENCLAW (AGENTRT_PROTOCOL_COUNT + 1)
-#define PROTO_CLAUDE (AGENTRT_PROTOCOL_COUNT + 2)
-#define PROTO_AGNTCY (AGENTRT_PROTOCOL_COUNT + 3)
-#define PROTO_CHINA_ECO (AGENTRT_PROTOCOL_COUNT + 4)
-#define PROTOCOL_WEBSOCKET (AGENTRT_PROTOCOL_COUNT + 10)
-#define PROTOCOL_GRPC (AGENTRT_PROTOCOL_COUNT + 11)
-#define PROTOCOL_MQTT (AGENTRT_PROTOCOL_COUNT + 12)
-#define PROTOCOL_AMQP (AGENTRT_PROTOCOL_COUNT + 13)
-#define PROTOCOL_RAW_TCP (AGENTRT_PROTOCOL_COUNT + 14)
-#define PROTOCOL_RAW_UDP (AGENTRT_PROTOCOL_COUNT + 15)
-#define PROTOCOL_STDIO (AGENTRT_PROTOCOL_COUNT + 16)
-#define PROTOCOL_IPC (AGENTRT_PROTOCOL_COUNT + 17)
+#define PROTO_JSONRPC AIRY_PROTOCOL_JSON_RPC
+#define PROTO_MCP AIRY_PROTOCOL_MCP
+#define PROTO_A2A AIRY_PROTOCOL_A2A
+#define PROTO_OPENAI AIRY_PROTOCOL_OPENAI
+#define PROTO_OPENJIUWEN AIRY_PROTOCOL_OPENJIUWEN
+#define PROTO_OPENCLAW (AIRY_PROTOCOL_COUNT + 1)
+#define PROTO_CLAUDE (AIRY_PROTOCOL_COUNT + 2)
+#define PROTO_AGNTCY (AIRY_PROTOCOL_COUNT + 3)
+#define PROTO_CHINA_ECO (AIRY_PROTOCOL_COUNT + 4)
+#define PROTOCOL_WEBSOCKET (AIRY_PROTOCOL_COUNT + 10)
+#define PROTOCOL_GRPC (AIRY_PROTOCOL_COUNT + 11)
+#define PROTOCOL_MQTT (AIRY_PROTOCOL_COUNT + 12)
+#define PROTOCOL_AMQP (AIRY_PROTOCOL_COUNT + 13)
+#define PROTOCOL_RAW_TCP (AIRY_PROTOCOL_COUNT + 14)
+#define PROTOCOL_RAW_UDP (AIRY_PROTOCOL_COUNT + 15)
+#define PROTOCOL_STDIO (AIRY_PROTOCOL_COUNT + 16)
+#define PROTOCOL_IPC (AIRY_PROTOCOL_COUNT + 17)
 #define ENCODING_BINARY 1
 
 typedef struct {
@@ -120,8 +120,8 @@ typedef struct {
 } payload_wrapper_t;
 
 typedef struct {
-    agentrt_protocol_type_t protocol;
-    agentrt_protocol_type_t protocol_type; /* alias for protocol */
+    airy_protocol_type_t protocol;
+    airy_protocol_type_t protocol_type; /* alias for protocol */
     char protocol_name[64];
     char endpoint[256];
     char method[64];
@@ -150,7 +150,7 @@ typedef struct {
 /**
  * @brief 创建指定类型的协议适配器
  */
-int protocol_adapter_create(agentrt_protocol_type_t type, protocol_adapter_t *adapter);
+int protocol_adapter_create(airy_protocol_type_t type, protocol_adapter_t *adapter);
 
 /**
  * @brief 销毁协议适配器
@@ -160,12 +160,12 @@ void protocol_adapter_destroy(protocol_adapter_t adapter);
 /**
  * @brief 通过适配器发送消息
  */
-int protocol_adapter_send(protocol_adapter_t adapter, const agentrt_message_t *msg);
+int protocol_adapter_send(protocol_adapter_t adapter, const airy_message_t *msg);
 
 /**
  * @brief 通过适配器接收消息
  */
-int protocol_adapter_recv(protocol_adapter_t adapter, agentrt_message_t *msg, size_t max_len);
+int protocol_adapter_recv(protocol_adapter_t adapter, airy_message_t *msg, size_t max_len);
 
 typedef struct protocol_stack_s protocol_stack_s;
 typedef struct protocol_stack_s *protocol_stack_handle_t;
@@ -174,7 +174,7 @@ typedef struct {
     char name[128];
     uint32_t max_adapters;
     bool enable_logging;
-    agentrt_protocol_type_t default_protocol;
+    airy_protocol_type_t default_protocol;
     uint32_t max_message_size;
     uint32_t timeout_ms;
     bool enable_compression;
@@ -203,10 +203,10 @@ protocol_type_t protocol_type_from_string(const char *str);
 int protocol_auto_transform(const unified_message_t *source, unified_message_t *target,
                             const char *target_protocol_name);
 
-const char *protocol_type_name(agentrt_protocol_type_t type);
+const char *protocol_type_name(airy_protocol_type_t type);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* AGENTRT_UNIFIED_PROTOCOL_H */
+#endif /* AIRY_RT_UNIFIED_PROTOCOL_H */

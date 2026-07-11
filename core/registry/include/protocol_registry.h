@@ -25,10 +25,10 @@
  * @since 2.1.0
  */
 
-#ifndef AGENTRT_PROTOCOL_REGISTRY_H
-#define AGENTRT_PROTOCOL_REGISTRY_H
+#ifndef AIRY_RT_PROTOCOL_REGISTRY_H
+#define AIRY_RT_PROTOCOL_REGISTRY_H
 
-#include "agentrt_protocol_interface.h"
+#include "airy_protocol_interface.h"
 #include "unified_protocol.h"
 
 #include <stdbool.h>
@@ -168,4 +168,4 @@ const char *proto_state_to_string(proto_state_t state);
 }
 #endif
 
-#endif /* AGENTRT_PROTOCOL_REGISTRY_H */
+#endif /* AIRY_RT_PROTOCOL_REGISTRY_H */
