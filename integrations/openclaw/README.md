@@ -4,7 +4,7 @@
 
 ## 概述
 
-`openclaw/` 是 AgentRT 协议栈的 OpenClaw（九问）开源 AI Agent 平台适配器，专注于政务和企业应用场景的双向桥接集成。实现 AgentRT ↔ OpenClaw 消息互通、工具共享和能力映射，通过 `agentrt_protocol_interface.h` 和 `unified_protocol.h` 注册到协议路由器。
+`openclaw/` 是 AgentRT 协议栈的 OpenClaw（九问）开源 AI Agent 平台适配器，专注于政务和企业应用场景的双向桥接集成。实现 AgentRT ↔ OpenClaw 消息互通、工具共享和能力映射，通过 `airy_protocol_interface.h` 和 `unified_protocol.h` 注册到协议路由器。
 
 ### 核心能力
 
@@ -75,7 +75,7 @@ openclaw/
 | 依赖 | 来源 | 用途 |
 |------|------|------|
 | **unified_protocol.h** | `protocols/include/` | 统一消息模型 |
-| **agentrt_protocol_interface.h** | `protocols/include/` | 适配器虚表与接口定义 |
+| **airy_protocol_interface.h** | `protocols/include/` | 适配器虚表与接口定义 |
 | cJSON | 外部 | JSON 解析 |
 | libcurl | 外部 | HTTP 客户端 |
 
@@ -92,7 +92,7 @@ CMake 选项: `PROTOCOLS_ENABLE_OPENCLAW`（默认 OFF，需 Unix sockets）
 
 ```bash
 cmake -S . -B build -DPROTOCOLS_ENABLE_OPENCLAW=ON
-cmake --build build --target agentrt_protocols
+cmake --build build --target airy_protocols
 ```
 
 ## 许可证

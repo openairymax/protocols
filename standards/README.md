@@ -53,7 +53,7 @@ standards/
   ★ standards/  ★  ← 开放标准协议适配（A2A / MCP / AGNTCY ACP）
   core/           ← 核心路由 / 扩展框架 / 转换 / 注册表
   common/         ← 统一协议接口 / 消息模型
-  include/        ← 顶层公共接口（unified_protocol.h / agentrt_protocol_interface.h）
+  include/        ← 顶层公共接口（unified_protocol.h / airy_protocol_interface.h）
 ```
 
 ## 上游依赖
@@ -61,7 +61,7 @@ standards/
 | 依赖 | 来源 | 用途 |
 |------|------|------|
 | **unified_protocol.h** | `protocols/include/` | 统一消息模型 |
-| **agentrt_protocol_interface.h** | `protocols/include/` | 适配器虚表与接口定义 |
+| **airy_protocol_interface.h** | `protocols/include/` | 适配器虚表与接口定义 |
 | cJSON | 外部 | JSON 解析 |
 | libcurl | 外部 | HTTP 客户端 |
 
@@ -76,11 +76,11 @@ standards/
 
 ## 构建
 
-全部三个协议适配器默认编译，编译为 `libagentrt_protocols` 的一部分。
+全部三个协议适配器默认编译，编译为 `libairy_protocols` 的一部分。
 
 ```bash
 cmake -S . -B build
-cmake --build build --target agentrt_protocols
+cmake --build build --target airy_protocols
 ```
 
 ## 许可证
