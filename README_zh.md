@@ -17,11 +17,11 @@
 
 ## 概述
 
-**protocols** 是 Airymax 智能体运行时的**统一通信协议栈**。它定义并实现系统内使用的所有协议契约——模块间、服务间、运行时与外部平台间。协议栈组织为五层（Common / Core / Standards / Integrations / Frameworks），编译为 `libagentrt_protocols` 共享库。
+**protocols** 是 Airymax 智能体运行时的**统一通信协议栈**。它定义并实现系统内使用的所有协议契约——模块间、服务间、运行时与外部平台间。协议栈组织为五层（Common / Core / Standards / Integrations / Frameworks），编译为 `libairy_protocols` 共享库。
 
 协议栈承载三大协议族：
 
-- **AgentsIPC** —— Airymax 内部 IPC 线协议。其 L2 应用层消息头（`agentrt_ipc_header_t`，权威定义于 `commons/include/agentrt_types.h`）是**定长二进制头**，携带 magic、version、type、flags、消息 ID、关联 ID、64 字节 source、64 字节 target、payload 长度、checksum、timestamp——是跨模块、跨服务、应用层消息在 Linux/Windows/macOS 上的规范信封。Payload 分为 **5 类**，与运行时消息域对齐（task / memory / session / telemetry / agent）。
+- **AgentsIPC** —— Airymax 内部 IPC 线协议。其 L2 应用层消息头（`airy_ipc_header_t`，权威定义于 `commons/include/airy_types.h`）是**定长二进制头**，携带 magic、version、type、flags、消息 ID、关联 ID、64 字节 source、64 字节 target、payload 长度、checksum、timestamp——是跨模块、跨服务、应用层消息在 Linux/Windows/macOS 上的规范信封。Payload 分为 **5 类**，与运行时消息域对齐（task / memory / session / telemetry / agent）。
 - **A2A（Agent-to-Agent）** —— v0.3 Agent-to-Agent 标准协议适配器，用于智能体间对话与能力交换。
 - **A2T（Agent-to-Tool）/ MCP** —— Model Context Protocol（MCP v1.0）适配器作为 Agent-to-Tool 契约，通过标准化上下文协议向智能体暴露工具接口。
 
@@ -33,23 +33,23 @@
 
 **类 ——（服务 / 组合层）。**
 
-protocols 既非基础原语（A 类），也非行为安全模块（B 类）；它是服务/组合模块，提供运行时其余部分所使用的线协议契约和适配器管道。它依赖 `commons`（权威 `agentrt_ipc_header_t` 类型和平台/字符串工具）和 `atoms/corekern`（内核类型定义；CoreKern Binder IPC 是 AgentsIPC 信封搭载的底层传输）。其消费者——`gateway` 和 `daemons`——使用协议路由器/网关接口翻译传输并在协议边界桥接 A2A/MCP。
+protocols 既非基础原语（A 类），也非行为安全模块（B 类）；它是服务/组合模块，提供运行时其余部分所使用的线协议契约和适配器管道。它依赖 `commons`（权威 `airy_ipc_header_t` 类型和平台/字符串工具）和 `atoms/corekern`（内核类型定义；CoreKern Binder IPC 是 AgentsIPC 信封搭载的底层传输）。其消费者——`gateway` 和 `daemons`——使用协议路由器/网关接口翻译传输并在协议边界桥接 A2A/MCP。
 
 ## 目录结构
 
 ```
 protocols/
-├── CMakeLists.txt                          # CMake 构建配置（共享库 libagentrt_protocols）
+├── CMakeLists.txt                          # CMake 构建配置（共享库 libairy_protocols）
 ├── README.md                               # 英文版
 ├── README_zh.md                            # 本文件（中文）
 ├── LICENSE                                 # 双许可证文本（AGPL-3.0 + Apache-2.0）
 ├── NOTICE                                  # 版权声明
 ├── include/                                # 顶层公共头
-│   ├── agentrt_protocol_interface.h        # 统一协议系统接口
+│   ├── airy_protocol_interface.h        # 统一协议系统接口
 │   ├── unified_protocol.h                  # 统一消息模型与协议类型
 │   └── protocol_router.h                   # 顶层（轻量）协议路由器
 ├── src/                                    # 顶层实现
-│   ├── agentrt_protocol_interface.c        # 路由器/网关/注册中心统一实现
+│   ├── airy_protocol_interface.c        # 路由器/网关/注册中心统一实现
 │   └── protocol_toplevel_impl.c            # 顶层协议路由实现
 ├── common/                                 # Common 层——统一协议接口
 │   ├── include/protocols.h                 # 框架主头（init / manager / adapter factory）
@@ -84,7 +84,7 @@ protocols/
 
 ### AgentsIPC —— L2 应用层线协议
 
-所有跨模块/跨服务消息的规范信封，权威定义于 `commons/include/agentrt_types.h`：
+所有跨模块/跨服务消息的规范信封，权威定义于 `commons/include/airy_types.h`：
 
 ```c
 typedef struct {
@@ -99,7 +99,7 @@ typedef struct {
     uint32_t payload_len;    /* 负载长度 */
     uint32_t checksum;       /* 校验和 */
     uint64_t timestamp;      /* 纳秒时间戳 */
-} agentrt_ipc_header_t;
+} airy_ipc_header_t;
 ```
 
 头部携带结构化寻址块（64 字节 source + 64 字节 target = 128 字节路由标识）加 magic/version/type/flags、消息与关联 ID、payload 长度、checksum、纳秒时间戳。**5 类 payload** 与运行时消息域对齐：
@@ -171,20 +171,20 @@ typedef struct {
 └─────────────────────────────────────────────────────────────────────┘
                             │
                             ▼
-        AgentsIPC L2 信封（agentrt_ipc_header_t + payload）
+        AgentsIPC L2 信封（airy_ipc_header_t + payload）
         搭载于 atoms/corekern Binder IPC 传输之上
 ```
 
 ## 上游依赖
 
-> `commons` 是所有 agentrt 模块的基础库；protocols 消费它以获取权威 `agentrt_ipc_header_t` 类型和平台/字符串工具。protocols 还依赖 `atoms/corekern`。
+> `commons` 是所有 agentrt 模块的基础库；protocols 消费它以获取权威 `airy_ipc_header_t` 类型和平台/字符串工具。protocols 还依赖 `atoms/corekern`。
 
 | 依赖 | 来源 | 用途 |
 |------|------|------|
-| **commons** | `commons/` | 平台抽象、内存管理、字符串工具、**权威 `agentrt_ipc_header_t` 类型定义**（AgentsIPC L2 线协议头） |
+| **commons** | `commons/` | 平台抽象、内存管理、字符串工具、**权威 `airy_ipc_header_t` 类型定义**（AgentsIPC L2 线协议头） |
 | **atoms/corekern** | `atoms/corekern/` | 内核类型定义；CoreKern Binder IPC 是 AgentsIPC 信封搭载的底层传输 |
 | `svc_common` | `daemons/common/` | 安全字符串工具（`safe_string_utils.c`） |
-| `agentrt_compile_defs` | 伞仓 CMake | 编译宏 |
+| `airy_compile_defs` | 伞仓 CMake | 编译宏 |
 | cJSON | 外部 | JSON 解析（MCP 等适配器） |
 | libcurl | 外部 | HTTP 客户端（部分集成适配器） |
 
@@ -199,7 +199,7 @@ typedef struct {
 
 ## 构建
 
-协议层构建为共享库 `libagentrt_protocols`。每个适配器可通过 CMake 选项单独启用/禁用。
+协议层构建为共享库 `libairy_protocols`。每个适配器可通过 CMake 选项单独启用/禁用。
 
 ```bash
 # 标准构建（源外构建，BAN-33 强制要求）
@@ -229,7 +229,7 @@ Windows 注意：`OPENCLAW`、`CHINA_ECO`、`MCP` 在 Windows 上强制禁用，
 
 **构建产物：**
 
-- `libagentrt_protocols` —— 聚合 Common / Core / Standards / Integrations / Frameworks 层的共享库
+- `libairy_protocols` —— 聚合 Common / Core / Standards / Integrations / Frameworks 层的共享库
 - 公共头文件安装到 `include/agentrt/protocols`
 
 ## API

@@ -81,7 +81,7 @@ langchain/
 
 | 依赖 | 来源 | 用途 |
 |------|------|------|
-| `agentrt_protocol_interface.h` | `protocols/include/` | 适配器虚表与接口定义 |
+| `airy_protocol_interface.h` | `protocols/include/` | 适配器虚表与接口定义 |
 | `unified_protocol.h` | `protocols/include/` | 统一消息模型 |
 
 ## 使用说明

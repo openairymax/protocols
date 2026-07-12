@@ -17,11 +17,11 @@
 
 ## Overview
 
-**protocols** is the **unified communication protocol stack** of the Airymax agent runtime. It defines and implements every protocol contract used inside the system — between modules, between services, and between the runtime and external platforms. The stack is organized in five layers (Common / Core / Standards / Integrations / Frameworks) and is compiled into the `libagentrt_protocols` shared library.
+**protocols** is the **unified communication protocol stack** of the Airymax agent runtime. It defines and implements every protocol contract used inside the system — between modules, between services, and between the runtime and external platforms. The stack is organized in five layers (Common / Core / Standards / Integrations / Frameworks) and is compiled into the `libairy_protocols` shared library.
 
 The stack carries three protocol families:
 
-- **AgentsIPC** — the Airymax internal IPC wire format. Its L2 application-level message header (`agentrt_ipc_header_t`, defined authoritatively in `commons/include/agentrt_types.h`) is a **fixed-length binary header** carrying magic, version, type, flags, message ID, correlation ID, 64-byte source, 64-byte target, payload length, checksum, and timestamp — the canonical envelope for cross-module, cross-service, and application-level messaging across Linux / Windows / macOS. Payloads fall into **5 categories** aligned with the runtime's message domains (task / memory / session / telemetry / agent).
+- **AgentsIPC** — the Airymax internal IPC wire format. Its L2 application-level message header (`airy_ipc_header_t`, defined authoritatively in `commons/include/airy_types.h`) is a **fixed-length binary header** carrying magic, version, type, flags, message ID, correlation ID, 64-byte source, 64-byte target, payload length, checksum, and timestamp — the canonical envelope for cross-module, cross-service, and application-level messaging across Linux / Windows / macOS. Payloads fall into **5 categories** aligned with the runtime's message domains (task / memory / session / telemetry / agent).
 - **A2A (Agent-to-Agent)** — the v0.3 Agent-to-Agent standard protocol adapter for inter-agent dialogue and capability exchange.
 - **A2T (Agent-to-Tool) / MCP** — the Model Context Protocol (MCP v1.0) adapter serves as the Agent-to-Tool contract, exposing tool surfaces to agents through a standardized context protocol.
 
@@ -33,23 +33,23 @@ Within the Airymax 0.1.1 release, the workspace is partitioned into **38 reposit
 
 **Class — (Service / Composition layer).**
 
-protocols is neither a foundational primitive (Class A) nor a behavioral safety module (Class B); it is a service/composition module that provides the wire-format contracts and adapter plumbing the rest of the runtime speaks. It depends on `commons` (the authoritative `agentrt_ipc_header_t` type and platform/string utilities) and `atoms/corekern` (kernel type definitions; CoreKern Binder IPC is the underlying transport that the AgentsIPC envelope rides on). Its consumers — `gateway` and `daemons` — use the protocol router/gateway interfaces to translate transports and bridge A2A/MCP at protocol boundaries.
+protocols is neither a foundational primitive (Class A) nor a behavioral safety module (Class B); it is a service/composition module that provides the wire-format contracts and adapter plumbing the rest of the runtime speaks. It depends on `commons` (the authoritative `airy_ipc_header_t` type and platform/string utilities) and `atoms/corekern` (kernel type definitions; CoreKern Binder IPC is the underlying transport that the AgentsIPC envelope rides on). Its consumers — `gateway` and `daemons` — use the protocol router/gateway interfaces to translate transports and bridge A2A/MCP at protocol boundaries.
 
 ## Directory Structure
 
 ```
 protocols/
-├── CMakeLists.txt                          # CMake build configuration (shared lib libagentrt_protocols)
+├── CMakeLists.txt                          # CMake build configuration (shared lib libairy_protocols)
 ├── README.md                               # This file (English)
 ├── README_zh.md                            # Chinese version
 ├── LICENSE                                 # Dual license texts (AGPL-3.0 + Apache-2.0)
 ├── NOTICE                                  # Copyright notice
 ├── include/                                # Top-level public headers
-│   ├── agentrt_protocol_interface.h        # Unified protocol system interface
+│   ├── airy_protocol_interface.h        # Unified protocol system interface
 │   ├── unified_protocol.h                  # Unified message model & protocol types
 │   └── protocol_router.h                   # Top-level (lightweight) protocol router
 ├── src/                                    # Top-level implementation
-│   ├── agentrt_protocol_interface.c        # Router / Gateway / Registry unified impl
+│   ├── airy_protocol_interface.c        # Router / Gateway / Registry unified impl
 │   └── protocol_toplevel_impl.c            # Top-level protocol routing impl
 ├── common/                                 # Common layer — unified protocol interface
 │   ├── include/protocols.h                 # Framework main header (init / manager / adapter factory)
@@ -84,7 +84,7 @@ protocols/
 
 ### AgentsIPC — the L2 application-level wire format
 
-The canonical envelope for all cross-module / cross-service messaging, defined authoritatively in `commons/include/agentrt_types.h`:
+The canonical envelope for all cross-module / cross-service messaging, defined authoritatively in `commons/include/airy_types.h`:
 
 ```c
 typedef struct {
@@ -99,7 +99,7 @@ typedef struct {
     uint32_t payload_len;    /* payload length */
     uint32_t checksum;       /* checksum */
     uint64_t timestamp;      /* nanosecond timestamp */
-} agentrt_ipc_header_t;
+} airy_ipc_header_t;
 ```
 
 The header carries a structured addressing block (64-byte source + 64-byte target = 128 bytes of routing identity) plus magic/version/type/flags, message & correlation IDs, payload length, checksum, and nanosecond timestamp. **5 payload categories** align with the runtime's message domains:
@@ -171,20 +171,20 @@ The header carries a structured addressing block (64-byte source + 64-byte targe
 └─────────────────────────────────────────────────────────────────────┘
                             │
                             ▼
-        AgentsIPC L2 envelope (agentrt_ipc_header_t + payload)
+        AgentsIPC L2 envelope (airy_ipc_header_t + payload)
         rides on atoms/corekern Binder IPC transport
 ```
 
 ## Upstream Dependencies
 
-> `commons` is the foundation for all agentrt modules; protocols consumes it for the authoritative `agentrt_ipc_header_t` type and platform/string utilities. protocols also depends on `atoms/corekern`.
+> `commons` is the foundation for all agentrt modules; protocols consumes it for the authoritative `airy_ipc_header_t` type and platform/string utilities. protocols also depends on `atoms/corekern`.
 
 | Dependency | Source | Purpose |
 |------------|--------|---------|
-| **commons** | `commons/` | Platform abstraction, memory management, string tools, **authoritative `agentrt_ipc_header_t` type definition** (the AgentsIPC L2 wire-format header) |
+| **commons** | `commons/` | Platform abstraction, memory management, string tools, **authoritative `airy_ipc_header_t` type definition** (the AgentsIPC L2 wire-format header) |
 | **atoms/corekern** | `atoms/corekern/` | Kernel type definitions; CoreKern Binder IPC is the underlying transport that the AgentsIPC envelope rides on |
 | `svc_common` | `daemons/common/` | Safe-string utilities (`safe_string_utils.c`) |
-| `agentrt_compile_defs` | umbrella CMake | Compile definitions |
+| `airy_compile_defs` | umbrella CMake | Compile definitions |
 | cJSON | external | JSON parsing (MCP and other adapters) |
 | libcurl | external | HTTP client (some integration adapters) |
 
@@ -199,7 +199,7 @@ The header carries a structured addressing block (64-byte source + 64-byte targe
 
 ## Build
 
-The protocols layer builds as a shared library `libagentrt_protocols`. Each adapter can be individually enabled or disabled through CMake options.
+The protocols layer builds as a shared library `libairy_protocols`. Each adapter can be individually enabled or disabled through CMake options.
 
 ```bash
 # Standard build (out-of-source, enforced by BAN-33)
@@ -229,7 +229,7 @@ Windows note: `OPENCLAW`, `CHINA_ECO`, and `MCP` are force-disabled on Windows b
 
 **Build artifacts:**
 
-- `libagentrt_protocols` — shared library aggregating Common / Core / Standards / Integrations / Frameworks layers
+- `libairy_protocols` — shared library aggregating Common / Core / Standards / Integrations / Frameworks layers
 - Public headers installed under `include/agentrt/protocols`
 
 ## API

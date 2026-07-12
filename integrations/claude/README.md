@@ -62,7 +62,7 @@ claude/
 | 依赖 | 来源 | 用途 |
 |------|------|------|
 | **unified_protocol.h** | `protocols/include/` | 统一消息模型 |
-| **agentrt_protocol_interface.h** | `protocols/include/` | 适配器虚表与接口定义 |
+| **airy_protocol_interface.h** | `protocols/include/` | 适配器虚表与接口定义 |
 | cJSON | 外部 | JSON 解析 |
 | libcurl | 外部 | HTTP 客户端 |
 
@@ -79,7 +79,7 @@ CMake 选项: `PROTOCOLS_ENABLE_CLAUDE`（默认 ON）
 
 ```bash
 cmake -S . -B build -DPROTOCOLS_ENABLE_CLAUDE=ON
-cmake --build build --target agentrt_protocols
+cmake --build build --target airy_protocols
 ```
 
 ## 许可证

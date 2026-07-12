@@ -81,7 +81,7 @@ CMake 选项: `PROTOCOLS_ENABLE_CHINA_ECO`（默认 ON，Windows 上 OFF）
 
 ```bash
 cmake -S . -B build -DPROTOCOLS_ENABLE_CHINA_ECO=ON
-cmake --build build --target agentrt_protocols
+cmake --build build --target airy_protocols
 ```
 
 ## 许可证

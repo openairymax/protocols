@@ -44,7 +44,7 @@ common/
 
 | 类型 | 说明 |
 |------|------|
-| `agentrt_protocol_type_t` | 支持的协议类型枚举（JSON-RPC / MCP / A2A / OpenAI / OpenJiuwen / Claude / ChinaEco / AGNTCY / OpenClaw） |
+| `airy_protocol_type_t` | 支持的协议类型枚举（JSON-RPC / MCP / A2A / OpenAI / OpenJiuwen / Claude / ChinaEco / AGNTCY / OpenClaw） |
 | `unified_message_t` | 统一消息结构体，包含协议类型、方向、端点、方法、载荷、错误信息、追踪元数据等 |
 | `protocol_adapter_t` | 协议适配器结构体，定义 init/destroy/encode/decode/connect/disconnect/send/receive 等接口 |
 | `protocol_stack_config_t` | 协议栈配置，包含名称、最大适配器数、超时、压缩/加密开关等 |
@@ -99,7 +99,7 @@ common/
 | 依赖 | 来源 | 用途 |
 |------|------|------|
 | `unified_protocol.h` | `protocols/include/` | 统一消息模型与协议类型定义 |
-| `memory_compat.h` | `commons/utils/compat/` | `AGENTRT_CALLOC/MALLOC/FREE` 内存管理宏 |
+| `memory_compat.h` | `commons/utils/compat/` | `AIRY_CALLOC/MALLOC/FREE` 内存管理宏 |
 | `platform.h` | `commons/platform/` | 平台抽象 |
 | `safe_string_utils.c` | `daemons/common/` | 安全字符串操作 |
 | `error.h` | `commons/utils/` | 错误码定义与错误栈 |

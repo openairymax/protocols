@@ -82,7 +82,7 @@ openjiuwen/
 
 ```bash
 cmake -S . -B build
-cmake --build build --target agentrt_protocols
+cmake --build build --target airy_protocols
 ```
 
 ## 许可证
