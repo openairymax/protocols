@@ -114,7 +114,7 @@ static void init_static_adapters(void)
     s_http_adapter.version = "0.1.0";
     s_http_adapter.description = "HTTP Protocol Adapter";
 
-    s_ws_adapter.type = PROTOCOL_HTTP;
+    s_ws_adapter.type = PROTOCOL_WEBSOCKET;
     s_ws_adapter.name = "websocket";
     s_ws_adapter.version = "0.1.0";
     s_ws_adapter.description = "WebSocket Protocol Adapter";
