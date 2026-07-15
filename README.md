@@ -223,7 +223,8 @@ cmake --install /tmp/protocols-build --prefix /opt/airymax
 | `PROTOCOLS_ENABLE_AUTOGEN` | `ON` | AutoGen framework adapter |
 | `PROTOCOLS_ENABLE_AGNTCY` | `ON` | AGNTCY ACP protocol adapter |
 | `PROTOCOLS_ENABLE_CHINA_ECO` | `ON` | China ecosystem adapter (requires Unix) |
-| `PROTOCOLS_ENABLE_MCP` | `ON` (OFF on Windows) | MCP protocol adapter (requires cJSON / unistd.h) |
+| `PROTOCOLS_ENABLE_MCP` | `ON` | MCP protocol adapter (cJSON core cross-platform; Unix socket transport POSIX-only) |
+| `PROTOCOLS_ENABLE_MCP_TRANSPORT` | `ON` (OFF on Windows) | MCP Unix socket transport layer (requires POSIX) |
 
 Windows note: `OPENCLAW`, `CHINA_ECO`, and `MCP` are force-disabled on Windows because they require Unix-domain sockets or `unistd.h`.
 

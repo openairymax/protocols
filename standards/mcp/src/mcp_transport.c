@@ -6,8 +6,16 @@
  * @copyright (c) 2026 SPHARX. All Rights Reserved.
  *
  * Implements STDIO and HTTP+SSE transport for MCP protocol.
+ *
+ * P2-24: This file is POSIX-only (Unix sockets, select(), STDIO transport).
+ * The CMake build system excludes it from Windows builds via
+ * PROTOCOLS_ENABLE_MCP_TRANSPORT=OFF. The cJSON-based MCP core
+ * (mcp_v1_adapter.c) remains cross-platform.
  */
 // @owner: team-B
+
+#ifndef _WIN32
+/* P2-24: POSIX-only transport layer; excluded from Windows builds at CMake level */
 
 #include "mcp_transport.h"
 
@@ -660,3 +668,5 @@ const char *mcp_transport_type_string(mcp_transport_type_t type)
         return "unknown";
     }
 }
+
+#endif /* _WIN32 */
