@@ -32,8 +32,11 @@ airy_print_info("[PROTOCOLS] Configuring protocols module (cJSON: ${AIRY_HAS_CJS
 airy_print_info("[PROTOCOLS]   MCP: ${PROTOCOLS_ENABLE_MCP}, A2A: ON, Claude: ${PROTOCOLS_ENABLE_CLAUDE}")
 
 option(PROTOCOLS_ENABLE_MCP "Enable MCP protocol adapter" ON)
+# P2-24: MCP cJSON core is cross-platform; only Unix socket transport is POSIX-only
 if(WIN32)
-    set(PROTOCOLS_ENABLE_MCP OFF CACHE BOOL "MCP requires cJSON/unistd.h" FORCE)
+    set(PROTOCOLS_ENABLE_MCP_TRANSPORT OFF CACHE BOOL "MCP Unix socket transport requires POSIX" FORCE)
+else()
+    set(PROTOCOLS_ENABLE_MCP_TRANSPORT ON CACHE BOOL "MCP Unix socket transport" FORCE)
 endif()
 
 # ============================================================
@@ -122,8 +125,11 @@ set(PROTOCOLS_STANDARDS_SOURCES
 )
 if(PROTOCOLS_ENABLE_MCP)
     list(APPEND PROTOCOLS_STANDARDS_SOURCES
-        standards/mcp/src/mcp_v1_adapter.c
-        standards/mcp/src/mcp_transport.c)
+        standards/mcp/src/mcp_v1_adapter.c)
+    if(PROTOCOLS_ENABLE_MCP_TRANSPORT)
+        list(APPEND PROTOCOLS_STANDARDS_SOURCES
+            standards/mcp/src/mcp_transport.c)
+    endif()
 endif()
 
 if(PROTOCOLS_ENABLE_AGNTCY)
