@@ -12,7 +12,7 @@
 
 #include "airy_protocol_interface.h"
 #include "error.h"
-#include "memory_compat.h"
+#include "airy_memory.h"
 #include "types.h"
 
 #include <ctype.h>

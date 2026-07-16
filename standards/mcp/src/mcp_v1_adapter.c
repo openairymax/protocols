@@ -9,7 +9,7 @@
 #include "mcp_v1_adapter.h"
 
 #include "mcp_transport.h"
-#include "memory_compat.h"
+#include "airy_memory.h"
 #include "error.h"
 #include "types.h"
 #include "unified_protocol.h"
@@ -22,7 +22,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "logging_compat.h"
+#include "logging.h"
 
 typedef struct {
     mcp_tool_t tool;
@@ -151,7 +151,7 @@ mcp_v1_context_t *mcp_v1_context_create(const mcp_v1_config_t *config)
 {
     mcp_v1_context_t *ctx = AIRY_CALLOC(1, sizeof(mcp_v1_context_t));
     if (!ctx) {
-        AIRY_LOG_ERROR("context allocation failed, size=%zu", sizeof(mcp_v1_context_t));
+        LOG_ERROR("context allocation failed, size=%zu", sizeof(mcp_v1_context_t));
         return NULL;
     }
 
@@ -166,7 +166,7 @@ mcp_v1_context_t *mcp_v1_context_create(const mcp_v1_config_t *config)
     ctx->tool_capacity = 32;
     ctx->tools = AIRY_CALLOC(ctx->tool_capacity, sizeof(mcp_tool_entry_t));
     if (!ctx->tools) {
-        AIRY_LOG_ERROR("tools array allocation failed, capacity=%zu", ctx->tool_capacity);
+        LOG_ERROR("tools array allocation failed, capacity=%zu", ctx->tool_capacity);
         AIRY_FREE(ctx);
         return NULL;
     }
@@ -174,7 +174,7 @@ mcp_v1_context_t *mcp_v1_context_create(const mcp_v1_config_t *config)
     ctx->resource_capacity = 16;
     ctx->resources = AIRY_CALLOC(ctx->resource_capacity, sizeof(mcp_resource_entry_t));
     if (!ctx->resources) {
-        AIRY_LOG_ERROR("resources array allocation failed, capacity=%zu", ctx->resource_capacity);
+        LOG_ERROR("resources array allocation failed, capacity=%zu", ctx->resource_capacity);
         AIRY_FREE(ctx->tools);
         AIRY_FREE(ctx);
         return NULL;
@@ -184,7 +184,7 @@ mcp_v1_context_t *mcp_v1_context_create(const mcp_v1_config_t *config)
     ctx->resource_templates =
         AIRY_CALLOC(ctx->template_capacity, sizeof(mcp_resource_template_t));
     if (!ctx->resource_templates) {
-        AIRY_LOG_ERROR("resource_templates allocation failed, capacity=%zu", ctx->template_capacity);
+        LOG_ERROR("resource_templates allocation failed, capacity=%zu", ctx->template_capacity);
         AIRY_FREE(ctx->resources);
         AIRY_FREE(ctx->tools);
         AIRY_FREE(ctx);
@@ -194,7 +194,7 @@ mcp_v1_context_t *mcp_v1_context_create(const mcp_v1_config_t *config)
     ctx->prompt_capacity = 16;
     ctx->prompts = AIRY_CALLOC(ctx->prompt_capacity, sizeof(mcp_prompt_entry_t));
     if (!ctx->prompts) {
-        AIRY_LOG_ERROR("prompts array allocation failed, capacity=%zu", ctx->prompt_capacity);
+        LOG_ERROR("prompts array allocation failed, capacity=%zu", ctx->prompt_capacity);
         AIRY_FREE(ctx->resource_templates);
         AIRY_FREE(ctx->resources);
         AIRY_FREE(ctx->tools);
@@ -509,7 +509,7 @@ int mcp_v1_handle_tools_call(mcp_v1_context_t *ctx, const char *name, const char
     }
 
     if (!found) {
-        AIRY_LOG_WARN("tool not found: name=%s, tool_count=%zu", name, ctx->tool_count);
+        LOG_WARN("tool not found: name=%s, tool_count=%zu", name, ctx->tool_count);
         char *name_esc = json_string_escape(name);
         const char *safe_name = name_esc ? name_esc : name;
         size_t len = snprintf(
@@ -535,6 +535,13 @@ int mcp_v1_handle_tools_call(mcp_v1_context_t *ctx, const char *name, const char
 
     found->handler(name, arguments_json, &results, &result_count, &is_error, found->user_data);
 
+    /* V4.0-P2-1 修复：整数溢出检查，防止 result_count * 1024 溢出 size_t */
+    if (result_count > (SIZE_MAX - 4096) / 1024) {
+        mcp_content_destroy(results, result_count);
+        airy_err_push_ex(AIRY_ERR_OVERFLOW, __FILE__, __LINE__, __func__,
+                         "mcp_v1_adapter: result_count overflow");
+        return AIRY_ERR_OVERFLOW;
+    }
     size_t buf_size = 4096 + result_count * 1024;
     char *buf = AIRY_MALLOC(buf_size);
     if (!buf) {
@@ -633,7 +640,7 @@ int mcp_v1_handle_resources_read(mcp_v1_context_t *ctx, const char *uri, char **
     }
 
     if (!found || !found->handler) {
-        AIRY_LOG_WARN("resource not found or no handler: uri=%s, resource_count=%zu", uri, ctx->resource_count);
+        LOG_WARN("resource not found or no handler: uri=%s, resource_count=%zu", uri, ctx->resource_count);
         char *uri_esc = json_string_escape(uri);
         size_t len = snprintf(
             NULL, 0, "{\"contents\":[{\"uri\":%s,\"text\":\"Resource not found\"}]}", uri_esc);
@@ -762,7 +769,7 @@ int mcp_v1_handle_prompts_get(mcp_v1_context_t *ctx, const char *name, const cha
     }
 
     if (!found || !found->handler) {
-        AIRY_LOG_WARN("prompt not found or no handler: name=%s, prompt_count=%zu", name, ctx->prompt_count);
+        LOG_WARN("prompt not found or no handler: name=%s, prompt_count=%zu", name, ctx->prompt_count);
         *response_json = AIRY_STRDUP("{\"description\":\"Prompt not found\",\"messages\":[]}");
         airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
         return AIRY_ERR_INVALID_PARAM;
@@ -813,12 +820,12 @@ int mcp_v1_handle_sampling(mcp_v1_context_t *ctx, const mcp_sampling_params_t *p
         return AIRY_ERR_UNKNOWN;
         }
     if (!ctx->sampling_handler) {
-        AIRY_LOG_WARN("sampling handler not registered, cannot handle sampling request");
+        LOG_WARN("sampling handler not registered, cannot handle sampling request");
         airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
         return AIRY_ERR_INVALID_PARAM;
         }
     if (!(ctx->config.capabilities & MCP_CAP_SAMPLING)) {
-        AIRY_LOG_WARN("sampling capability not enabled, caps=0x%x", ctx->config.capabilities);
+        LOG_WARN("sampling capability not enabled, caps=0x%x", ctx->config.capabilities);
         airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "mcp_v1_adapter: null pointer");
         return AIRY_ERR_NULL_POINTER;
         }
@@ -1061,8 +1068,13 @@ int mcp_v1_handle_tools_call_streaming(mcp_v1_context_t *ctx, const char *name,
         }
     }
 
-    size_t final_buf_size = 4096 + result_count * 1024;
-    char *final_json = AIRY_MALLOC(final_buf_size);
+    /* V4.0-P2-1 修复：整数溢出检查，防止 result_count * 1024 溢出 size_t */
+    size_t final_buf_size = 0;
+    char *final_json = NULL;
+    if (result_count <= (SIZE_MAX - 4096) / 1024) {
+        final_buf_size = 4096 + result_count * 1024;
+        final_json = AIRY_MALLOC(final_buf_size);
+    }
     if (final_json) {
         size_t offset = 0;
         offset += snprintf(final_json + offset, final_buf_size - offset,
@@ -1116,12 +1128,12 @@ int mcp_v1_handle_sampling_streaming(mcp_v1_context_t *ctx, const mcp_sampling_p
         return AIRY_ERR_UNKNOWN;
         }
     if (!ctx->sampling_handler) {
-        AIRY_LOG_WARN("sampling handler not registered for streaming request");
+        LOG_WARN("sampling handler not registered for streaming request");
         airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
         return AIRY_ERR_INVALID_PARAM;
         }
     if (!(ctx->config.capabilities & MCP_CAP_SAMPLING)) {
-        AIRY_LOG_WARN("sampling capability not enabled for streaming, caps=0x%x", ctx->config.capabilities);
+        LOG_WARN("sampling capability not enabled for streaming, caps=0x%x", ctx->config.capabilities);
         return AIRY_ERR_NULL_POINTER;
         }
 
@@ -1324,7 +1336,7 @@ int mcp_v1_route_request(mcp_v1_context_t *ctx, const char *method, const char *
 
     *response_json =
         AIRY_STRDUP("{\"error\":{\"code\":-32601,\"message\":\"Method not found\"}}");
-    AIRY_LOG_WARN("method not found in route_request: method=%s, request_counter=%llu", method, (unsigned long long)ctx->request_counter);
+    LOG_WARN("method not found in route_request: method=%s, request_counter=%llu", method, (unsigned long long)ctx->request_counter);
     airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
     return AIRY_ERR_INVALID_PARAM;
 }
@@ -1370,7 +1382,7 @@ static int mcp_adapter_encode(void *context, const void *msg, void **encoded, si
     int result =
         mcp_v1_route_request(ctx, umsg->endpoint, (const char *)umsg->payload, &response_json);
     if (result != 0 || !response_json) {
-        AIRY_LOG_ERROR("route_request failed in encode: endpoint=%s, result=%d", umsg->endpoint, result);
+        LOG_ERROR("route_request failed in encode: endpoint=%s, result=%d", umsg->endpoint, result);
         *encoded = NULL;
         *size = 0;
         return result;
@@ -1389,7 +1401,7 @@ static int mcp_adapter_decode(void *context, const void *data, size_t data_size,
         return AIRY_ERR_UNKNOWN;
         }
     if (data_size == 0) {
-        AIRY_LOG_WARN("decode called with zero data_size");
+        LOG_WARN("decode called with zero data_size");
         airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
         return AIRY_ERR_INVALID_PARAM;
         }
@@ -1508,7 +1520,7 @@ static int mcp_adapter_send(void *context, const void *data, size_t size)
         }
     mcp_v1_context_t *ctx = (mcp_v1_context_t *)context;
     if (!ctx->transport) {
-        AIRY_LOG_WARN("send called but no transport configured");
+        LOG_WARN("send called but no transport configured");
         airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "mcp_v1_adapter: invalid parameter");
         return AIRY_ERR_INVALID_PARAM;
         }
@@ -1524,7 +1536,7 @@ static int mcp_adapter_receive(void *context, void **data, size_t *size)
         }
     mcp_v1_context_t *ctx = (mcp_v1_context_t *)context;
     if (!ctx->transport) {
-        AIRY_LOG_WARN("receive called but no transport configured");
+        LOG_WARN("receive called but no transport configured");
         return AIRY_ERR_INVALID_PARAM;
         }
     char *msg = NULL;

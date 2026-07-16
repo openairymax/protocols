@@ -11,8 +11,8 @@
 // @owner: team-B
 
 #include "china_eco_adapter.h"
-#include "logging_compat.h"
-#include "memory_compat.h"     
+#include "logging.h"
+#include "airy_memory.h"     
 
 #include <assert.h>
 #include <stdio.h>

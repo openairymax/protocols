@@ -8,7 +8,7 @@
 
 #include "protocol_extension_framework.h"
 
-#include "memory_compat.h"
+#include "airy_memory.h"
 #include "types.h"
 
 #include <stdio.h>

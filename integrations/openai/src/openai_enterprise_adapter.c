@@ -35,7 +35,7 @@
 #include <cjson_helpers.h>
 #endif
 
-#include "memory_compat.h"
+#include "airy_memory.h"
 #include "types.h"
 #include "../../../../commons/utils/error/include/error.h"
 #include "error.h"

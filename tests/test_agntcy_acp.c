@@ -8,7 +8,7 @@
 // @owner: team-B
 
 #include "agntcy_acp_adapter.h"
-#include "logging_compat.h"
+#include "logging.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -300,6 +300,6 @@ int main(void)
     RUN_TEST(task_orchestrate);
     RUN_TEST(ack_negotiate);
 
-    AIRY_LOG_INFO("\nAGNTCY ACP tests: %d failures", failures);
+    LOG_INFO("\nAGNTCY ACP tests: %d failures", failures);
     return failures;
 }

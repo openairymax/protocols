@@ -22,6 +22,9 @@ option(PROTOCOLS_ENABLE_LANGCHAIN "Enable LangChain framework adapter" ON)
 option(PROTOCOLS_ENABLE_AUTOGEN "Enable AutoGen framework adapter" ON)
 option(PROTOCOLS_ENABLE_AGNTCY "Enable AGNTCY ACP protocol adapter" ON)
 option(PROTOCOLS_ENABLE_CHINA_ECO "Enable China domestic ecosystem protocol adapter" ON)
+option(PROTOCOLS_ENABLE_A2A "Enable A2A protocol adapter" ON)
+option(PROTOCOLS_ENABLE_OPENAI "Enable OpenAI enterprise adapter" ON)
+option(PROTOCOLS_ENABLE_OPENJIUWEN "Enable OpenJiuwen adapter" ON)
 
 if(WIN32)
     set(PROTOCOLS_ENABLE_OPENCLAW OFF CACHE BOOL "OpenClaw requires Unix sockets" FORCE)
@@ -368,6 +371,9 @@ if(BUILD_TESTS)
         ${CMAKE_CURRENT_SOURCE_DIR}/standards/mcp/include
         ${CMAKE_CURRENT_SOURCE_DIR}/integrations/openai/include
         ${CMAKE_CURRENT_SOURCE_DIR}/integrations/openjiuwen/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/integrations/claude/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/frameworks/langchain/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/frameworks/autogen/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../commons/platform/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/types/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/error/include
@@ -424,5 +430,118 @@ if(BUILD_TESTS)
             target_link_libraries(test_china_eco_crypto PRIVATE pthread)
         endif()
         add_test(NAME test_china_eco_crypto COMMAND test_china_eco_crypto)
+    endif()
+
+    # P1-16: 7 adapter unit tests
+    if(PROTOCOLS_ENABLE_A2A)
+        add_executable(test_a2a_adapter
+            tests/test_a2a_adapter.c
+            standards/a2a/src/a2a_v03_adapter.c
+            common/src/unified_protocol.c
+            core/transformers/src/protocol_transformers.c
+        )
+        target_compile_definitions(test_a2a_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
+        target_include_directories(test_a2a_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
+        target_link_libraries(test_a2a_adapter PRIVATE airy_common svc_common m)
+        if(UNIX)
+            target_link_libraries(test_a2a_adapter PRIVATE pthread)
+        endif()
+        add_test(NAME test_a2a_adapter COMMAND test_a2a_adapter)
+    endif()
+
+    if(PROTOCOLS_ENABLE_MCP)
+        add_executable(test_mcp_adapter
+            tests/test_mcp_adapter.c
+            standards/mcp/src/mcp_v1_adapter.c
+            common/src/unified_protocol.c
+            core/transformers/src/protocol_transformers.c
+        )
+        target_compile_definitions(test_mcp_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
+        target_include_directories(test_mcp_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
+        target_link_libraries(test_mcp_adapter PRIVATE airy_common svc_common m)
+        if(UNIX)
+            target_link_libraries(test_mcp_adapter PRIVATE pthread)
+        endif()
+        add_test(NAME test_mcp_adapter COMMAND test_mcp_adapter)
+    endif()
+
+    if(PROTOCOLS_ENABLE_OPENAI)
+        add_executable(test_openai_adapter
+            tests/test_openai_adapter.c
+            integrations/openai/src/openai_enterprise_adapter.c
+            common/src/unified_protocol.c
+            core/transformers/src/protocol_transformers.c
+        )
+        target_compile_definitions(test_openai_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
+        target_include_directories(test_openai_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
+        target_link_libraries(test_openai_adapter PRIVATE airy_common svc_common m)
+        if(UNIX)
+            target_link_libraries(test_openai_adapter PRIVATE pthread)
+        endif()
+        add_test(NAME test_openai_adapter COMMAND test_openai_adapter)
+    endif()
+
+    if(PROTOCOLS_ENABLE_OPENJIUWEN)
+        add_executable(test_openjiuwen_adapter
+            tests/test_openjiuwen_adapter.c
+            integrations/openjiuwen/src/openjiuwen_adapter.c
+            common/src/unified_protocol.c
+            core/transformers/src/protocol_transformers.c
+        )
+        target_compile_definitions(test_openjiuwen_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
+        target_include_directories(test_openjiuwen_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
+        target_link_libraries(test_openjiuwen_adapter PRIVATE airy_common svc_common m)
+        if(UNIX)
+            target_link_libraries(test_openjiuwen_adapter PRIVATE pthread)
+        endif()
+        add_test(NAME test_openjiuwen_adapter COMMAND test_openjiuwen_adapter)
+    endif()
+
+    if(PROTOCOLS_ENABLE_CLAUDE)
+        add_executable(test_claude_adapter
+            tests/test_claude_adapter.c
+            integrations/claude/src/claude_adapter.c
+            common/src/unified_protocol.c
+            core/transformers/src/protocol_transformers.c
+        )
+        target_compile_definitions(test_claude_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
+        target_include_directories(test_claude_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
+        target_link_libraries(test_claude_adapter PRIVATE airy_common svc_common m)
+        if(UNIX)
+            target_link_libraries(test_claude_adapter PRIVATE pthread)
+        endif()
+        add_test(NAME test_claude_adapter COMMAND test_claude_adapter)
+    endif()
+
+    if(PROTOCOLS_ENABLE_LANGCHAIN)
+        add_executable(test_langchain_adapter
+            tests/test_langchain_adapter.c
+            frameworks/langchain/src/langchain_adapter.c
+            common/src/unified_protocol.c
+            core/transformers/src/protocol_transformers.c
+        )
+        target_compile_definitions(test_langchain_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
+        target_include_directories(test_langchain_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
+        target_link_libraries(test_langchain_adapter PRIVATE airy_common svc_common m)
+        if(UNIX)
+            target_link_libraries(test_langchain_adapter PRIVATE pthread)
+        endif()
+        add_test(NAME test_langchain_adapter COMMAND test_langchain_adapter)
+    endif()
+
+    if(PROTOCOLS_ENABLE_AUTOGEN)
+        add_executable(test_autogen_adapter
+            tests/test_autogen_adapter.c
+            frameworks/autogen/src/autogen_adapter.c
+            common/src/unified_protocol.c
+            core/transformers/src/protocol_transformers.c
+        )
+        target_compile_definitions(test_autogen_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
+        target_include_directories(test_autogen_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
+        target_link_libraries(test_autogen_adapter PRIVATE airy_common svc_common m)
+        if(UNIX)
+            target_link_libraries(test_autogen_adapter PRIVATE pthread)
+        endif()
+        add_test(NAME test_autogen_adapter COMMAND test_autogen_adapter)
     endif()
 endif()

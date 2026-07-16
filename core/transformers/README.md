@@ -97,7 +97,7 @@ OpenJiuwen 二进制协议格式：`Header(24B) + Payload(variable) + CRC32(4B)`
 | 依赖 | 来源 | 用途 |
 |------|------|------|
 | `unified_protocol.h` | `protocols/include/` | 统一消息模型与协议类型 |
-| `memory_compat.h` | `commons/utils/compat/` | 内存管理宏 |
+| `airy_memory.h` | `commons/utils/compat/` | 内存管理宏 |
 
 ## 使用说明
 

@@ -8,7 +8,7 @@
 
 #include "agntcy_acp_adapter.h"
 
-#include "memory_compat.h"
+#include "airy_memory.h"
 #include "platform.h"
 #include "types.h"
 
