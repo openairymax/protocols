@@ -16,7 +16,7 @@
 
 #include "error.h"
 
-#include "memory_compat.h"
+#include "airy_memory.h"
 #include "types.h"
 
 #include <stdint.h>

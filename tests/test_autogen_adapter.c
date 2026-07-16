@@ -10,7 +10,7 @@
 #include "autogen_adapter.h"
 
 #include <assert.h>
-#include "logging_compat.h"
+#include "logging.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,16 +20,16 @@ static int tests_failed = 0;
 
 #define TEST(name)                              \
     do {                                        \
-        AIRY_LOG_INFO("  TEST: %s ... ", name); \
+        LOG_INFO("  TEST: %s ... ", name); \
     } while (0)
 #define PASS()            \
     do {                  \
-        AIRY_LOG_INFO("PASS"); \
+        LOG_INFO("PASS"); \
         tests_passed++;   \
     } while (0)
 #define FAIL(msg)                  \
     do {                           \
-        AIRY_LOG_ERROR("FAIL: %s", msg); \
+        LOG_ERROR("FAIL: %s", msg); \
         tests_failed++;            \
     } while (0)
 #define ASSERT_TRUE(cond, msg) \
@@ -334,7 +334,7 @@ static void test_destroy_handlers_null(void)
 
 int main(void)
 {
-    AIRY_LOG_INFO("=== AutoGen Framework Adapter Unit Tests ===\n\n");
+    LOG_INFO("=== AutoGen Framework Adapter Unit Tests ===\n\n");
 
     test_config_default();
     test_context_create_destroy();
@@ -361,6 +361,6 @@ int main(void)
     test_adapter_version();
     test_destroy_handlers_null();
 
-    AIRY_LOG_INFO("\n=== Results: %d passed, %d failed ===\n", tests_passed, tests_failed);
+    LOG_INFO("\n=== Results: %d passed, %d failed ===\n", tests_passed, tests_failed);
     return tests_failed > 0 ? 1 : 0;
 }

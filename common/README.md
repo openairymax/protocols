@@ -99,7 +99,7 @@ common/
 | 依赖 | 来源 | 用途 |
 |------|------|------|
 | `unified_protocol.h` | `protocols/include/` | 统一消息模型与协议类型定义 |
-| `memory_compat.h` | `commons/utils/compat/` | `AIRY_CALLOC/MALLOC/FREE` 内存管理宏 |
+| `airy_memory.h` | `commons/utils/compat/` | `AIRY_CALLOC/MALLOC/FREE` 内存管理宏 |
 | `platform.h` | `commons/platform/` | 平台抽象 |
 | `safe_string_utils.c` | `daemons/common/` | 安全字符串操作 |
 | `error.h` | `commons/utils/` | 错误码定义与错误栈 |

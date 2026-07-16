@@ -69,7 +69,7 @@ core/
 |------|------|------|
 | `unified_protocol.h` | `protocols/include/` | 统一消息模型 |
 | `airy_protocol_interface.h` | `protocols/include/` | 适配器虚表与接口定义 |
-| `memory_compat.h` | `commons/utils/compat/` | 内存管理宏 |
+| `airy_memory.h` | `commons/utils/compat/` | 内存管理宏 |
 | `error.h` | `commons/utils/` | 错误码定义 |
 | `logging.h` | `commons/utils/logging/` | 日志输出 |
 

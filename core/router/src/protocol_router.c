@@ -10,7 +10,7 @@
 
 #include "../include/protocol_router.h"
 
-#include "memory_compat.h"
+#include "airy_memory.h"
 #include "platform.h"
 #include "protocol_transformers.h"
 #include "safe_string_utils.h"

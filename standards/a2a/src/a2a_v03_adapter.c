@@ -17,7 +17,7 @@
 
 #include "a2a_v03_adapter.h"
 
-#include "memory_compat.h"
+#include "airy_memory.h"
 #include "error.h"
 
 #include <inttypes.h>
@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "logging_compat.h"
+#include "logging.h"
 
 /* Forward declarations for types defined in header */
 typedef struct a2a_v03_adapter_s a2a_v03_adapter_t;
@@ -591,7 +591,7 @@ void a2a_free_agent_list(a2a_agent_list_t *list)
  * 5. Request signature verification (tamper-proof)
  * ============================================================================ */
 
-#include "memory_compat.h"
+#include "airy_memory.h"
 #include "platform.h"
 
 #include <ctype.h>
@@ -708,7 +708,7 @@ int a2a_v03_authenticate(a2a_v03_context_t *ctx, const char *agent_id, const cha
     uint64_t now = a2a_timestamp_ms() / 1000;
 
     if (g_a2a_auth.lockout_until > 0 && now < g_a2a_auth.lockout_until) {
-        AIRY_LOG_ERROR("authentication locked out: agent_id=%s, lockout_until=%llu, now=%llu",
+        LOG_ERROR("authentication locked out: agent_id=%s, lockout_until=%llu, now=%llu",
                           agent_id, (unsigned long long)g_a2a_auth.lockout_until, (unsigned long long)now);
         airy_err_push_ex(AIRY_ERR_NOT_SUPPORTED, __FILE__, __LINE__, __func__, "a2a_timestamp_ms: error AIRY_ERR_NOT_SUPPORTED");
         return AIRY_ERR_NOT_SUPPORTED;
@@ -733,7 +733,7 @@ int a2a_v03_authenticate(a2a_v03_context_t *ctx, const char *agent_id, const cha
     }
 
     if (!cred_valid) {
-        AIRY_LOG_ERROR("authentication failed: agent_id=%s, method=%d, failed_attempts=%d",
+        LOG_ERROR("authentication failed: agent_id=%s, method=%d, failed_attempts=%d",
                           agent_id, g_a2a_auth.config.method, g_a2a_auth.failed_attempts + 1);
         g_a2a_auth.failed_attempts++;
         if (g_a2a_auth.failed_attempts >= g_a2a_auth.config.max_failed_attempts) {
@@ -790,7 +790,7 @@ int a2a_v03_verify_token(a2a_v03_context_t *ctx, const char *token_str,
             continue;
 
         if (now >= tok->expires_at) {
-            AIRY_LOG_WARN("token expired: agent_id=%s, expires_at=%llu, now=%llu",
+            LOG_WARN("token expired: agent_id=%s, expires_at=%llu, now=%llu",
                              tok->agent_id, (unsigned long long)tok->expires_at, (unsigned long long)now);
             tok->valid = false;
             airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "operation failed");
@@ -803,7 +803,7 @@ int a2a_v03_verify_token(a2a_v03_context_t *ctx, const char *token_str,
     }
 
     airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "operation failed");
-    AIRY_LOG_WARN("token not found or invalid: token_count=%zu", g_a2a_auth.token_count);
+    LOG_WARN("token not found or invalid: token_count=%zu", g_a2a_auth.token_count);
     return AIRY_ERR_UNKNOWN;
 }
 
@@ -874,7 +874,7 @@ int a2a_v03_verify_signature(a2a_v03_context_t *ctx, const char *method, const c
 
     if (memcmp(expected, signature, 64) == 0)
         return 0;
-    AIRY_LOG_ERROR("signature verification failed: method=%s, expected vs actual mismatch", method);
+    LOG_ERROR("signature verification failed: method=%s, expected vs actual mismatch", method);
     airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "operation failed");
     return AIRY_ERR_UNKNOWN;
 }
@@ -947,7 +947,7 @@ int a2a_v03_validate_session(a2a_v03_context_t *ctx, const char *session_id,
         uint64_t age_sec = (now - sess->created_at) / 1000;
 
         if (age_sec > (uint64_t)g_a2a_auth.config.token_ttl_sec * 2) {
-            AIRY_LOG_WARN("session expired: session_id=%s, age_sec=%llu, ttl=%d",
+            LOG_WARN("session expired: session_id=%s, age_sec=%llu, ttl=%d",
                              sess->session_id, (unsigned long long)age_sec, g_a2a_auth.config.token_ttl_sec * 2);
             AIRY_MEMSET(sess, 0, sizeof(*sess));
             airy_err_push_ex(AIRY_ERR_NOT_SUPPORTED, __FILE__, __LINE__, __func__, "a2a_timestamp_ms: error AIRY_ERR_NOT_SUPPORTED");
@@ -1513,7 +1513,7 @@ int a2a_v03_route_request(a2a_v03_context_t *ctx, const char *method, const char
     }
 
     *response_json = AIRY_STRDUP("{\"error\":\"unknown method\"}");
-    AIRY_LOG_WARN("unknown method in route_request: method=%s", method);
+    LOG_WARN("unknown method in route_request: method=%s", method);
     airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "AIRY_STRDUP: error AIRY_ERR_OUT_OF_MEMORY");
     return AIRY_ERR_OUT_OF_MEMORY;
 }
@@ -1568,7 +1568,7 @@ static int a2a_adapter_connect_cb(void *c, const char *e)
         }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)c;
     adapter->connected = true;
-    AIRY_LOG_DEBUG("a2a_adapter_connect_cb: connected to %s",
+    LOG_DEBUG("a2a_adapter_connect_cb: connected to %s",
                       e ? e : "(unknown)");
     (void)e;
     return 0;
@@ -1582,7 +1582,7 @@ static int a2a_adapter_disconnect_cb(void *c)
         }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)c;
     adapter->connected = false;
-    AIRY_LOG_DEBUG("a2a_adapter_disconnect_cb: disconnected");
+    LOG_DEBUG("a2a_adapter_disconnect_cb: disconnected");
     return 0;
 }
 static int a2a_adapter_is_connected_cb(void *c)
@@ -1608,7 +1608,7 @@ static int a2a_adapter_send_cb(void *c, const void *d, size_t s)
     }
 
     if (!adapter->connected || !adapter->transport_write) {
-        AIRY_LOG_WARN("send failed: not connected or no transport, connected=%d, transport_write=%p",
+        LOG_WARN("send failed: not connected or no transport, connected=%d, transport_write=%p",
                          adapter->connected, (void *)(uintptr_t)adapter->transport_write);
         airy_err_push_ex(AIRY_ERR_NOT_SUPPORTED, __FILE__, __LINE__, __func__,
                               "not connected or no transport");
@@ -1634,7 +1634,7 @@ static int a2a_adapter_send_cb(void *c, const void *d, size_t s)
         return AIRY_ERR_OVERFLOW;
     }
 
-    AIRY_LOG_DEBUG("a2a_adapter_send_cb: sending %zu bytes (frame hdr=%d)", s, hdr_len);
+    LOG_DEBUG("a2a_adapter_send_cb: sending %zu bytes (frame hdr=%d)", s, hdr_len);
 
     /* Send header */
     int rc = adapter->transport_write(adapter->transport_ctx, header, (size_t)hdr_len);
@@ -1655,7 +1655,7 @@ static int a2a_adapter_send_cb(void *c, const void *d, size_t s)
     adapter->bytes_sent += (uint64_t)s + (uint64_t)hdr_len;
     adapter->messages_sent++;
 
-    AIRY_LOG_DEBUG("a2a_adapter_send_cb: sent message #%llu (%zu bytes payload)",
+    LOG_DEBUG("a2a_adapter_send_cb: sent message #%llu (%zu bytes payload)",
                       (unsigned long long)adapter->messages_sent, s);
 
     return AIRY_OK;

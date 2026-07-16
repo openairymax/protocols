@@ -20,7 +20,7 @@
 #ifndef _WIN32
 #include <pthread.h>
 #endif
-#include "memory_compat.h"
+#include "airy_memory.h"
 #include "types.h"
 
 #include <errno.h>

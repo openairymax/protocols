@@ -64,7 +64,7 @@ router/
 | 依赖 | 来源 | 用途 |
 |------|------|------|
 | `unified_protocol.h` | `protocols/include/` | 统一消息模型与协议类型 |
-| `memory_compat.h` | `commons/utils/compat/` | 内存管理宏 |
+| `airy_memory.h` | `commons/utils/compat/` | 内存管理宏 |
 | `error.h` | `commons/utils/` | 错误码定义 |
 
 ## 使用说明

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
 // @owner: team-B
 
-#include "memory_compat.h"
+#include "airy_memory.h"
 #include "protocols.h"
 
 #include <stdio.h>

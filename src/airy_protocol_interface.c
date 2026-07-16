@@ -14,8 +14,7 @@
 #include "../core/router/include/protocol_router.h"
 #include "error.h"
 #include "logging.h"
-#include "logging_compat.h"
-#include "memory_compat.h"
+#include "airy_memory.h"
 #include "protocol_registry.h"
 #include "types.h"
 
@@ -247,7 +246,7 @@ static proto_gateway_impl_t *g_gw_impl = NULL;
 static void airy_proto_gw_log(const proto_gateway_iface_t *gw, const char *operation)
 {
     if (gw) {
-        AIRY_LOG_DEBUG("[proto_gw:%p] %s", (const void *)gw, operation ? operation : "unknown");
+        LOG_DEBUG("[proto_gw:%p] %s", (const void *)gw, operation ? operation : "unknown");
     }
 }
 

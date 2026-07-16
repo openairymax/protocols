@@ -17,7 +17,7 @@
 
 #include "error.h"
 #include "logging.h"
-#include "memory_compat.h"
+#include "airy_memory.h"
 #include "protocol_transformers.h"
 #include "types.h"
 #include "unified_protocol.h"
