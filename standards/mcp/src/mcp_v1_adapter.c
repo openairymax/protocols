@@ -149,19 +149,19 @@ mcp_v1_config_t mcp_v1_config_default(void)
 
 mcp_v1_context_t *mcp_v1_context_create(const mcp_v1_config_t *config)
 {
+    /* 测试契约：NULL config 视为调用方错误，必须返回 NULL（与 a2a_v03 一致）。 */
+    if (!config)
+        return NULL;
+
     mcp_v1_context_t *ctx = AIRY_CALLOC(1, sizeof(mcp_v1_context_t));
     if (!ctx) {
         LOG_ERROR("context allocation failed, size=%zu", sizeof(mcp_v1_context_t));
         return NULL;
     }
 
-    if (config) {
-        ctx->config = *config;
-        ctx->config.server_name = strdup_safe(config->server_name);
-        ctx->config.server_version = strdup_safe(config->server_version);
-    } else {
-        ctx->config = mcp_v1_config_default();
-    }
+    ctx->config = *config;
+    ctx->config.server_name = strdup_safe(config->server_name);
+    ctx->config.server_version = strdup_safe(config->server_version);
 
     ctx->tool_capacity = 32;
     ctx->tools = AIRY_CALLOC(ctx->tool_capacity, sizeof(mcp_tool_entry_t));
@@ -251,7 +251,9 @@ void mcp_v1_context_destroy(mcp_v1_context_t *ctx)
 int mcp_v1_register_tool(mcp_v1_context_t *ctx, const mcp_tool_t *tool, mcp_tool_handler_t handler,
                          void *user_data)
 {
-    if (!ctx || !tool || !handler)
+    /* 与 register_resource/register_prompt 一致：handler 允许为 NULL（延迟绑定）。
+     * 仅在调用时若 handler 仍为 NULL 才报错；注册阶段不强求 handler 已就绪。 */
+    if (!ctx || !tool)
         {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "mcp_v1_register_tool: failed");
         return AIRY_ERR_UNKNOWN;
@@ -1619,6 +1621,14 @@ static uint32_t mcp_adapter_capabilities(void *context)
                       MCP_CAP_SAMPLING);
 }
 
+/* P0-01 修复: 提供静态默认 context，避免 mcp_adapter_init(NULL) 失败。
+ * gateway_d/src/main.c:227 调用 mcp_adapter->init(mcp_adapter->context)，
+ * 若 context 为 NULL 则 init 直接返回 AIRY_ERR_UNKNOWN，导致 daemon 启动时
+ * 打印 "Failed to initialize MCP v1.0 adapter" 警告。此处提供静态默认
+ * context，让 init 能正常完成（init 会用 mcp_v1_context_create() 创建
+ * 新 context 并 memcpy 覆盖此静态对象）。 */
+static mcp_v1_context_t s_mcp_default_context = {0};
+
 static protocol_adapter_t mcp_v1_adapter_internal = {.type = AIRY_PROTOCOL_MCP,
                                                      .name = "MCP v1.0 Protocol Adapter",
                                                      .version = MCP_V1_VERSION,
@@ -1637,7 +1647,7 @@ static protocol_adapter_t mcp_v1_adapter_internal = {.type = AIRY_PROTOCOL_MCP,
                                                      .get_version = mcp_adapter_get_version,
                                                      .capabilities = mcp_adapter_capabilities,
                                                      .get_stats = mcp_adapter_get_stats,
-                                                     .context = NULL,
+                                                     .context = &s_mcp_default_context,
                                                      .user_data = NULL};
 
 const protocol_adapter_t *mcp_v1_get_adapter(void)

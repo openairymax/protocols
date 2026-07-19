@@ -149,8 +149,8 @@ static void test_adapter_interface(void)
     TEST("adapter_interface is valid");
     ASSERT_NOT_NULL(openjiuwen_adapter_interface.name, "interface name should not be NULL");
     ASSERT_NOT_NULL(openjiuwen_adapter_interface.version, "interface version should not be NULL");
-    ASSERT_NOT_NULL(openjiuwen_adapter_interface.initialize, "init should not be NULL");
-    ASSERT_NOT_NULL(openjiuwen_adapter_interface.shutdown, "shutdown should not be NULL");
+    ASSERT_NOT_NULL(openjiuwen_adapter_interface.init, "init should not be NULL");
+    ASSERT_NOT_NULL(openjiuwen_adapter_interface.destroy, "shutdown should not be NULL");
     ASSERT_NOT_NULL(openjiuwen_adapter_interface.send, "send should not be NULL");
     ASSERT_NOT_NULL(openjiuwen_adapter_interface.receive, "receive should not be NULL");
     PASS();
