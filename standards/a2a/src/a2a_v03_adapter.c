@@ -123,6 +123,7 @@ typedef struct {
     int protocol_version;
     bool available;
     char *capabilities_json;
+    a2a_capability_t capabilities_mask;  /* bitmask：与 a2a_agent_card_t.capabilities 同步 */
 } a2a_internal_card_t;
 
 /* Transport write callback type for sending data through the transport layer */
@@ -237,14 +238,43 @@ int a2a_v03_register_agent(a2a_v03_context_t *ctx, const a2a_agent_card_t *card)
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
         return AIRY_ERR_STATE_ERROR;
     }
+
+    /* 重复注册检测：若已存在同 ID agent，则更新该条目并合并 capabilities bitmask，
+     * 不增加 agent_count（测试契约："duplicate should not increase count"）。 */
+    const char *new_id = (card->id && card->id[0]) ? card->id : NULL;
+    if (new_id) {
+        for (size_t i = 0; i < adapter->agent_count; i++) {
+            if (strcmp(adapter->agents[i].id, new_id) == 0) {
+                /* 命中重复：在原位合并更新（capabilities OR 合并；其他字段覆盖） */
+                a2a_internal_card_t *ic = &adapter->agents[i];
+                AIRY_STRNCPY_TERM(ic->name, card->name ? card->name : "Unknown", sizeof(ic->name));
+                AIRY_STRNCPY_TERM(ic->url, card->url ? card->url : "", sizeof(ic->url));
+                if (card->capabilities_json) {
+                    AIRY_STRNCPY_TERM(ic->capabilities, card->capabilities_json, sizeof(ic->capabilities));
+                }
+                ic->version = card->protocol_version > 0 ? card->protocol_version : 3;
+                ic->available = card->available;
+                /* bitmask 合并：保留已有 caps，并 OR 入新 caps（合并语义） */
+                ic->capabilities_mask = (a2a_capability_t)((int)ic->capabilities_mask | (int)card->capabilities);
+                return 0;
+            }
+        }
+    }
+
     if (adapter->agent_count >= A2A_MAX_AGENTS) {
         airy_err_push_ex(AIRY_ERR_BUFFER_TOO_SMALL, __FILE__, __LINE__, __func__, "capacity exceeded");
         return AIRY_ERR_BUFFER_TOO_SMALL;
     }
 
     a2a_internal_card_t *internal_card = &adapter->agents[adapter->agent_count];
-    snprintf(internal_card->id, sizeof(internal_card->id), "agent_%zu_%" PRIu64 ",",
-             adapter->agent_count + 1, adapter->task_counter++);
+    /* 使用调用方提供的 card->id（测试契约：register 后 get_agent_card(card->id) 可命中）。
+     * 若调用方未提供 id，则按原逻辑生成 "agent_<n>_<counter>" 形式 ID。 */
+    if (new_id) {
+        AIRY_STRNCPY_TERM(internal_card->id, new_id, sizeof(internal_card->id));
+    } else {
+        snprintf(internal_card->id, sizeof(internal_card->id), "agent_%zu_%" PRIu64,
+                 adapter->agent_count + 1, adapter->task_counter++);
+    }
     AIRY_STRNCPY_TERM(internal_card->name, card->name ? card->name : "Unknown", sizeof(internal_card->name));
     AIRY_STRNCPY_TERM(internal_card->url, card->url ? card->url : "", sizeof(internal_card->url));
 
@@ -252,7 +282,8 @@ int a2a_v03_register_agent(a2a_v03_context_t *ctx, const a2a_agent_card_t *card)
         AIRY_STRNCPY_TERM(internal_card->capabilities, card->capabilities_json, sizeof(internal_card->capabilities));
     }
     internal_card->version = card->protocol_version > 0 ? card->protocol_version : 3;
-    internal_card->available = true;
+    internal_card->available = card->available;
+    internal_card->capabilities_mask = card->capabilities;
 
     adapter->agent_count++;
     return 0;
@@ -343,6 +374,8 @@ const a2a_agent_card_t *a2a_v03_get_agent_card(a2a_v03_context_t *ctx, const cha
             card.url = AIRY_STRDUP(internal->url);
             card.capabilities_json = AIRY_STRDUP(internal->capabilities);
             card.protocol_version = internal->version;
+            card.capabilities = internal->capabilities_mask;
+            card.available = internal->available;
             return &card;
         }
     }
@@ -1040,7 +1073,10 @@ a2a_v03_config_t a2a_v03_config_default(void)
 
 a2a_v03_context_t *a2a_v03_context_create(const a2a_v03_config_t *config)
 {
-    a2a_v03_config_t cfg = config ? *config : a2a_v03_config_default();
+    /* 测试契约：NULL config 视为调用方错误，必须返回 NULL（不允许隐式 default 回退）。 */
+    if (!config)
+        return NULL;
+    a2a_v03_config_t cfg = *config;
     a2a_handle_t handle = NULL;
     a2a_config_t legacy_cfg;
     AIRY_MEMSET(&legacy_cfg, 0, sizeof(legacy_cfg));

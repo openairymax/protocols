@@ -453,6 +453,7 @@ if(BUILD_TESTS)
         add_executable(test_mcp_adapter
             tests/test_mcp_adapter.c
             standards/mcp/src/mcp_v1_adapter.c
+            standards/mcp/src/mcp_transport.c
             common/src/unified_protocol.c
             core/transformers/src/protocol_transformers.c
         )

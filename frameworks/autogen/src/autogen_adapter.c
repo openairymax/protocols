@@ -241,11 +241,22 @@ int autogen_create_group_chat(autogen_adapter_context_t *ctx,
     ctx->group_chats[ctx->group_chat_count].allow_repeat_speaker = true;
     ctx->group_chats[ctx->group_chat_count].is_active = true;
 
-    if (definition && definition->participant_ids) {
+    if (definition && definition->participant_ids && definition->participant_count > 0) {
+        /* participant_ids 是 char**（指针），AIRY_MEMSET 后为 NULL。
+         * 必须先分配指针数组，再写入元素，否则 NULL[p] 解引用导致 SEGFAULT。 */
+        char **ids = (char **)AIRY_CALLOC(definition->participant_count, sizeof(char *));
+        if (!ids)
+            return AIRY_ERR_OUT_OF_MEMORY;
         for (size_t p = 0; p < definition->participant_count; p++) {
-            ctx->group_chats[ctx->group_chat_count].participant_ids[p] =
-                AIRY_STRDUP(definition->participant_ids[p]);
+            ids[p] = AIRY_STRDUP(definition->participant_ids[p]);
+            if (!ids[p]) {
+                for (size_t q = 0; q < p; q++)
+                    AIRY_FREE(ids[q]);
+                AIRY_FREE(ids);
+                return AIRY_ERR_OUT_OF_MEMORY;
+            }
         }
+        ctx->group_chats[ctx->group_chat_count].participant_ids = ids;
         ctx->group_chats[ctx->group_chat_count].participant_count = definition->participant_count;
     }
 
