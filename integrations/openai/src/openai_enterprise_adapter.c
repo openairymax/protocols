@@ -1151,8 +1151,17 @@ openai_enterprise_config_t openai_enterprise_config_default(void)
     openai_enterprise_config_t cfg;
     AIRY_MEMSET(&cfg, 0, sizeof(cfg));
     cfg.api_key = NULL;
-    cfg.base_url = AIRY_STRDUP("https://api.openai.com/v1");
-    cfg.default_model = AIRY_STRDUP("gpt-4o");
+    /* P0-09 修复: 使用字符串字面量避免动态分配（与 mcp_v1_config_default 修复一致）。
+     *
+     * 历史问题：原实现用 AIRY_STRDUP() 分配 base_url/default_model，但 config 按值返回，
+     * 调用方（如 test_openai_adapter.c）通常不释放这些字符串，导致 ASAN 检测到
+     * 26B("https://api.openai.com/v1") + 7B("gpt-4o") × 多次调用泄漏。
+     *
+     * 修复方案：default config 直接指向字符串字面量（只读，静态存储期）。
+     * openai_create() 和 openai_enterprise_context_create() 都按值拷贝 config，
+     * 共享字面量指针；openai_destroy() 不释放 config 字符串，所以安全。 */
+    cfg.base_url = (char *)"https://api.openai.com/v1";
+    cfg.default_model = (char *)"gpt-4o";
     cfg.organization = NULL;
     cfg.max_retries = 3;
     cfg.retry_base_ms = 1000;
