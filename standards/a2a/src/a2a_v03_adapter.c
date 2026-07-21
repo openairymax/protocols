@@ -207,6 +207,29 @@ void a2a_v03_destroy(a2a_handle_t handle)
     adapter->initialized = false;
     if (g_a2a_instance == adapter)
         g_a2a_instance = NULL;
+
+    /* P0-06 修复: 释放 tasks 数组中的每个 task。
+     *
+     * 历史问题：a2a_v03_create_task() 通过 AIRY_CALLOC 分配 a2a_task_t 并 STRDUP
+     * id/agent_id/description/input_json，但 a2a_v03_destroy() 只释放 adapter 本身，
+     * 漏释放所有 tasks，导致 ASAN 检测到 96B(task struct) + 40B(?) + 14B+10B+13B 字符串泄漏。
+     *
+     * 修复方案：用 a2a_task_destroy() 释放每个 task（处理所有字符串字段 + task 本身）。 */
+    for (size_t i = 0; i < adapter->task_count; i++)
+        a2a_task_destroy(adapter->tasks[i]);
+    adapter->task_count = 0;
+
+    /* P0-07 修复: 释放 a2a_v03_get_agent_card() 的 static card 缓冲区。
+     *
+     * 历史问题：a2a_v03_get_agent_card() 使用 static card 并每次 STRDUP id/name/url/capabilities_json，
+     * 导致：(1) 多次调用累积泄漏（每次 STRDUP 不释放上一次的字符串）
+     *      (2) 程序结束时 static card 仍持有最后一次 STRDUP 的字符串，ASAN 检测到泄漏。
+     *
+     * 修复方案：在 context_destroy 时调用 a2a_agent_card_destroy() 释放 static card 的字符串。
+     * 注意：static card 是函数内的，但 a2a_agent_card_destroy() 接受 card 指针，
+     * 我们通过 a2a_v03_get_agent_card(NULL, NULL) 触发清理（见该函数实现）。 */
+    a2a_v03_get_agent_card(NULL, NULL);
+
     AIRY_FREE(adapter);
 }
 
@@ -358,6 +381,18 @@ int a2a_v03_discover_agents(a2a_v03_context_t *ctx, const char *capability, cons
 
 const a2a_agent_card_t *a2a_v03_get_agent_card(a2a_v03_context_t *ctx, const char *agent_id)
 {
+    /* P0-07: static card 缓冲区，由 a2a_v03_destroy() 通过 (NULL, NULL) 调用清理。
+     *
+     * 设计权衡：保留 static card 以维持 API 兼容（const 返回值，调用方无需释放），
+     * 但添加显式清理路径避免 ASAN 检测到泄漏。 */
+    static a2a_agent_card_t g_cached_card = {0};
+
+    /* P0-07: (NULL, NULL) 是 a2a_v03_destroy() 的清理信号，释放 static card 中的字符串。 */
+    if (!ctx && !agent_id) {
+        a2a_agent_card_destroy(&g_cached_card);
+        AIRY_MEMSET(&g_cached_card, 0, sizeof(g_cached_card));
+        return NULL;
+    }
     if (!ctx || !agent_id)
         return NULL;
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
@@ -366,17 +401,19 @@ const a2a_agent_card_t *a2a_v03_get_agent_card(a2a_v03_context_t *ctx, const cha
 
     for (size_t i = 0; i < adapter->agent_count; i++) {
         if (strcmp(adapter->agents[i].id, agent_id) == 0) {
-            static a2a_agent_card_t card;
-            AIRY_MEMSET(&card, 0, sizeof(card));
+            /* P0-07: 释放上一次 STRDUP 的字符串避免累积泄漏。
+             * 原 bug：每次调用都 STRDUP 但不释放上一次的字符串，导致多次调用累积泄漏。 */
+            a2a_agent_card_destroy(&g_cached_card);
+            AIRY_MEMSET(&g_cached_card, 0, sizeof(g_cached_card));
             const a2a_internal_card_t *internal = &adapter->agents[i];
-            card.id = AIRY_STRDUP(internal->id);
-            card.name = AIRY_STRDUP(internal->name);
-            card.url = AIRY_STRDUP(internal->url);
-            card.capabilities_json = AIRY_STRDUP(internal->capabilities);
-            card.protocol_version = internal->version;
-            card.capabilities = internal->capabilities_mask;
-            card.available = internal->available;
-            return &card;
+            g_cached_card.id = AIRY_STRDUP(internal->id);
+            g_cached_card.name = AIRY_STRDUP(internal->name);
+            g_cached_card.url = AIRY_STRDUP(internal->url);
+            g_cached_card.capabilities_json = AIRY_STRDUP(internal->capabilities);
+            g_cached_card.protocol_version = internal->version;
+            g_cached_card.capabilities = internal->capabilities_mask;
+            g_cached_card.available = internal->available;
+            return &g_cached_card;
         }
     }
 
@@ -1816,7 +1853,14 @@ void a2a_agent_card_destroy(a2a_agent_card_t *card)
         }
         AIRY_FREE(card->skills);
     }
-    AIRY_FREE(card);
+    /* P0-07 修复: 移除 AIRY_FREE(card)。
+     *
+     * 历史 bug：原实现调用 AIRY_FREE(card) 释放 card 指针本身，但 card 可能是
+     * 栈分配（如调用方的局部变量）或静态分配（如 a2a_v03_get_agent_card 的
+     * g_cached_card），AIRY_FREE 非堆指针会导致 ASAN bad-free 错误。
+     *
+     * 修复方案：只释放 card 的字段，不释放 card 本身。调用方负责释放 card
+     * 指针（如果是堆分配的）。这与 cJSON_free 等标准 destroy 模式一致。 */
 }
 
 void a2a_task_destroy(a2a_task_t *task)

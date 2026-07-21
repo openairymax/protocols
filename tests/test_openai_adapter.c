@@ -200,6 +200,15 @@ static void test_model_register(void)
     ASSERT_TRUE(count >= 1, "model count should be at least 1");
 
     openai_enterprise_context_destroy(ctx);
+
+    /* P0-10 修复: openai_enterprise_list_models() 返回堆分配的 models 数组副本，
+     * 每个 model 的 id/name/owned_by 都是 STRDUP 拷贝，调用方负责释放。
+     * 历史 bug：测试调用 list_models 但不释放，导致 ASAN 检测到 448B(models 数组)
+     * + 21×STRDUP(builtin 7 models × 3 字段) 泄漏。使用 openai_model_destroy()
+     * helper 释放每个 model 的字符串字段，再释放数组本身。 */
+    for (size_t i = 0; i < count; i++)
+        openai_model_destroy(&models[i]);
+    free(models);
     PASS();
 }
 

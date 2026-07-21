@@ -122,6 +122,18 @@ void autogen_adapter_destroy(autogen_adapter_context_t *ctx)
         autogen_conversation_destroy(&ctx->conversations[i]);
     AIRY_FREE(ctx->conversations);
 
+    /* P0-03 修复: 释放 tools 资源。
+     *
+     * 历史问题：autogen_register_tool() 通过 AIRY_REALLOC 扩展 tool_names/tool_executors
+     * 数组并 AIRY_STRDUP(name) 拷贝 tool 名，但 autogen_adapter_destroy() 漏释放这些资源，
+     * 导致 ASAN 检测到 8B(tool_executors) + 8B(tool_names) + 11B("web_search" str) 泄漏。
+     *
+     * 修复方案：在 destroy 中循环释放 tool_names[i]，然后释放两个数组本身。 */
+    for (size_t i = 0; i < ctx->tool_count; i++)
+        AIRY_FREE(ctx->tool_names[i]);
+    AIRY_FREE(ctx->tool_names);
+    AIRY_FREE(ctx->tool_executors);
+
     AIRY_MEMSET(ctx, 0, sizeof(autogen_adapter_context_t));
     AIRY_FREE(ctx);
 }

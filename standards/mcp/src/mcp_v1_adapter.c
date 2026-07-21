@@ -142,8 +142,24 @@ mcp_v1_config_t mcp_v1_config_default(void)
     config.enable_progress_notifications = true;
     config.enable_cancellation = true;
     config.enable_sampling = false;
-    config.server_name = strdup_safe("AgentRT MCP Server");
-    config.server_version = strdup_safe(MCP_V1_VERSION);
+    /* P0-01 修复: 使用字符串字面量避免动态分配。
+     *
+     * 历史问题：mcp_v1_config_default() 按值返回 mcp_v1_config_t，调用方
+     * （如 test_mcp_adapter.c）通常不释放 server_name/server_version，
+     * 导致 AddressSanitizer 检测到内存泄漏（186 字节/15 次分配）。
+     *
+     * 修复方案：default config 直接指向字符串字面量（只读，静态存储期）。
+     * 这安全因为：
+     *   1. mcp_v1_context_create() 会 strdup_safe() 拷贝字符串到 ctx，
+     *      ctx 拥有自己的动态分配副本，可以被 mcp_v1_context_destroy() 释放。
+     *   2. default config 本身不需要被释放（字符串字面量静态存储）。
+     *   3. mcp_adapter_connect() 中 AIRY_FREE(old_name) 只作用于 ctx 的副本，
+     *      不影响 default config 的字面量。
+     *
+     * 强转 (char*) 是因为 mcp_v1_config_t.server_name 字段类型为 char*（非 const），
+     * 但 default config 不应被修改，调用方应通过 mcp_v1_context_create() 拷贝使用。 */
+    config.server_name = (char *)"AgentRT MCP Server";
+    config.server_version = (char *)MCP_V1_VERSION;
     return config;
 }
 
