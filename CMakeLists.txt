@@ -432,7 +432,7 @@ if(BUILD_TESTS)
         add_test(NAME test_china_eco_crypto COMMAND test_china_eco_crypto)
     endif()
 
-    # P1-16: 7 adapter unit tests
+    # P1-16: 10 adapter unit tests (mcp/a2a/openai/openjiuwen/langchain/autogen/claude/openclaw/china_eco/agntcy)
     if(PROTOCOLS_ENABLE_A2A)
         add_executable(test_a2a_adapter
             tests/test_a2a_adapter.c

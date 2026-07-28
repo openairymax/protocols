@@ -110,28 +110,14 @@ size_t protocol_manager_get_stacks(protocol_manager_handle_t manager,
 // ============================================================================
 
 /**
- * @brief 获取HTTP协议适配器
- * @return HTTP协议适配器
+ * @brief 获取HTTP/JSON-RPC协议适配器
+ * @return HTTP（JSON-RPC）协议适配器
  */
 const protocol_adapter_t *protocol_adapter_http(void);
 
-/**
- * @brief 获取WebSocket协议适配器
- * @return WebSocket协议适配器
- */
-const protocol_adapter_t *protocol_adapter_websocket(void);
-
-/**
- * @brief 获取gRPC协议适配器
- * @return gRPC协议适配器
- */
-const protocol_adapter_t *protocol_adapter_grpc(void);
-
-/**
- * @brief 获取MQTT协议适配器
- * @return MQTT协议适配器
- */
-const protocol_adapter_t *protocol_adapter_mqtt(void);
+/* P0-15: 删除 protocol_adapter_websocket/grpc/mqtt 声明。
+ * 这些旧传输层适配器使用已删除的 PROTOCOL_WEBSOCKET/GRPC/MQTT 宏，
+ * 与当前应用层协议枚举体系不兼容，且无实际调用点（gateway 模块自行实现）。 */
 
 // ============================================================================
 // 错误处理

@@ -78,6 +78,11 @@ struct openclaw_adapter_context_s {
     uint64_t connection_uptime_sec;
     uint64_t connect_timestamp;
     socket_fd_t sock_fd;
+    char *connected_endpoint;
+    void *send_buffer;
+    size_t send_buffer_size;
+    uint64_t bytes_sent;
+    uint64_t bytes_received;
     char last_error[256];
 };
 
@@ -178,6 +183,9 @@ void openclaw_adapter_destroy(openclaw_adapter_context_t *ctx)
     for (size_t i = 0; i < ctx->tracked_task_count; i++)
         openclaw_task_destroy(&ctx->tracked_tasks[i]);
     AIRY_FREE(ctx->tracked_tasks);
+
+    AIRY_FREE(ctx->connected_endpoint);
+    AIRY_FREE(ctx->send_buffer);
 
     AIRY_MEMSET(ctx, 0, sizeof(openclaw_adapter_context_t));
     AIRY_FREE(ctx);
@@ -1216,6 +1224,199 @@ static uint32_t openclaw_proto_capabilities(void *context)
                       PROTO_CAP_AGENT_DISCOVERY);
 }
 
+static int openclaw_proto_encode(void *context, const void *msg, void **out_data, size_t *out_size)
+{
+    if (!context || !msg || !out_data || !out_size)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "openclaw_proto_encode: invalid param");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+    const unified_message_t *umsg = (const unified_message_t *)msg;
+    const char *payload = umsg->payload ? (const char *)umsg->payload : "";
+    size_t payload_len = umsg->payload_size;
+    size_t buf_size = 256 + payload_len;
+    char *buf = (char *)AIRY_MALLOC(buf_size);
+    if (!buf)
+        {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "openclaw_proto_encode: oom");
+        return AIRY_ERR_OUT_OF_MEMORY;
+        }
+    int written = snprintf(buf, buf_size,
+                           "{\"protocol\":%d,\"direction\":%d,\"timestamp\":%llu,\"payload\":\"%.*s\"}",
+                           (int)umsg->protocol, (int)umsg->direction,
+                           (unsigned long long)umsg->timestamp, (int)payload_len, payload);
+    if (written < 0)
+        {
+        AIRY_FREE(buf);
+        airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__, "openclaw_proto_encode: snprintf failed");
+        return AIRY_ERR_IO;
+        }
+    *out_data = buf;
+    *out_size = (size_t)written;
+    return 0;
+}
+
+static int openclaw_proto_decode(void *context, const void *data, size_t size, void *out_msg)
+{
+    if (!context || !data || !out_msg)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "openclaw_proto_decode: invalid param");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+    if (size == 0)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "openclaw_proto_decode: zero size");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+
+    unified_message_t *msg = (unified_message_t *)out_msg;
+    char *copy = (char *)AIRY_MALLOC(size + 1);
+    if (!copy)
+        {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "openclaw_proto_decode: oom");
+        return AIRY_ERR_OUT_OF_MEMORY;
+        }
+    __builtin_memcpy(copy, data, size);
+    copy[size] = '\0';
+
+    msg->protocol = AIRY_PROTOCOL_OPENCLAW;
+    char *p = strstr(copy, "\"protocol\":");
+    if (p)
+        msg->protocol = (airy_protocol_type_t)strtol(p + 11, NULL, 10);
+
+    msg->direction = DIRECTION_RESPONSE;
+    p = strstr(copy, "\"direction\":");
+    if (p)
+        msg->direction = (message_direction_t)strtol(p + 12, NULL, 10);
+
+    msg->timestamp = (uint64_t)time(NULL);
+    p = strstr(copy, "\"timestamp\":");
+    if (p)
+        msg->timestamp = (uint64_t)strtoull(p + 12, NULL, 10);
+
+    p = strstr(copy, "\"payload\":\"");
+    if (p) {
+        p += 11;
+        char *end = strchr(p, '"');
+        size_t plen = end ? (size_t)(end - p) : strlen(p);
+        msg->payload = AIRY_MALLOC(plen + 1);
+        if (msg->payload) {
+            __builtin_memcpy(msg->payload, p, plen);
+            ((char *)msg->payload)[plen] = '\0';
+            msg->payload_size = plen;
+        }
+    } else {
+        msg->payload = AIRY_STRDUP("");
+        msg->payload_size = 0;
+    }
+
+    AIRY_FREE(copy);
+    return 0;
+}
+
+static int openclaw_proto_connect(void *context, const char *endpoint)
+{
+    if (!context)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "openclaw_proto_connect: invalid param");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+    openclaw_adapter_context_t *ctx = (openclaw_adapter_context_t *)context;
+    AIRY_FREE(ctx->connected_endpoint);
+    ctx->connected_endpoint = endpoint ? AIRY_STRDUP(endpoint) : NULL;
+    ctx->connected = true;
+    return 0;
+}
+
+static int openclaw_proto_disconnect(void *context)
+{
+    if (!context)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "openclaw_proto_disconnect: invalid param");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+    openclaw_adapter_context_t *ctx = (openclaw_adapter_context_t *)context;
+    ctx->connected = false;
+    AIRY_FREE(ctx->connected_endpoint);
+    ctx->connected_endpoint = NULL;
+    return 0;
+}
+
+static int openclaw_proto_is_connected(void *context)
+{
+    if (!context)
+        return 0;
+    openclaw_adapter_context_t *ctx = (openclaw_adapter_context_t *)context;
+    return ctx->connected ? 1 : 0;
+}
+
+static int openclaw_proto_send(void *context, const void *data, size_t size)
+{
+    if (!context || !data)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "openclaw_proto_send: invalid param");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+    openclaw_adapter_context_t *ctx = (openclaw_adapter_context_t *)context;
+    AIRY_FREE(ctx->send_buffer);
+    ctx->send_buffer = AIRY_MALLOC(size + 1);
+    if (!ctx->send_buffer)
+        {
+        ctx->send_buffer_size = 0;
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "openclaw_proto_send: oom");
+        return AIRY_ERR_OUT_OF_MEMORY;
+        }
+    __builtin_memcpy(ctx->send_buffer, data, size);
+    ((char *)ctx->send_buffer)[size] = '\0';
+    ctx->send_buffer_size = size;
+    ctx->bytes_sent += size;
+    return 0;
+}
+
+static int openclaw_proto_receive(void *context, void **data, size_t *size, uint32_t timeout_ms)
+{
+    (void)timeout_ms;
+    if (!context || !data || !size)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "openclaw_proto_receive: invalid param");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+    openclaw_adapter_context_t *ctx = (openclaw_adapter_context_t *)context;
+    if (!ctx->send_buffer || ctx->send_buffer_size == 0)
+        {
+        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "openclaw_proto_receive: no data");
+        return AIRY_ERR_TIMEOUT;
+        }
+    *data = ctx->send_buffer;
+    *size = ctx->send_buffer_size;
+    ctx->bytes_received += *size;
+    ctx->send_buffer = NULL;
+    ctx->send_buffer_size = 0;
+    return 0;
+}
+
+static int openclaw_proto_get_stats(void *context, char *stats_json, size_t max_size)
+{
+    if (!context || !stats_json || max_size < 64)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "openclaw_proto_get_stats: invalid param");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+    openclaw_adapter_context_t *ctx = (openclaw_adapter_context_t *)context;
+    int written = snprintf(stats_json, max_size,
+                           "{\"adapter\":\"openclaw\",\"version\":\"%s\",\"connected\":%s,"
+                           "\"bytes_sent\":%llu,\"bytes_received\":%llu,"
+                           "\"messages_sent\":%llu,\"messages_received\":%llu,"
+                           "\"agents\":%zu,\"sessions\":%zu}",
+                           OPENCLAW_ADAPTER_VERSION, ctx->connected ? "true" : "false",
+                           (unsigned long long)ctx->bytes_sent,
+                           (unsigned long long)ctx->bytes_received,
+                           (unsigned long long)ctx->messages_sent,
+                           (unsigned long long)ctx->messages_received,
+                           ctx->registered_agent_count, ctx->active_session_count);
+    return (written >= 0 && (size_t)written < max_size) ? 0 : AIRY_ERR_BUFFER_TOO_SMALL;
+}
+
 static proto_adapter_t g_openclaw_adapter = {0};
 static pthread_once_t g_openclaw_adapter_once = PTHREAD_ONCE_INIT;
 
@@ -1225,12 +1426,20 @@ static void openclaw_adapter_init_once(void)
     g_openclaw_adapter.version = OPENCLAW_ADAPTER_VERSION;
     g_openclaw_adapter.description = "OpenClaw Platform Integration Adapter - offline private AI "
                                      "Agent platform with multimodal capabilities";
-    g_openclaw_adapter.type = PROTO_OPENCLAW;
+    g_openclaw_adapter.type = AIRY_PROTOCOL_OPENCLAW;  /* P0-15: PROTO_OPENCLAW→枚举值 */
     g_openclaw_adapter.init = openclaw_proto_init;
     g_openclaw_adapter.destroy = openclaw_proto_destroy;
+    g_openclaw_adapter.encode = openclaw_proto_encode;
+    g_openclaw_adapter.decode = openclaw_proto_decode;
+    g_openclaw_adapter.connect = openclaw_proto_connect;
+    g_openclaw_adapter.disconnect = openclaw_proto_disconnect;
+    g_openclaw_adapter.is_connected = openclaw_proto_is_connected;
+    g_openclaw_adapter.send = openclaw_proto_send;
+    g_openclaw_adapter.receive = openclaw_proto_receive;
     g_openclaw_adapter.handle_request = openclaw_proto_handle_request;
     g_openclaw_adapter.get_version = openclaw_proto_get_version;
     g_openclaw_adapter.capabilities = openclaw_proto_capabilities;
+    g_openclaw_adapter.get_stats = openclaw_proto_get_stats;
 }
 
 const proto_adapter_t *openclaw_get_protocol_adapter(void)

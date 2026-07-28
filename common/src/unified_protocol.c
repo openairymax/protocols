@@ -413,10 +413,23 @@ void unified_message_destroy(unified_message_t *message)
 
 const char *protocol_type_to_string(protocol_type_t type)
 {
-    static const char *names[] = {"HTTP", "WebSocket", "gRPC",    "MQTT",
-                                  "AMQP", "Raw TCP",   "Raw UDP", "Custom"};
+    /* P0-15 修复: 名称数组对齐 airy_protocol_type_t 枚举（9 个值 0-8）。
+     * 历史 bug：数组只有 8 项旧传输层协议名（HTTP/WebSocket/gRPC/...），
+     * 与当前 9 项应用层枚举完全不匹配。调用 protocol_type_to_string(MCP) 会
+     * 错误返回 "WebSocket"（索引 1 = 旧 WebSocket 位置）。 */
+    static const char *names[] = {
+        "JSON-RPC",   /* 0: AIRY_PROTOCOL_JSON_RPC */
+        "MCP",        /* 1: AIRY_PROTOCOL_MCP */
+        "A2A",        /* 2: AIRY_PROTOCOL_A2A */
+        "OpenAI",     /* 3: AIRY_PROTOCOL_OPENAI */
+        "OpenJiuwen", /* 4: AIRY_PROTOCOL_OPENJIUWEN */
+        "Claude",     /* 5: AIRY_PROTOCOL_CLAUDE */
+        "ChinaEco",   /* 6: AIRY_PROTOCOL_CHINA_ECO */
+        "AGNTCY",     /* 7: AIRY_PROTOCOL_AGNTCY */
+        "OpenClaw"    /* 8: AIRY_PROTOCOL_OPENCLAW */
+    };
 
-    if (type < 0 || type > PROTOCOL_CUSTOM) {
+    if (type < 0 || type >= AIRY_PROTOCOL_COUNT) {
         return "Unknown";
     }
 
@@ -428,15 +441,27 @@ protocol_type_t protocol_type_from_string(const char *str)
     if (!str)
         return PROTOCOL_CUSTOM;
 
-    const char *names[] = {"http", "websocket", "grpc", "mqtt", "amqp", "tcp", "udp"};
-    protocol_type_t types[] = {PROTOCOL_HTTP, PROTOCOL_WEBSOCKET, PROTOCOL_GRPC,   PROTOCOL_MQTT,
-                               PROTOCOL_AMQP, PROTOCOL_RAW_TCP,   PROTOCOL_RAW_UDP};
-
-    for (int i = 0; i < 7; i++) {
-        if (strcasecmp(str, names[i]) == 0) {
-            return types[i];
-        }
-    }
+    /* P0-15 修复: 新增全部 9 种应用层协议名的字符串→枚举映射。
+     * 历史 bug：from_string 只识别旧传输层协议名（http/websocket/grpc/...），
+     * 调用 protocol_type_from_string("mcp") 返回 PROTOCOL_CUSTOM 而非 PROTO_MCP。 */
+    if (strcasecmp(str, "json-rpc") == 0 || strcasecmp(str, "http") == 0)
+        return AIRY_PROTOCOL_JSON_RPC;
+    if (strcasecmp(str, "mcp") == 0 || strcasecmp(str, "mcp_v1") == 0)
+        return AIRY_PROTOCOL_MCP;
+    if (strcasecmp(str, "a2a") == 0 || strcasecmp(str, "a2a_v03") == 0)
+        return AIRY_PROTOCOL_A2A;
+    if (strcasecmp(str, "openai") == 0)
+        return AIRY_PROTOCOL_OPENAI;
+    if (strcasecmp(str, "openjiuwen") == 0)
+        return AIRY_PROTOCOL_OPENJIUWEN;
+    if (strcasecmp(str, "claude") == 0)
+        return AIRY_PROTOCOL_CLAUDE;
+    if (strcasecmp(str, "china-eco") == 0 || strcasecmp(str, "china_eco") == 0)
+        return AIRY_PROTOCOL_CHINA_ECO;
+    if (strcasecmp(str, "agntcy") == 0 || strcasecmp(str, "acp") == 0)
+        return AIRY_PROTOCOL_AGNTCY;
+    if (strcasecmp(str, "openclaw") == 0)
+        return AIRY_PROTOCOL_OPENCLAW;
 
     return PROTOCOL_CUSTOM;
 }
@@ -469,7 +494,7 @@ static int validate_message(const unified_message_t *message)
         return AIRY_ERR_UNKNOWN;
         }
 
-    if (message->protocol < PROTOCOL_HTTP || message->protocol > PROTOCOL_CUSTOM) {
+    if (message->protocol < AIRY_PROTOCOL_JSON_RPC || message->protocol >= AIRY_PROTOCOL_COUNT) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "if: failed");
         return AIRY_ERR_UNKNOWN;
     }

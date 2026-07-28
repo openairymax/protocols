@@ -224,6 +224,12 @@ typedef struct langchain_adapter_context_s {
     langchain_llm_callback_fn llm_callback;
     void *llm_callback_data;
     bool is_initialized;
+    bool is_connected;
+    char *connected_endpoint;
+    void *send_buffer;
+    size_t send_buffer_size;
+    uint64_t bytes_sent;
+    uint64_t bytes_received;
     uint64_t total_chains_executed;
     uint64_t total_tokens_used;
     double total_execution_time_ms;
