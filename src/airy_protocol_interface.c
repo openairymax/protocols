@@ -652,45 +652,18 @@ int proto_interface_list_all(char **json_output)
 
 const char *proto_interface_type_name(protocol_type_t type)
 {
-    switch (type) {
-    case PROTOCOL_HTTP:
-        return "HTTP";
-    case PROTOCOL_CUSTOM:
-        return "Custom";
-    default:
-        if (type == PROTOCOL_WEBSOCKET)
-            return "WebSocket";
-        if (type == PROTOCOL_STDIO)
-            return "Stdio";
-        if (type == PROTOCOL_IPC)
-            return "IPC";
-        return "Unknown";
-    }
+    /* P0-15 修复: 委托给已对齐枚举的 protocol_type_name()，
+     * 历史 bug：使用旧传输层常量 PROTOCOL_HTTP/PROTOCOL_WEBSOCKET/... 现已删除。 */
+    return protocol_type_name(type);
 }
 
 protocol_type_t proto_interface_parse_type(const char *name)
 {
     if (!name)
         return PROTOCOL_CUSTOM;
-    if (strcasecmp(name, "http") == 0 || strcasecmp(name, "jsonrpc") == 0)
-        return PROTOCOL_HTTP;
-    if (strcasecmp(name, "websocket") == 0 || strcasecmp(name, "ws") == 0)
-        return PROTOCOL_WEBSOCKET;
-    if (strcasecmp(name, "stdio") == 0)
-        return PROTOCOL_STDIO;
-    if (strcasecmp(name, "ipc") == 0)
-        return PROTOCOL_IPC;
-    if (strcasecmp(name, "mcp") == 0 || strcasecmp(name, "mcp_v1") == 0)
-        return PROTOCOL_CUSTOM;
-    if (strcasecmp(name, "a2a") == 0 || strcasecmp(name, "a2a_v03") == 0)
-        return PROTOCOL_CUSTOM;
-    if (strcasecmp(name, "openai") == 0)
-        return PROTOCOL_CUSTOM;
-    if (strcasecmp(name, "openjiuwen") == 0)
-        return PROTOCOL_CUSTOM;
-    if (strcasecmp(name, "openclaw") == 0)
-        return PROTOCOL_CUSTOM;
-    if (strcasecmp(name, "claude") == 0)
-        return PROTOCOL_CUSTOM;
-    return PROTOCOL_CUSTOM;
+
+    /* P0-15 修复: 委托给已对齐枚举的 protocol_type_from_string()，
+     * 历史 bug：所有应用层协议（mcp/a2a/openai/...）都返回 PROTOCOL_CUSTOM，
+     * 且使用已删除的旧传输层常量 PROTOCOL_WEBSOCKET/STDIO/IPC。 */
+    return protocol_type_from_string(name);
 }

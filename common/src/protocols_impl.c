@@ -100,10 +100,11 @@ size_t protocol_manager_get_stacks(protocol_manager_handle_t manager,
 }
 
 static protocol_adapter_t s_http_adapter = {0};
-static protocol_adapter_t s_ws_adapter = {0};
-static protocol_adapter_t s_grpc_adapter = {0};
-static protocol_adapter_t s_mqtt_adapter = {0};
 static bool s_adapters_init = false;
+
+/* P0-15: 删除 s_ws_adapter/s_grpc_adapter/s_mqtt_adapter 及对应工厂函数。
+ * 这些旧传输层适配器使用已删除的 PROTOCOL_WEBSOCKET/GRPC/MQTT 宏，
+ * 与当前应用层协议枚举体系不兼容，且无实际调用点（gateway 模块自行实现）。 */
 
 static void init_static_adapters(void)
 {
@@ -112,22 +113,7 @@ static void init_static_adapters(void)
     s_http_adapter.type = PROTOCOL_HTTP;
     s_http_adapter.name = "http";
     s_http_adapter.version = "0.1.0";
-    s_http_adapter.description = "HTTP Protocol Adapter";
-
-    s_ws_adapter.type = PROTOCOL_WEBSOCKET;
-    s_ws_adapter.name = "websocket";
-    s_ws_adapter.version = "0.1.0";
-    s_ws_adapter.description = "WebSocket Protocol Adapter";
-
-    s_grpc_adapter.type = PROTOCOL_GRPC;
-    s_grpc_adapter.name = "grpc";
-    s_grpc_adapter.version = "0.1.0";
-    s_grpc_adapter.description = "gRPC Protocol Adapter (HTTP/2 framing)";
-
-    s_mqtt_adapter.type = PROTOCOL_MQTT;
-    s_mqtt_adapter.name = "mqtt";
-    s_mqtt_adapter.version = "3.1.1";
-    s_mqtt_adapter.description = "MQTT Protocol Adapter (pub/sub)";
+    s_http_adapter.description = "HTTP/JSON-RPC Protocol Adapter";
 
     s_adapters_init = true;
 }
@@ -136,24 +122,6 @@ const protocol_adapter_t *protocol_adapter_http(void)
 {
     init_static_adapters();
     return &s_http_adapter;
-}
-
-const protocol_adapter_t *protocol_adapter_websocket(void)
-{
-    init_static_adapters();
-    return &s_ws_adapter;
-}
-
-const protocol_adapter_t *protocol_adapter_grpc(void)
-{
-    init_static_adapters();
-    return &s_grpc_adapter;
-}
-
-const protocol_adapter_t *protocol_adapter_mqtt(void)
-{
-    init_static_adapters();
-    return &s_mqtt_adapter;
 }
 
 const char *protocol_error_to_string(protocol_error_t error)

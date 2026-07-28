@@ -22,6 +22,12 @@
 static struct {
     agntcy_handle_t handle;
     bool proto_initialized;
+    bool is_connected;
+    char *connected_endpoint;
+    void *send_buffer;
+    size_t send_buffer_size;
+    uint64_t bytes_sent;
+    uint64_t bytes_received;
 } g_agntcy_state = {0};
 
 int agntcy_acp_create(agntcy_handle_t **handle)
@@ -345,6 +351,12 @@ static int agntcy_proto_destroy(void *context)
 {
     (void)context;
     g_agntcy_state.proto_initialized = false;
+    g_agntcy_state.is_connected = false;
+    AIRY_FREE(g_agntcy_state.connected_endpoint);
+    g_agntcy_state.connected_endpoint = NULL;
+    AIRY_FREE(g_agntcy_state.send_buffer);
+    g_agntcy_state.send_buffer = NULL;
+    g_agntcy_state.send_buffer_size = 0;
     return 0;
 }
 
@@ -400,6 +412,190 @@ static uint32_t agntcy_proto_capabilities_adapter(void *context)
     return (uint32_t)agntcy_proto_capabilities(context);
 }
 
+static int agntcy_proto_encode(void *context, const void *msg, void **out_data, size_t *out_size)
+{
+    (void)context;
+    if (!msg || !out_data || !out_size)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "agntcy_proto_encode: invalid param");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+    const unified_message_t *umsg = (const unified_message_t *)msg;
+    const char *payload = umsg->payload ? (const char *)umsg->payload : "";
+    size_t payload_len = umsg->payload_size;
+    size_t buf_size = 256 + payload_len;
+    char *buf = (char *)AIRY_MALLOC(buf_size);
+    if (!buf)
+        {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "agntcy_proto_encode: oom");
+        return AIRY_ERR_OUT_OF_MEMORY;
+        }
+    int written = snprintf(buf, buf_size,
+                           "{\"protocol\":%d,\"direction\":%d,\"timestamp\":%llu,\"payload\":\"%.*s\"}",
+                           (int)umsg->protocol, (int)umsg->direction,
+                           (unsigned long long)umsg->timestamp, (int)payload_len, payload);
+    if (written < 0)
+        {
+        AIRY_FREE(buf);
+        airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__, "agntcy_proto_encode: snprintf failed");
+        return AIRY_ERR_IO;
+        }
+    *out_data = buf;
+    *out_size = (size_t)written;
+    return 0;
+}
+
+static int agntcy_proto_decode(void *context, const void *data, size_t size, void *out_msg)
+{
+    (void)context;
+    if (!data || !out_msg)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "agntcy_proto_decode: invalid param");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+    if (size == 0)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "agntcy_proto_decode: zero size");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+
+    unified_message_t *msg = (unified_message_t *)out_msg;
+    char *copy = (char *)AIRY_MALLOC(size + 1);
+    if (!copy)
+        {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "agntcy_proto_decode: oom");
+        return AIRY_ERR_OUT_OF_MEMORY;
+        }
+    __builtin_memcpy(copy, data, size);
+    copy[size] = '\0';
+
+    msg->protocol = AIRY_PROTOCOL_AGNTCY;
+    char *p = strstr(copy, "\"protocol\":");
+    if (p)
+        msg->protocol = (airy_protocol_type_t)strtol(p + 11, NULL, 10);
+
+    msg->direction = DIRECTION_RESPONSE;
+    p = strstr(copy, "\"direction\":");
+    if (p)
+        msg->direction = (message_direction_t)strtol(p + 12, NULL, 10);
+
+    msg->timestamp = (uint64_t)time(NULL);
+    p = strstr(copy, "\"timestamp\":");
+    if (p)
+        msg->timestamp = (uint64_t)strtoull(p + 12, NULL, 10);
+
+    p = strstr(copy, "\"payload\":\"");
+    if (p) {
+        p += 11;
+        char *end = strchr(p, '"');
+        size_t plen = end ? (size_t)(end - p) : strlen(p);
+        msg->payload = AIRY_MALLOC(plen + 1);
+        if (msg->payload) {
+            __builtin_memcpy(msg->payload, p, plen);
+            ((char *)msg->payload)[plen] = '\0';
+            msg->payload_size = plen;
+        }
+    } else {
+        msg->payload = AIRY_STRDUP("");
+        msg->payload_size = 0;
+    }
+
+    AIRY_FREE(copy);
+    return 0;
+}
+
+static int agntcy_proto_connect(void *context, const char *endpoint)
+{
+    (void)context;
+    AIRY_FREE(g_agntcy_state.connected_endpoint);
+    g_agntcy_state.connected_endpoint = endpoint ? AIRY_STRDUP(endpoint) : NULL;
+    g_agntcy_state.is_connected = true;
+    return 0;
+}
+
+static int agntcy_proto_disconnect(void *context)
+{
+    (void)context;
+    g_agntcy_state.is_connected = false;
+    AIRY_FREE(g_agntcy_state.connected_endpoint);
+    g_agntcy_state.connected_endpoint = NULL;
+    return 0;
+}
+
+static int agntcy_proto_is_connected(void *context)
+{
+    (void)context;
+    return g_agntcy_state.is_connected ? 1 : 0;
+}
+
+static int agntcy_proto_send(void *context, const void *data, size_t size)
+{
+    (void)context;
+    if (!data)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "agntcy_proto_send: invalid param");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+    AIRY_FREE(g_agntcy_state.send_buffer);
+    g_agntcy_state.send_buffer = AIRY_MALLOC(size + 1);
+    if (!g_agntcy_state.send_buffer)
+        {
+        g_agntcy_state.send_buffer_size = 0;
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "agntcy_proto_send: oom");
+        return AIRY_ERR_OUT_OF_MEMORY;
+        }
+    __builtin_memcpy(g_agntcy_state.send_buffer, data, size);
+    ((char *)g_agntcy_state.send_buffer)[size] = '\0';
+    g_agntcy_state.send_buffer_size = size;
+    g_agntcy_state.bytes_sent += size;
+    return 0;
+}
+
+static int agntcy_proto_receive(void *context, void **data, size_t *size, uint32_t timeout_ms)
+{
+    (void)context;
+    (void)timeout_ms;
+    if (!data || !size)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "agntcy_proto_receive: invalid param");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+    if (!g_agntcy_state.send_buffer || g_agntcy_state.send_buffer_size == 0)
+        {
+        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "agntcy_proto_receive: no data");
+        return AIRY_ERR_TIMEOUT;
+        }
+    *data = g_agntcy_state.send_buffer;
+    *size = g_agntcy_state.send_buffer_size;
+    g_agntcy_state.bytes_received += *size;
+    g_agntcy_state.send_buffer = NULL;
+    g_agntcy_state.send_buffer_size = 0;
+    return 0;
+}
+
+static int agntcy_proto_get_stats(void *context, char *stats_json, size_t max_size)
+{
+    (void)context;
+    if (!stats_json || max_size < 64)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "agntcy_proto_get_stats: invalid param");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+    int written = snprintf(stats_json, max_size,
+                           "{\"adapter\":\"agntcy_acp\",\"version\":\"%s\",\"connected\":%s,"
+                           "\"bytes_sent\":%llu,\"bytes_received\":%llu,"
+                           "\"agents\":%zu,\"channels\":%zu,"
+                           "\"tasks\":%zu,\"messages\":%llu}",
+                           AGNTCY_ACP_VERSION, g_agntcy_state.is_connected ? "true" : "false",
+                           (unsigned long long)g_agntcy_state.bytes_sent,
+                           (unsigned long long)g_agntcy_state.bytes_received,
+                           g_agntcy_state.handle.agent_count,
+                           g_agntcy_state.handle.channel_count,
+                           g_agntcy_state.handle.task_count,
+                           (unsigned long long)g_agntcy_state.handle.message_counter);
+    return (written >= 0 && (size_t)written < max_size) ? 0 : AIRY_ERR_BUFFER_TOO_SMALL;
+}
+
 const proto_adapter_t *agntcy_get_protocol_adapter(void)
 {
     static proto_adapter_t adapter = {0};
@@ -410,12 +606,20 @@ const proto_adapter_t *agntcy_get_protocol_adapter(void)
         adapter.version = AGNTCY_ACP_VERSION;
         adapter.description =
             "Agent Communication Protocol - open standard for agent-to-agent communication";
-        adapter.type = PROTO_AGNTCY;
+        adapter.type = AIRY_PROTOCOL_AGNTCY;  /* P0-15: PROTO_AGNTCY→枚举值 */
         adapter.init = agntcy_proto_init_adapter;
         adapter.destroy = agntcy_proto_destroy;
+        adapter.encode = agntcy_proto_encode;
+        adapter.decode = agntcy_proto_decode;
+        adapter.connect = agntcy_proto_connect;
+        adapter.disconnect = agntcy_proto_disconnect;
+        adapter.is_connected = agntcy_proto_is_connected;
+        adapter.send = agntcy_proto_send;
+        adapter.receive = agntcy_proto_receive;
         adapter.handle_request = agntcy_proto_handle_request;
         adapter.get_version = agntcy_proto_get_version_adapter;
         adapter.capabilities = agntcy_proto_capabilities_adapter;
+        adapter.get_stats = agntcy_proto_get_stats;
         initialized = true;
     }
 

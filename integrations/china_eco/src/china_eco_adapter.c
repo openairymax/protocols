@@ -28,6 +28,12 @@
 static struct {
     china_eco_handle_t handle;
     bool proto_initialized;
+    bool is_connected;
+    char *connected_endpoint;
+    void *send_buffer;
+    size_t send_buffer_size;
+    uint64_t bytes_sent;
+    uint64_t bytes_received;
 } g_china_eco_state = {0};
 
 static const char *g_provider_api_urls[] = {
@@ -617,7 +623,14 @@ static int china_eco_proto_init(void *context)
 
 static int china_eco_proto_destroy(void *context)
 {
+    (void)context;
     g_china_eco_state.proto_initialized = false;
+    g_china_eco_state.is_connected = false;
+    AIRY_FREE(g_china_eco_state.connected_endpoint);
+    g_china_eco_state.connected_endpoint = NULL;
+    AIRY_FREE(g_china_eco_state.send_buffer);
+    g_china_eco_state.send_buffer = NULL;
+    g_china_eco_state.send_buffer_size = 0;
     return 0;
 }
 
@@ -662,6 +675,190 @@ static uint32_t china_eco_proto_capabilities(void *context)
                       CHINA_ECO_CAP_CONTENT_AUDIT);
 }
 
+static int china_eco_proto_encode(void *context, const void *msg, void **out_data, size_t *out_size)
+{
+    (void)context;
+    if (!msg || !out_data || !out_size)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "china_eco_proto_encode: invalid param");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+    const unified_message_t *umsg = (const unified_message_t *)msg;
+    const char *payload = umsg->payload ? (const char *)umsg->payload : "";
+    size_t payload_len = umsg->payload_size;
+    size_t buf_size = 256 + payload_len;
+    char *buf = (char *)AIRY_MALLOC(buf_size);
+    if (!buf)
+        {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "china_eco_proto_encode: oom");
+        return AIRY_ERR_OUT_OF_MEMORY;
+        }
+    int written = snprintf(buf, buf_size,
+                           "{\"protocol\":%d,\"direction\":%d,\"timestamp\":%llu,\"payload\":\"%.*s\"}",
+                           (int)umsg->protocol, (int)umsg->direction,
+                           (unsigned long long)umsg->timestamp, (int)payload_len, payload);
+    if (written < 0)
+        {
+        AIRY_FREE(buf);
+        airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__, "china_eco_proto_encode: snprintf failed");
+        return AIRY_ERR_IO;
+        }
+    *out_data = buf;
+    *out_size = (size_t)written;
+    return 0;
+}
+
+static int china_eco_proto_decode(void *context, const void *data, size_t size, void *out_msg)
+{
+    (void)context;
+    if (!data || !out_msg)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "china_eco_proto_decode: invalid param");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+    if (size == 0)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "china_eco_proto_decode: zero size");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+
+    unified_message_t *msg = (unified_message_t *)out_msg;
+    char *copy = (char *)AIRY_MALLOC(size + 1);
+    if (!copy)
+        {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "china_eco_proto_decode: oom");
+        return AIRY_ERR_OUT_OF_MEMORY;
+        }
+    __builtin_memcpy(copy, data, size);
+    copy[size] = '\0';
+
+    msg->protocol = AIRY_PROTOCOL_CHINA_ECO;
+    char *p = strstr(copy, "\"protocol\":");
+    if (p)
+        msg->protocol = (airy_protocol_type_t)strtol(p + 11, NULL, 10);
+
+    msg->direction = DIRECTION_RESPONSE;
+    p = strstr(copy, "\"direction\":");
+    if (p)
+        msg->direction = (message_direction_t)strtol(p + 12, NULL, 10);
+
+    msg->timestamp = (uint64_t)time(NULL);
+    p = strstr(copy, "\"timestamp\":");
+    if (p)
+        msg->timestamp = (uint64_t)strtoull(p + 12, NULL, 10);
+
+    p = strstr(copy, "\"payload\":\"");
+    if (p) {
+        p += 11;
+        char *end = strchr(p, '"');
+        size_t plen = end ? (size_t)(end - p) : strlen(p);
+        msg->payload = AIRY_MALLOC(plen + 1);
+        if (msg->payload) {
+            __builtin_memcpy(msg->payload, p, plen);
+            ((char *)msg->payload)[plen] = '\0';
+            msg->payload_size = plen;
+        }
+    } else {
+        msg->payload = AIRY_STRDUP("");
+        msg->payload_size = 0;
+    }
+
+    AIRY_FREE(copy);
+    return 0;
+}
+
+static int china_eco_proto_connect(void *context, const char *endpoint)
+{
+    (void)context;
+    AIRY_FREE(g_china_eco_state.connected_endpoint);
+    g_china_eco_state.connected_endpoint = endpoint ? AIRY_STRDUP(endpoint) : NULL;
+    g_china_eco_state.is_connected = true;
+    return 0;
+}
+
+static int china_eco_proto_disconnect(void *context)
+{
+    (void)context;
+    g_china_eco_state.is_connected = false;
+    AIRY_FREE(g_china_eco_state.connected_endpoint);
+    g_china_eco_state.connected_endpoint = NULL;
+    return 0;
+}
+
+static int china_eco_proto_is_connected(void *context)
+{
+    (void)context;
+    return g_china_eco_state.is_connected ? 1 : 0;
+}
+
+static int china_eco_proto_send(void *context, const void *data, size_t size)
+{
+    (void)context;
+    if (!data)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "china_eco_proto_send: invalid param");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+    AIRY_FREE(g_china_eco_state.send_buffer);
+    g_china_eco_state.send_buffer = AIRY_MALLOC(size + 1);
+    if (!g_china_eco_state.send_buffer)
+        {
+        g_china_eco_state.send_buffer_size = 0;
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "china_eco_proto_send: oom");
+        return AIRY_ERR_OUT_OF_MEMORY;
+        }
+    __builtin_memcpy(g_china_eco_state.send_buffer, data, size);
+    ((char *)g_china_eco_state.send_buffer)[size] = '\0';
+    g_china_eco_state.send_buffer_size = size;
+    g_china_eco_state.bytes_sent += size;
+    return 0;
+}
+
+static int china_eco_proto_receive(void *context, void **data, size_t *size, uint32_t timeout_ms)
+{
+    (void)context;
+    (void)timeout_ms;
+    if (!data || !size)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "china_eco_proto_receive: invalid param");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+    if (!g_china_eco_state.send_buffer || g_china_eco_state.send_buffer_size == 0)
+        {
+        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "china_eco_proto_receive: no data");
+        return AIRY_ERR_TIMEOUT;
+        }
+    *data = g_china_eco_state.send_buffer;
+    *size = g_china_eco_state.send_buffer_size;
+    g_china_eco_state.bytes_received += *size;
+    g_china_eco_state.send_buffer = NULL;
+    g_china_eco_state.send_buffer_size = 0;
+    return 0;
+}
+
+static int china_eco_proto_get_stats(void *context, char *stats_json, size_t max_size)
+{
+    (void)context;
+    if (!stats_json || max_size < 64)
+        {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "china_eco_proto_get_stats: invalid param");
+        return AIRY_ERR_INVALID_PARAM;
+        }
+    int written = snprintf(stats_json, max_size,
+                           "{\"adapter\":\"china_eco\",\"version\":\"%s\",\"connected\":%s,"
+                           "\"bytes_sent\":%llu,\"bytes_received\":%llu,"
+                           "\"requests_total\":%llu,\"token_total\":%llu,"
+                           "\"llm_providers\":%zu,\"storage_bridges\":%zu}",
+                           CHINA_ECO_VERSION, g_china_eco_state.is_connected ? "true" : "false",
+                           (unsigned long long)g_china_eco_state.bytes_sent,
+                           (unsigned long long)g_china_eco_state.bytes_received,
+                           (unsigned long long)g_china_eco_state.handle.request_counter,
+                           (unsigned long long)g_china_eco_state.handle.token_total,
+                           g_china_eco_state.handle.llm_provider_count,
+                           g_china_eco_state.handle.storage_bridge_count);
+    return (written >= 0 && (size_t)written < max_size) ? 0 : AIRY_ERR_BUFFER_TOO_SMALL;
+}
+
 const proto_adapter_t *china_eco_get_protocol_adapter(void)
 {
     static proto_adapter_t adapter = {0};
@@ -673,12 +870,20 @@ const proto_adapter_t *china_eco_get_protocol_adapter(void)
         adapter.description =
             "Domestic ecosystem protocol compatibility - Bailian/Wenxin/DashScope LLM bridge, "
             "OSS/COS/BOS storage, SM2/SM3/SM4 crypto";
-        adapter.type = PROTO_CHINA_ECO;
+        adapter.type = AIRY_PROTOCOL_CHINA_ECO;  /* P0-15: PROTO_CHINA_ECO→枚举值 */
         adapter.init = china_eco_proto_init;
         adapter.destroy = china_eco_proto_destroy;
+        adapter.encode = china_eco_proto_encode;
+        adapter.decode = china_eco_proto_decode;
+        adapter.connect = china_eco_proto_connect;
+        adapter.disconnect = china_eco_proto_disconnect;
+        adapter.is_connected = china_eco_proto_is_connected;
+        adapter.send = china_eco_proto_send;
+        adapter.receive = china_eco_proto_receive;
         adapter.handle_request = china_eco_proto_handle_request;
         adapter.get_version = china_eco_proto_get_version;
         adapter.capabilities = china_eco_proto_capabilities;
+        adapter.get_stats = china_eco_proto_get_stats;
         initialized = true;
     }
 

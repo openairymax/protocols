@@ -1468,7 +1468,7 @@ static int mcp_adapter_decode(void *context, const void *data, size_t data_size,
     if (result == 0 && response_json) {
         msg->payload = response_json;
         msg->payload_size = strlen(response_json);
-        msg->protocol = PROTOCOL_CUSTOM;
+        msg->protocol = AIRY_PROTOCOL_MCP;
         msg->direction = DIRECTION_RESPONSE;
         msg->timestamp = (uint64_t)time(NULL);
     }
