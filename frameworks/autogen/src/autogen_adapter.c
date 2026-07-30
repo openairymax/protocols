@@ -694,7 +694,7 @@ static int autogen_proto_encode(void *context, const void *msg, void **out_data,
                            "{\"protocol\":%d,\"direction\":%d,\"timestamp\":%llu,\"payload\":\"%.*s\"}",
                            (int)umsg->protocol, (int)umsg->direction,
                            (unsigned long long)umsg->timestamp, (int)payload_len, payload);
-    if (written < 0)
+    if (written < 0 || (size_t)written >= buf_size)
         {
         AIRY_FREE(buf);
         airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__, "autogen_proto_encode: snprintf failed");
