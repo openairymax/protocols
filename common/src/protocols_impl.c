@@ -112,7 +112,7 @@ static void init_static_adapters(void)
         return;
     s_http_adapter.type = PROTOCOL_HTTP;
     s_http_adapter.name = "http";
-    s_http_adapter.version = "0.1.0";
+    s_http_adapter.version = "0.1.1";
     s_http_adapter.description = "HTTP/JSON-RPC Protocol Adapter";
 
     s_adapters_init = true;
