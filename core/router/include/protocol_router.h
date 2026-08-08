@@ -91,6 +91,19 @@ int protocol_router_add_rule(protocol_router_handle_t router, const protocol_rul
                              message_transformer_t transformer);
 
 /**
+ * @brief 删除匹配源端点的协议转换规则
+ *
+ * 从路由表中删除所有 source_endpoint 与 source_endpoint_pattern
+ * 精确相等的规则（真实删除并释放节点，非桩）。
+ *
+ * @param router 路由引擎句柄
+ * @param source_endpoint_pattern 源端点模式（与 add_rule 时 rule->source_endpoint 一致）
+ * @return 0 删除成功；AIRY_ERR_NOT_FOUND 无匹配规则；AIRY_EINVAL 参数无效
+ */
+int protocol_router_remove_rule(protocol_router_handle_t router,
+                                const char *source_endpoint_pattern);
+
+/**
  * @brief 路由消息
  * @param router 路由引擎句柄
  * @param message 输入消息

@@ -146,6 +146,44 @@ int protocol_router_add_rule(protocol_router_handle_t router, const protocol_rul
     return 0;
 }
 
+int protocol_router_remove_rule(protocol_router_handle_t router,
+                                const char *source_endpoint_pattern)
+{
+    if (!router || !source_endpoint_pattern) {
+        airy_err_push_ex(AIRY_EINVAL, __FILE__, __LINE__, __func__,
+                         "protocol_router_remove_rule: null parameter");
+        return AIRY_EINVAL;
+    }
+
+    struct protocol_router_s *r = (struct protocol_router_s *)router;
+
+    /* 遍历链表，删除所有 source_endpoint 精确匹配的规则节点 */
+    rule_node_t **pp = &r->rules;
+    int removed = 0;
+    while (*pp) {
+        const protocol_rule_t *rule = &(*pp)->rule;
+        int matched = 0;
+        if (rule->source_endpoint) {
+            matched = (strcmp(rule->source_endpoint, source_endpoint_pattern) == 0);
+        } else {
+            /* 无源端点（通配）的规则：仅当请求删除 "*" 时视为匹配 */
+            matched = (strcmp(source_endpoint_pattern, "*") == 0);
+        }
+
+        if (matched) {
+            rule_node_t *victim = *pp;
+            *pp = victim->next;
+            destroy_rule_node(victim);
+            r->rule_count--;
+            removed++;
+        } else {
+            pp = &(*pp)->next;
+        }
+    }
+
+    return removed > 0 ? 0 : AIRY_ERR_NOT_FOUND;
+}
+
 int protocol_router_route(protocol_router_handle_t router, const unified_message_t *message,
                           unified_message_t *transformed)
 {
