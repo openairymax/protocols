@@ -128,7 +128,8 @@ set(PROTOCOLS_STANDARDS_SOURCES
 )
 if(PROTOCOLS_ENABLE_MCP)
     list(APPEND PROTOCOLS_STANDARDS_SOURCES
-        standards/mcp/src/mcp_v1_adapter.c)
+        standards/mcp/src/mcp_v1_adapter.c
+        standards/mcp/src/mcp_client.c)
     if(PROTOCOLS_ENABLE_MCP_TRANSPORT)
         list(APPEND PROTOCOLS_STANDARDS_SOURCES
             standards/mcp/src/mcp_transport.c)
@@ -214,6 +215,7 @@ set(PROTOCOLS_CORE_HEADERS
 set(PROTOCOLS_STANDARDS_HEADERS
     standards/a2a/include/a2a_v03_adapter.h
     standards/mcp/include/mcp_v1_adapter.h
+    standards/mcp/include/mcp_client.h
     standards/mcp/include/mcp_transport.h
 )
 
