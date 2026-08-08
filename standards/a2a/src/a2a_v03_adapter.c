@@ -685,6 +685,155 @@ static void a2a_hex_encode(const uint8_t *data, size_t len, char *out, size_t ou
     out[len * 2] = '\0';
 }
 
+/* ============================================================================
+ * SHA-256 + HMAC-SHA256（FIPS 180-4 / RFC 2104，纯 C 自包含实现）
+ *
+ * PROTO-002 要求 A2A 签名使用真实 HMAC-SHA256；原实现为 djb2 32 位哈希，
+ * 无密钥、无单向性，可被离线穷举伪造。以下为标准实现，无外部依赖。
+ * ============================================================================ */
+
+typedef struct {
+    uint32_t state[8];
+    uint64_t bitlen;
+    uint8_t data[64];
+    size_t datalen;
+} a2a_sha256_ctx_t;
+
+static const uint32_t a2a_sha256_k[64] = {
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
+
+static uint32_t a2a_ror32(uint32_t x, unsigned n)
+{
+    return (x >> n) | (x << (32 - n));
+}
+
+static void a2a_sha256_transform(a2a_sha256_ctx_t *ctx)
+{
+    uint32_t w[64];
+    for (size_t i = 0; i < 16; i++) {
+        w[i] = ((uint32_t)ctx->data[i * 4] << 24) | ((uint32_t)ctx->data[i * 4 + 1] << 16) |
+               ((uint32_t)ctx->data[i * 4 + 2] << 8) | (uint32_t)ctx->data[i * 4 + 3];
+    }
+    for (size_t i = 16; i < 64; i++) {
+        uint32_t s0 = a2a_ror32(w[i - 15], 7) ^ a2a_ror32(w[i - 15], 18) ^ (w[i - 15] >> 3);
+        uint32_t s1 = a2a_ror32(w[i - 2], 17) ^ a2a_ror32(w[i - 2], 19) ^ (w[i - 2] >> 10);
+        w[i] = w[i - 16] + s0 + w[i - 7] + s1;
+    }
+    uint32_t a = ctx->state[0], b = ctx->state[1], c = ctx->state[2], d = ctx->state[3];
+    uint32_t e = ctx->state[4], f = ctx->state[5], g = ctx->state[6], h = ctx->state[7];
+    for (size_t i = 0; i < 64; i++) {
+        uint32_t S1 = a2a_ror32(e, 6) ^ a2a_ror32(e, 11) ^ a2a_ror32(e, 25);
+        uint32_t ch = (e & f) ^ (~e & g);
+        uint32_t t1 = h + S1 + ch + a2a_sha256_k[i] + w[i];
+        uint32_t S0 = a2a_ror32(a, 2) ^ a2a_ror32(a, 13) ^ a2a_ror32(a, 22);
+        uint32_t maj = (a & b) ^ (a & c) ^ (b & c);
+        uint32_t t2 = S0 + maj;
+        h = g; g = f; f = e; e = d + t1;
+        d = c; c = b; b = a; a = t1 + t2;
+    }
+    ctx->state[0] += a; ctx->state[1] += b; ctx->state[2] += c; ctx->state[3] += d;
+    ctx->state[4] += e; ctx->state[5] += f; ctx->state[6] += g; ctx->state[7] += h;
+}
+
+static void a2a_sha256_init(a2a_sha256_ctx_t *ctx)
+{
+    ctx->state[0] = 0x6a09e667; ctx->state[1] = 0xbb67ae85;
+    ctx->state[2] = 0x3c6ef372; ctx->state[3] = 0xa54ff53a;
+    ctx->state[4] = 0x510e527f; ctx->state[5] = 0x9b05688c;
+    ctx->state[6] = 0x1f83d9ab; ctx->state[7] = 0x5be0cd19;
+    ctx->bitlen = 0;
+    ctx->datalen = 0;
+}
+
+static void a2a_sha256_update(a2a_sha256_ctx_t *ctx, const void *data, size_t len)
+{
+    const uint8_t *p = (const uint8_t *)data;
+    for (size_t i = 0; i < len; i++) {
+        ctx->data[ctx->datalen++] = p[i];
+        if (ctx->datalen == 64) {
+            a2a_sha256_transform(ctx);
+            ctx->bitlen += 512;
+            ctx->datalen = 0;
+        }
+    }
+}
+
+static void a2a_sha256_final(a2a_sha256_ctx_t *ctx, uint8_t *out)
+{
+    uint64_t bitlen = ctx->bitlen + (uint64_t)ctx->datalen * 8;
+    ctx->data[ctx->datalen++] = 0x80;
+    if (ctx->datalen > 56) {
+        while (ctx->datalen < 64)
+            ctx->data[ctx->datalen++] = 0;
+        a2a_sha256_transform(ctx);
+        ctx->bitlen += 512;
+        ctx->datalen = 0;
+    }
+    while (ctx->datalen < 56)
+        ctx->data[ctx->datalen++] = 0;
+    for (int i = 0; i < 8; i++)
+        ctx->data[56 + i] = (uint8_t)(bitlen >> (56 - i * 8));
+    a2a_sha256_transform(ctx);
+
+    for (int i = 0; i < 8; i++) {
+        out[i * 4] = (uint8_t)(ctx->state[i] >> 24);
+        out[i * 4 + 1] = (uint8_t)(ctx->state[i] >> 16);
+        out[i * 4 + 2] = (uint8_t)(ctx->state[i] >> 8);
+        out[i * 4 + 3] = (uint8_t)ctx->state[i];
+    }
+}
+
+/* HMAC-SHA256（RFC 2104）：key 超过块长（64B）时先压缩；out 至少 32 字节 */
+static void a2a_hmac_sha256(const void *key, size_t key_len, const void *msg, size_t msg_len,
+                            uint8_t *out)
+{
+    uint8_t k[64];
+    __builtin_memset(k, 0, sizeof(k));
+    if (key_len > 64) {
+        a2a_sha256_ctx_t c;
+        a2a_sha256_init(&c);
+        a2a_sha256_update(&c, key, key_len);
+        a2a_sha256_final(&c, k);
+    } else {
+        __builtin_memcpy(k, key, key_len);
+    }
+
+    uint8_t ipad[64], opad[64];
+    for (int i = 0; i < 64; i++) {
+        ipad[i] = k[i] ^ 0x36;
+        opad[i] = k[i] ^ 0x5c;
+    }
+
+    a2a_sha256_ctx_t c;
+    a2a_sha256_init(&c);
+    a2a_sha256_update(&c, ipad, sizeof(ipad));
+    a2a_sha256_update(&c, msg, msg_len);
+    uint8_t inner[32];
+    a2a_sha256_final(&c, inner);
+
+    a2a_sha256_init(&c);
+    a2a_sha256_update(&c, opad, sizeof(opad));
+    a2a_sha256_update(&c, inner, sizeof(inner));
+    a2a_sha256_final(&c, out);
+}
+
+/* 常量时间比较（长度必须一致）；返回 1 相同，0 不同 */
+static int a2a_const_time_eq(const uint8_t *a, const uint8_t *b, size_t len)
+{
+    uint8_t diff = 0;
+    for (size_t i = 0; i < len; i++)
+        diff |= (uint8_t)(a[i] ^ b[i]);
+    return (diff == 0) ? 1 : 0;
+}
+
+/* 非加密用途的 djb2 哈希（session_id 后缀等装饰性场景，不得用于认证/签名） */
 static uint32_t a2a_simple_hash(const char *data, size_t len)
 {
     uint32_t hash = 5381;
@@ -694,23 +843,7 @@ static uint32_t a2a_simple_hash(const char *data, size_t len)
     return hash;
 }
 
-static void a2a_generate_token_string(char *token_buf, size_t buf_size, const char *agent_id,
-                                      uint64_t timestamp)
-{
-    uint8_t raw[32];
-    const char *src = agent_id ? agent_id : "anonymous";
-    size_t src_len = strlen(src);
-
-    for (size_t i = 0; i < sizeof(raw); i++) {
-        raw[i] = (uint8_t)(a2a_simple_hash(src, src_len) ^ (timestamp >> (i % 8)) ^
-                           (uint8_t)(i * 37 + 0xAB) ^ (uint8_t)((timestamp * (i + 1)) & 0xFF));
-    }
-
-    a2a_hex_encode(raw, sizeof(raw), token_buf, buf_size);
-    if (buf_size > 0)
-        token_buf[buf_size - 1] = '\0';
-}
-
+/* 认证全局状态（前置声明，供 token 生成等使用） */
 typedef struct {
     bool initialized;
     a2a_auth_config_t config;
@@ -723,6 +856,39 @@ typedef struct {
 } a2a_auth_state_t;
 
 static a2a_auth_state_t g_a2a_auth = {0};
+
+static void a2a_generate_token_string(char *token_buf, size_t buf_size, const char *agent_id,
+                                      uint64_t timestamp)
+{
+    /* 基于 HMAC-SHA256 的伪随机令牌：token = hex(HMAC(secret, agent_id|timestamp))。
+     * 有密钥时不可预测；无密钥时退回时间混洗（仅未启用安全性的场景）。 */
+    const char *src = agent_id ? agent_id : "anonymous";
+    uint8_t raw[32];
+    size_t src_len = strlen(src);
+    if (src_len > 32)
+        src_len = 32;
+
+    if (g_a2a_auth.initialized && g_a2a_auth.config.secret_len > 0 &&
+        g_a2a_auth.config.secret_len <= 64) {
+        uint8_t msg[64];
+        size_t off = 0;
+        __builtin_memcpy(msg, src, src_len);
+        off += src_len;
+        for (int i = 0; i < 8; i++)
+            msg[off++] = (uint8_t)(timestamp >> (i * 8));
+        a2a_hmac_sha256(g_a2a_auth.config.shared_secret, g_a2a_auth.config.secret_len, msg, off,
+                        raw);
+    } else {
+        for (size_t i = 0; i < sizeof(raw); i++) {
+            raw[i] = (uint8_t)(a2a_simple_hash(src, src_len) ^ (timestamp >> (i % 8)) ^
+                               (uint8_t)(i * 37 + 0xAB) ^ (uint8_t)((timestamp * (i + 1)) & 0xFF));
+        }
+    }
+
+    a2a_hex_encode(raw, sizeof(raw), token_buf, buf_size);
+    if (buf_size > 0)
+        token_buf[buf_size - 1] = '\0';
+}
 
 int a2a_v03_auth_init(a2a_v03_context_t *ctx, const a2a_auth_config_t *auth_config)
 {
@@ -780,20 +946,35 @@ int a2a_v03_authenticate(a2a_v03_context_t *ctx, const char *agent_id, const cha
     if (g_a2a_auth.lockout_until > 0 && now < g_a2a_auth.lockout_until) {
         LOG_ERROR("authentication locked out: agent_id=%s, lockout_until=%llu, now=%llu",
                           agent_id, (unsigned long long)g_a2a_auth.lockout_until, (unsigned long long)now);
-        airy_err_push_ex(AIRY_ERR_NOT_SUPPORTED, __FILE__, __LINE__, __func__, "a2a_timestamp_ms: error AIRY_ERR_NOT_SUPPORTED");
-        return AIRY_ERR_NOT_SUPPORTED;
+        /* 认证锁定期：权限/状态类错误（重复失败触发锁定） */
+        airy_err_push_ex(AIRY_ERR_PERMISSION_DENIED, __FILE__, __LINE__, __func__,
+                         "a2a_v03_authenticate: authentication locked out (too many failed attempts)");
+        return AIRY_ERR_PERMISSION_DENIED;
     }
 
     int cred_valid = 0;
     switch (g_a2a_auth.config.method) {
     case A2A_AUTH_API_KEY:
-        cred_valid = (strcmp(credential, g_a2a_auth.config.shared_secret) == 0);
+        /* 常量时间比较，避免时序侧信道 */
+        cred_valid = (strlen(credential) == (size_t)g_a2a_auth.config.secret_len) &&
+                     a2a_const_time_eq((const uint8_t *)credential,
+                                       (const uint8_t *)g_a2a_auth.config.shared_secret,
+                                       (size_t)g_a2a_auth.config.secret_len);
         break;
     case A2A_AUTH_HMAC_SHA256: {
-        uint32_t cred_hash = a2a_simple_hash(credential, strlen(credential));
-        uint32_t secret_hash =
-            a2a_simple_hash(g_a2a_auth.config.shared_secret, g_a2a_auth.config.secret_len);
-        cred_valid = (cred_hash == secret_hash);
+        /* 凭据为 hex(HMAC-SHA256(shared_secret, agent_id))：
+         * 用真实 HMAC 计算期望值并常量时间比较（原 djb2 哈希可伪造） */
+        if (g_a2a_auth.config.secret_len <= 0 || g_a2a_auth.config.secret_len > 64) {
+            cred_valid = 0;
+            break;
+        }
+        uint8_t expect[32];
+        a2a_hmac_sha256(g_a2a_auth.config.shared_secret, g_a2a_auth.config.secret_len, agent_id,
+                        strlen(agent_id), expect);
+        char expect_hex[65];
+        a2a_hex_encode(expect, sizeof(expect), expect_hex, sizeof(expect_hex));
+        cred_valid = (strlen(credential) == 64) &&
+                     a2a_const_time_eq((const uint8_t *)expect_hex, (const uint8_t *)credential, 64);
         break;
     }
     case A2A_AUTH_NONE:
@@ -905,25 +1086,35 @@ const char *a2a_v03_sign_request(a2a_v03_context_t *ctx, const char *method,
     if (!g_a2a_auth.initialized)
         return NULL;
 
+    /* 签名消息：method|params|token。
+     * 注意：原实现将当前时间戳嵌入签名导致验证与签名不在同一毫秒即失败
+     * （验证时无法复用签名时间戳），重放防护由会话/令牌 TTL 承担。 */
     char sign_data[4096];
-    int len = snprintf(sign_data, sizeof(sign_data), "%s|%s|%s|%" PRIu64 "", method, params_json,
-                       token_str ? token_str : "", (uint64_t)a2a_timestamp_ms());
-
+    int len = snprintf(sign_data, sizeof(sign_data), "%s|%s|%s", method, params_json,
+                       token_str ? token_str : "");
     if (len <= 0 || len >= (int)sizeof(sign_data))
         return NULL;
 
-    uint32_t hash = a2a_simple_hash(sign_data, (size_t)len);
-
-    if (g_a2a_auth.config.method == A2A_AUTH_HMAC_SHA256 && g_a2a_auth.config.secret_len > 0) {
-        uint32_t key_hash =
-            a2a_simple_hash(g_a2a_auth.config.shared_secret, g_a2a_auth.config.secret_len);
-        hash ^= key_hash;
-        hash = (hash << 16) | (hash >> 16);
+    if (g_a2a_auth.config.method == A2A_AUTH_HMAC_SHA256 && g_a2a_auth.config.secret_len > 0 &&
+        g_a2a_auth.config.secret_len <= 64) {
+        uint8_t mac[32];
+        a2a_hmac_sha256(g_a2a_auth.config.shared_secret, g_a2a_auth.config.secret_len, sign_data,
+                        (size_t)len, mac);
+        a2a_hex_encode(mac, sizeof(mac), out_signature, sig_buf_size);
+        return out_signature;
     }
 
+    /* A2A_AUTH_API_KEY / NONE：退化为 HMAC（有密钥时）或确定性哈希填充 */
+    if (g_a2a_auth.config.secret_len > 0 && g_a2a_auth.config.secret_len <= 64) {
+        uint8_t mac[32];
+        a2a_hmac_sha256(g_a2a_auth.config.shared_secret, g_a2a_auth.config.secret_len, sign_data,
+                        (size_t)len, mac);
+        a2a_hex_encode(mac, sizeof(mac), out_signature, sig_buf_size);
+        return out_signature;
+    }
+    uint32_t hash = a2a_simple_hash(sign_data, (size_t)len);
     snprintf(out_signature, sig_buf_size, "%08x%08x%08x%08x", hash, hash ^ 0xA5A5A5A5,
-             hash ^ 0x5A5A5A5A, (uint32_t)a2a_timestamp_ms());
-
+             hash ^ 0x5A5A5A5A, hash ^ 0x12345678);
     return out_signature;
 }
 
@@ -942,7 +1133,8 @@ int a2a_v03_verify_signature(a2a_v03_context_t *ctx, const char *method, const c
         return AIRY_ERR_NULL_POINTER;
     }
 
-    if (memcmp(expected, signature, 64) == 0)
+    if (strlen(signature) >= 64 &&
+        a2a_const_time_eq((const uint8_t *)expected, (const uint8_t *)signature, 64) == 1)
         return 0;
     LOG_ERROR("signature verification failed: method=%s, expected vs actual mismatch", method);
     airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "operation failed");
@@ -1020,8 +1212,10 @@ int a2a_v03_validate_session(a2a_v03_context_t *ctx, const char *session_id,
             LOG_WARN("session expired: session_id=%s, age_sec=%llu, ttl=%d",
                              sess->session_id, (unsigned long long)age_sec, g_a2a_auth.config.token_ttl_sec * 2);
             AIRY_MEMSET(sess, 0, sizeof(*sess));
-            airy_err_push_ex(AIRY_ERR_NOT_SUPPORTED, __FILE__, __LINE__, __func__, "a2a_timestamp_ms: error AIRY_ERR_NOT_SUPPORTED");
-            return AIRY_ERR_NOT_SUPPORTED;
+            /* session 过期：状态类错误 */
+            airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__,
+                             "a2a_v03_validate_session: session expired");
+            return AIRY_ERR_STATE_ERROR;
         }
 
         sess->last_activity = now;
@@ -1244,8 +1438,9 @@ int a2a_v03_update_task(a2a_v03_context_t *ctx, const char *task_id, a2a_task_st
             return 0;
         }
     }
-    airy_err_push_ex(AIRY_ERR_NOT_SUPPORTED, __FILE__, __LINE__, __func__, "a2a_timestamp_ms: error AIRY_ERR_NOT_SUPPORTED");
-    return AIRY_ERR_NOT_SUPPORTED;
+    airy_err_push_ex(AIRY_ERR_NOT_FOUND, __FILE__, __LINE__, __func__,
+                     "a2a_v03_update_task: task not found");
+    return AIRY_ERR_NOT_FOUND;
 }
 
 int a2a_v03_cancel_task(a2a_v03_context_t *ctx, const char *task_id, const char *reason)
@@ -1683,9 +1878,10 @@ static int a2a_adapter_send_cb(void *c, const void *d, size_t s)
     if (!adapter->connected || !adapter->transport_write) {
         LOG_WARN("send failed: not connected or no transport, connected=%d, transport_write=%p",
                          adapter->connected, (void *)(uintptr_t)adapter->transport_write);
-        airy_err_push_ex(AIRY_ERR_NOT_SUPPORTED, __FILE__, __LINE__, __func__,
-                              "not connected or no transport");
-        return AIRY_ERR_NOT_SUPPORTED;
+        /* 未连接无传输：连接类错误 */
+        airy_err_push_ex(AIRY_ENOTCONN, __FILE__, __LINE__, __func__,
+                         "a2a_adapter_send_cb: not connected or no transport");
+        return AIRY_ENOTCONN;
     }
 
     /* Format A2A v03 protocol message frame:

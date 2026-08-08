@@ -77,7 +77,9 @@ static int router_std_remove_route(proto_router_iface_t *router, const char *sou
     proto_router_impl_t *impl = router_get_impl(router);
     AIRY_CHECK(impl != NULL, AIRY_EINVAL, "impl is NULL");
     AIRY_CHECK(impl->handle != NULL, AIRY_EINVAL, "impl->handle is NULL");
-    return AIRY_ERR_INVALID_PARAM;
+
+    /* 真实删除：从路由表中移除所有 source_endpoint == source_pattern 的规则 */
+    return protocol_router_remove_rule(impl->handle, source_pattern);
 }
 
 static int router_std_route(proto_router_iface_t *router, const unified_message_t *message,
