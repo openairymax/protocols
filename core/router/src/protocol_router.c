@@ -400,21 +400,31 @@ int protocol_transformer_default(const unified_message_t *source, unified_messag
 
     if (source->payload && source->payload_size > 0) {
         void *new_payload = AIRY_MALLOC(source->payload_size);
-        if (!new_payload)
-            {
-            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "if: allocation failed");
+        if (!new_payload) {
+            /* 深拷贝失败：置 NULL 防止与 source 浅拷贝别名双释放 */
+            target->payload = NULL;
+            target->payload_size = 0;
+            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                             "protocol_transformer_default: payload allocation failed");
             return AIRY_ERR_OUT_OF_MEMORY;
-            }
+        }
         __builtin_memcpy(new_payload, source->payload, source->payload_size);
         target->payload = new_payload;
     }
 
     if (source->body && source->body_length > 0) {
         void *new_body = AIRY_MALLOC(source->body_length);
-        if (new_body) {
-            __builtin_memcpy(new_body, source->body, source->body_length);
-            target->body = new_body;
+        if (!new_body) {
+            /* 深拷贝失败：target->body 仍为 *target=*source 的浅拷贝别名，
+             * 置 NULL 防止调用方释放时与 source 双释放/悬垂 */
+            target->body = NULL;
+            target->body_length = 0;
+            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                             "protocol_transformer_default: body allocation failed");
+            return AIRY_ERR_OUT_OF_MEMORY;
         }
+        __builtin_memcpy(new_body, source->body, source->body_length);
+        target->body = new_body;
     }
 
     return 0;
