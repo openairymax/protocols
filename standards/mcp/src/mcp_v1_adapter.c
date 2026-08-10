@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2026 SPHARX Ltd.
+// SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
 // @owner: team-B
 /**
@@ -1380,9 +1380,48 @@ static int mcp_adapter_init(void *context)
 
 static int mcp_adapter_destroy(void *context)
 {
-    if (context) {
-        mcp_v1_context_destroy((mcp_v1_context_t *)context);
+    if (!context)
+        return 0;
+    mcp_v1_context_t *ctx = (mcp_v1_context_t *)context;
+    /* 释放内部堆字段（与 mcp_v1_context_destroy 一致），但不得 free 外壳：
+     * adapter 的 context 可能是静态全局 s_mcp_default_context（P0-01 默认
+     * context，gateway_d 经 mcp_v1_get_adapter() 获取），free 外壳会触发
+     * ASan bad-free（对非 malloc 地址调用 free）。外壳生命周期归持有方
+     * （protocol_adapter_t.context），destroy 仅负责内部资源。 */
+    for (size_t i = 0; i < ctx->tool_count; i++) {
+        AIRY_FREE(ctx->tools[i].tool.name);
+        AIRY_FREE(ctx->tools[i].tool.description);
+        AIRY_FREE(ctx->tools[i].tool.input_schema_json);
     }
+    AIRY_FREE(ctx->tools);
+
+    for (size_t i = 0; i < ctx->resource_count; i++) {
+        AIRY_FREE(ctx->resources[i].resource.uri);
+        AIRY_FREE(ctx->resources[i].resource.name);
+        AIRY_FREE(ctx->resources[i].resource.description);
+        AIRY_FREE(ctx->resources[i].resource.mime_type);
+    }
+    AIRY_FREE(ctx->resources);
+
+    for (size_t i = 0; i < ctx->template_count; i++) {
+        AIRY_FREE(ctx->resource_templates[i].uri_template);
+        AIRY_FREE(ctx->resource_templates[i].name);
+        AIRY_FREE(ctx->resource_templates[i].description);
+        AIRY_FREE(ctx->resource_templates[i].mime_type);
+    }
+    AIRY_FREE(ctx->resource_templates);
+
+    for (size_t i = 0; i < ctx->prompt_count; i++) {
+        AIRY_FREE(ctx->prompts[i].prompt.name);
+        AIRY_FREE(ctx->prompts[i].prompt.description);
+        AIRY_FREE(ctx->prompts[i].prompt.arguments_schema_json);
+    }
+    AIRY_FREE(ctx->prompts);
+
+    AIRY_FREE(ctx->config.server_name);
+    AIRY_FREE(ctx->config.server_version);
+    /* 重置为全零，消除悬挂指针（重复 destroy 安全） */
+    __builtin_memset(ctx, 0, sizeof(mcp_v1_context_t));
     return 0;
 }
 
