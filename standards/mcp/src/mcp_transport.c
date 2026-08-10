@@ -37,7 +37,6 @@
 #include <time.h>
 #include <unistd.h>
 #include "../../../../commons/utils/error/include/error.h"
-#include "error.h"
 
 #include "logging.h"
 
