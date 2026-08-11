@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+
 // @owner: team-B
 /**
  * @file china_eco_adapter.c
@@ -112,7 +113,8 @@ int china_eco_remove_llm_provider(china_eco_handle_t *h, china_eco_provider_type
         if (h->llm_providers[i].provider_type == type) {
             if (i < h->llm_provider_count - 1) {
                 __builtin_memmove(&h->llm_providers[i], &h->llm_providers[i + 1],
-                        (h->llm_provider_count - i - 1) * sizeof(china_eco_llm_provider_t));
+                                  (h->llm_provider_count - i - 1) *
+                                      sizeof(china_eco_llm_provider_t));
             }
             h->llm_provider_count--;
             return 0;
@@ -200,9 +202,9 @@ int china_eco_storage_upload(china_eco_handle_t *h, china_eco_storage_type_t sto
         }
     }
 
-    const char *endpoint = bridge && bridge->endpoint_url[0] != '\0'
-                               ? bridge->endpoint_url
-                               : g_storage_endpoint_urls[storage_type];
+    const char *endpoint = bridge && bridge->endpoint_url[0] != '\0' ?
+                               bridge->endpoint_url :
+                               g_storage_endpoint_urls[storage_type];
     const char *bucket =
         bridge && bridge->bucket_name[0] != '\0' ? bridge->bucket_name : "agentrt-default";
 
@@ -229,7 +231,7 @@ static const uint32_t SM3_IV[8] = {0x7380166FU, 0x4914B2B9U, 0x172442D7U, 0xDA8A
 
 static uint32_t sm3_rotl32(uint32_t x, int n)
 {
-    /* UBSan 安全：n 必须在 [0, 31] 范围内，对 32 取模避免移位溢出未定义行为 */
+
     n &= 31;
     if (n == 0)
         return x;
@@ -266,17 +268,19 @@ static uint32_t sm3_gg1(uint32_t x, uint32_t y, uint32_t z)
     return (x & y) | ((~x) & z);
 }
 
-static const uint32_t SM3_T[64] = {
-    0x79CC4519U, 0x79CC4519U, 0x79CC4519U, 0x79CC4519U, 0x79CC4519U, 0x79CC4519U, 0x79CC4519U,
-    0x79CC4519U, 0x79CC4519U, 0x79CC4519U, 0x79CC4519U, 0x79CC4519U, 0x79CC4519U, 0x79CC4519U,
-    0x79CC4519U, 0x79CC4519U, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU,
-    0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU,
-    0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU,
-    0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU,
-    0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU,
-    0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU,
-    0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU,
-    0x7A879D8AU};
+static const uint32_t SM3_T[64] = {0x79CC4519U, 0x79CC4519U, 0x79CC4519U, 0x79CC4519U, 0x79CC4519U,
+                                   0x79CC4519U, 0x79CC4519U, 0x79CC4519U, 0x79CC4519U, 0x79CC4519U,
+                                   0x79CC4519U, 0x79CC4519U, 0x79CC4519U, 0x79CC4519U, 0x79CC4519U,
+                                   0x79CC4519U, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU,
+                                   0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU,
+                                   0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU,
+                                   0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU,
+                                   0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU,
+                                   0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU,
+                                   0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU,
+                                   0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU,
+                                   0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU,
+                                   0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU, 0x7A879D8AU};
 
 static void sm3_compress(uint32_t digest[8], const uint8_t block[64])
 {
@@ -409,12 +413,13 @@ static const uint8_t SM4_SBOX[256] = {
 
 static uint32_t SM4_FK[4] = {0xA3B1BAC6U, 0x56AA3350U, 0x677D9197U, 0xB27022DCU};
 
-static uint32_t SM4_CK[32] = {
-    0x00070E15U, 0x1C232A31U, 0x383F464DU, 0x545B6269U, 0x70777E85U, 0x8C939AA1U, 0xA8AFB6BDU,
-    0xC4CBD2D9U, 0xE0E7EEF5U, 0xFC030A11U, 0x181F262DU, 0x343B4249U, 0x50575E65U, 0x6C737A81U,
-    0x888F969DU, 0xA4ABB2B9U, 0xC0C7CED5U, 0xDCE3EAF1U, 0xF8FF060DU, 0x141B2229U, 0x30373E45U,
-    0x4C535A61U, 0x686F767DU, 0x848B9299U, 0xA0A7AEB5U, 0xBCC3CAD1U, 0xD8DFE6EDU, 0xF4FB0209U,
-    0x10171E25U, 0x2C333A41U, 0x484F565DU, 0x646B7279U};
+static uint32_t SM4_CK[32] = {0x00070E15U, 0x1C232A31U, 0x383F464DU, 0x545B6269U, 0x70777E85U,
+                              0x8C939AA1U, 0xA8AFB6BDU, 0xC4CBD2D9U, 0xE0E7EEF5U, 0xFC030A11U,
+                              0x181F262DU, 0x343B4249U, 0x50575E65U, 0x6C737A81U, 0x888F969DU,
+                              0xA4ABB2B9U, 0xC0C7CED5U, 0xDCE3EAF1U, 0xF8FF060DU, 0x141B2229U,
+                              0x30373E45U, 0x4C535A61U, 0x686F767DU, 0x848B9299U, 0xA0A7AEB5U,
+                              0xBCC3CAD1U, 0xD8DFE6EDU, 0xF4FB0209U, 0x10171E25U, 0x2C333A41U,
+                              0x484F565DU, 0x646B7279U};
 
 static uint32_t sm4_rotl32(uint32_t x, int n)
 {
@@ -678,31 +683,32 @@ static uint32_t china_eco_proto_capabilities(void *context)
 static int china_eco_proto_encode(void *context, const void *msg, void **out_data, size_t *out_size)
 {
     (void)context;
-    if (!msg || !out_data || !out_size)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "china_eco_proto_encode: invalid param");
+    if (!msg || !out_data || !out_size) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "china_eco_proto_encode: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     const unified_message_t *umsg = (const unified_message_t *)msg;
     const char *payload = umsg->payload ? (const char *)umsg->payload : "";
     size_t payload_len = umsg->payload_size;
     size_t buf_size = 256 + payload_len;
     char *buf = (char *)AIRY_MALLOC(buf_size);
-    if (!buf)
-        {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "china_eco_proto_encode: oom");
+    if (!buf) {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "china_eco_proto_encode: oom");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
-    int written = snprintf(buf, buf_size,
-                           "{\"protocol\":%d,\"direction\":%d,\"timestamp\":%llu,\"payload\":\"%.*s\"}",
-                           (int)umsg->protocol, (int)umsg->direction,
-                           (unsigned long long)umsg->timestamp, (int)payload_len, payload);
-    if (written < 0 || (size_t)written >= buf_size)
-        {
+    }
+    int written =
+        snprintf(buf, buf_size,
+                 "{\"protocol\":%d,\"direction\":%d,\"timestamp\":%llu,\"payload\":\"%.*s\"}",
+                 (int)umsg->protocol, (int)umsg->direction, (unsigned long long)umsg->timestamp,
+                 (int)payload_len, payload);
+    if (written < 0 || (size_t)written >= buf_size) {
         AIRY_FREE(buf);
-        airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__, "china_eco_proto_encode: snprintf failed");
+        airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__,
+                         "china_eco_proto_encode: snprintf failed");
         return AIRY_ERR_IO;
-        }
+    }
     *out_data = buf;
     *out_size = (size_t)written;
     return 0;
@@ -711,24 +717,24 @@ static int china_eco_proto_encode(void *context, const void *msg, void **out_dat
 static int china_eco_proto_decode(void *context, const void *data, size_t size, void *out_msg)
 {
     (void)context;
-    if (!data || !out_msg)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "china_eco_proto_decode: invalid param");
+    if (!data || !out_msg) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "china_eco_proto_decode: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
-    if (size == 0)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "china_eco_proto_decode: zero size");
+    }
+    if (size == 0) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "china_eco_proto_decode: zero size");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
 
     unified_message_t *msg = (unified_message_t *)out_msg;
     char *copy = (char *)AIRY_MALLOC(size + 1);
-    if (!copy)
-        {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "china_eco_proto_decode: oom");
+    if (!copy) {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "china_eco_proto_decode: oom");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
+    }
     __builtin_memcpy(copy, data, size);
     copy[size] = '\0';
 
@@ -794,19 +800,19 @@ static int china_eco_proto_is_connected(void *context)
 static int china_eco_proto_send(void *context, const void *data, size_t size)
 {
     (void)context;
-    if (!data)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "china_eco_proto_send: invalid param");
+    if (!data) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "china_eco_proto_send: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     AIRY_FREE(g_china_eco_state.send_buffer);
     g_china_eco_state.send_buffer = AIRY_MALLOC(size + 1);
-    if (!g_china_eco_state.send_buffer)
-        {
+    if (!g_china_eco_state.send_buffer) {
         g_china_eco_state.send_buffer_size = 0;
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "china_eco_proto_send: oom");
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "china_eco_proto_send: oom");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
+    }
     __builtin_memcpy(g_china_eco_state.send_buffer, data, size);
     ((char *)g_china_eco_state.send_buffer)[size] = '\0';
     g_china_eco_state.send_buffer_size = size;
@@ -818,16 +824,16 @@ static int china_eco_proto_receive(void *context, void **data, size_t *size, uin
 {
     (void)context;
     (void)timeout_ms;
-    if (!data || !size)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "china_eco_proto_receive: invalid param");
+    if (!data || !size) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "china_eco_proto_receive: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
-    if (!g_china_eco_state.send_buffer || g_china_eco_state.send_buffer_size == 0)
-        {
-        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "china_eco_proto_receive: no data");
+    }
+    if (!g_china_eco_state.send_buffer || g_china_eco_state.send_buffer_size == 0) {
+        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__,
+                         "china_eco_proto_receive: no data");
         return AIRY_ERR_TIMEOUT;
-        }
+    }
     *data = g_china_eco_state.send_buffer;
     *size = g_china_eco_state.send_buffer_size;
     g_china_eco_state.bytes_received += *size;
@@ -839,11 +845,11 @@ static int china_eco_proto_receive(void *context, void **data, size_t *size, uin
 static int china_eco_proto_get_stats(void *context, char *stats_json, size_t max_size)
 {
     (void)context;
-    if (!stats_json || max_size < 64)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "china_eco_proto_get_stats: invalid param");
+    if (!stats_json || max_size < 64) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "china_eco_proto_get_stats: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     int written = snprintf(stats_json, max_size,
                            "{\"adapter\":\"china_eco\",\"version\":\"%s\",\"connected\":%s,"
                            "\"bytes_sent\":%llu,\"bytes_received\":%llu,"
@@ -870,7 +876,7 @@ const proto_adapter_t *china_eco_get_protocol_adapter(void)
         adapter.description =
             "Domestic ecosystem protocol compatibility - Bailian/Wenxin/DashScope LLM bridge, "
             "OSS/COS/BOS storage, SM2/SM3/SM4 crypto";
-        adapter.type = AIRY_PROTOCOL_CHINA_ECO;  /* P0-15: PROTO_CHINA_ECO→枚举值 */
+        adapter.type = AIRY_PROTOCOL_CHINA_ECO;
         adapter.init = china_eco_proto_init;
         adapter.destroy = china_eco_proto_destroy;
         adapter.encode = china_eco_proto_encode;

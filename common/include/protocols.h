@@ -1,6 +1,7 @@
-// SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
-// SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
-// @owner: team-B
+/* SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd. */
+/* SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0 */
+
+/* @owner: team-B */
 /**
  * @file protocols.h
  * @brief Main header for AgentRT Unified Protocols Framework
@@ -34,10 +35,9 @@
 extern "C" {
 #endif
 
-// ============================================================================
-// 初始化与清理
-// ============================================================================
+/* ============================================================================ */
 
+/* ============================================================================ */
 /**
  * @brief 初始化协议栈框架
  * @note 必须在调用任何其他协议栈函数之前调用
@@ -57,10 +57,9 @@ void protocols_framework_cleanup(void);
  */
 const char *protocols_framework_version(void);
 
-// ============================================================================
-// 协议栈管理器
-// ============================================================================
+/* ============================================================================ */
 
+/* ============================================================================ */
 /**
  * @brief 协议栈管理器句柄
  */
@@ -105,10 +104,9 @@ void protocol_manager_destroy_stack(protocol_manager_handle_t manager,
 size_t protocol_manager_get_stacks(protocol_manager_handle_t manager,
                                    protocol_stack_handle_t *stacks, size_t max_count);
 
-// ============================================================================
-// 默认适配器
-// ============================================================================
+/* ============================================================================ */
 
+/* ============================================================================ */
 /**
  * @brief 获取HTTP/JSON-RPC协议适配器
  * @return HTTP（JSON-RPC）协议适配器
@@ -119,25 +117,24 @@ const protocol_adapter_t *protocol_adapter_http(void);
  * 这些旧传输层适配器使用已删除的 PROTOCOL_WEBSOCKET/GRPC/MQTT 宏，
  * 与当前应用层协议枚举体系不兼容，且无实际调用点（gateway 模块自行实现）。 */
 
-// ============================================================================
-// 错误处理
-// ============================================================================
+/* ============================================================================ */
 
+/* ============================================================================ */
 /**
  * @brief 协议栈错误码
  */
 typedef enum {
-    PROTOCOL_SUCCESS = 0,           /**< 成功 */
-    PROTOCOL_ERROR_INVALID_ARG,     /**< 无效参数 */
-    PROTOCOL_ERROR_MEMORY,          /**< 内存不足 */
-    PROTOCOL_ERROR_NOT_INITIALIZED, /**< 未初始化 */
-    PROTOCOL_ERROR_NOT_CONNECTED,   /**< 未连接 */
-    PROTOCOL_ERROR_TIMEOUT,         /**< 超时 */
-    PROTOCOL_ERROR_ENCODE,          /**< 编码失败 */
-    PROTOCOL_ERROR_DECODE,          /**< 解码失败 */
-    PROTOCOL_ERROR_NETWORK,         /**< 网络错误 */
-    PROTOCOL_ERROR_PROTOCOL,        /**< 协议错误 */
-    PROTOCOL_ERROR_INTERNAL         /**< 内部错误 */
+    PROTOCOL_SUCCESS = 0,
+    PROTOCOL_ERROR_INVALID_ARG,
+    PROTOCOL_ERROR_MEMORY,
+    PROTOCOL_ERROR_NOT_INITIALIZED,
+    PROTOCOL_ERROR_NOT_CONNECTED,
+    PROTOCOL_ERROR_TIMEOUT,
+    PROTOCOL_ERROR_ENCODE,
+    PROTOCOL_ERROR_DECODE,
+    PROTOCOL_ERROR_NETWORK,
+    PROTOCOL_ERROR_PROTOCOL,
+    PROTOCOL_ERROR_INTERNAL
 } protocol_error_t;
 
 /**
@@ -153,10 +150,9 @@ const char *protocol_error_to_string(protocol_error_t error);
  */
 const char *protocol_get_last_error(void);
 
-// ============================================================================
-// 配置辅助函数
-// ============================================================================
+/* ============================================================================ */
 
+/* ============================================================================ */
 /**
  * @brief 创建默认协议栈配置
  * @param name 协议栈名称
@@ -174,6 +170,5 @@ void protocol_stack_config_destroy(protocol_stack_config_t *config);
 }
 #endif
 
-/** @} */  // end of protocols group
-
-#endif  // AIRY_RT_PROTOCOLS_H
+/** @} */ /* end of protocols group */
+#endif /* AIRY_RT_PROTOCOLS_H */

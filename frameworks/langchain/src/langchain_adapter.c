@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+
 // @owner: team-B
 /**
  * @file langchain_adapter.c
@@ -20,7 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
 
 langchain_config_t langchain_config_default(void)
 {
@@ -158,9 +158,9 @@ int langchain_list_tools(langchain_adapter_context_t *ctx, langchain_tool_def_t 
         (*tools)[i].name = ctx->tools[i].name ? AIRY_STRDUP(ctx->tools[i].name) : NULL;
         (*tools)[i].description =
             ctx->tools[i].description ? AIRY_STRDUP(ctx->tools[i].description) : NULL;
-        (*tools)[i].function_schema_json = ctx->tools[i].function_schema_json
-                                               ? AIRY_STRDUP(ctx->tools[i].function_schema_json)
-                                               : NULL;
+        (*tools)[i].function_schema_json = ctx->tools[i].function_schema_json ?
+                                               AIRY_STRDUP(ctx->tools[i].function_schema_json) :
+                                               NULL;
         (*tools)[i].tool_type = ctx->tools[i].tool_type;
         (*tools)[i].is_async = ctx->tools[i].is_async;
     }
@@ -191,7 +191,8 @@ int langchain_create_chain(langchain_adapter_context_t *ctx,
     instance->is_compiled = true;
 
     if (ctx->chain_count < LANGCHAIN_MAX_CHAINS) {
-        __builtin_memcpy(&ctx->chains[ctx->chain_count], instance, sizeof(langchain_chain_instance_t));
+        __builtin_memcpy(&ctx->chains[ctx->chain_count], instance,
+                         sizeof(langchain_chain_instance_t));
         ctx->chains[ctx->chain_count].id = AIRY_STRDUP(instance->id);
         ctx->chains[ctx->chain_count].input_schema_json =
             instance->input_schema_json ? AIRY_STRDUP(instance->input_schema_json) : NULL;
@@ -548,11 +549,11 @@ int langchain_create_memory(langchain_adapter_context_t *ctx, langchain_memory_t
 int langchain_memory_add(langchain_adapter_context_t *ctx, const char *memory_id, const char *role,
                          const char *content)
 {
-    if (!ctx || !memory_id || !role || !content)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "langchain_memory_add: failed");
+    if (!ctx || !memory_id || !role || !content) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "langchain_memory_add: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     for (size_t m = 0; m < ctx->memory_count; m++) {
         if (strcmp(ctx->memories[m].id, memory_id) == 0) {
@@ -636,58 +637,60 @@ int langchain_get_statistics(langchain_adapter_context_t *ctx, char *stats_json,
     if (!ctx || !stats_json || buffer_size < 64)
         return AIRY_ERR_NULL_POINTER;
 
-    int written = snprintf(
-        stats_json, buffer_size,
-        "{"
-        "\"adapter_version\":\"%s\","
-        "\"total_executions\":%llu,"
-        "\"successful\":%llu,"
-        "\"failure_rate\":%.1f%%,"
-        "\"avg_latency_ms\":%.2f,"
-        "\"registered_tools\":%zu,"
-        "\"active_chains\":%zu,"
-        "\"memories\":%zu"
-        "}",
-        LANGCHAIN_ADAPTER_VERSION, (unsigned long long)ctx->total_chains_executed,
-        (unsigned long long)ctx->total_tokens_used,
-        ctx->total_chains_executed > 0 ? (double)(ctx->total_chains_executed) /
-                                             (double)(ctx->total_chains_executed + 1) * 100.0
-                                       : 0.0,
-        ctx->total_chains_executed > 0
-            ? ctx->total_execution_time_ms / (double)ctx->total_chains_executed
-            : 0.0,
-        ctx->tool_count, ctx->chain_count, ctx->memory_count);
+    int written =
+        snprintf(stats_json, buffer_size,
+                 "{"
+                 "\"adapter_version\":\"%s\","
+                 "\"total_executions\":%llu,"
+                 "\"successful\":%llu,"
+                 "\"failure_rate\":%.1f%%,"
+                 "\"avg_latency_ms\":%.2f,"
+                 "\"registered_tools\":%zu,"
+                 "\"active_chains\":%zu,"
+                 "\"memories\":%zu"
+                 "}",
+                 LANGCHAIN_ADAPTER_VERSION, (unsigned long long)ctx->total_chains_executed,
+                 (unsigned long long)ctx->total_tokens_used,
+                 ctx->total_chains_executed > 0 ?
+                     (double)(ctx->total_chains_executed) /
+                         (double)(ctx->total_chains_executed + 1) * 100.0 :
+                     0.0,
+                 ctx->total_chains_executed > 0 ?
+                     ctx->total_execution_time_ms / (double)ctx->total_chains_executed :
+                     0.0,
+                 ctx->tool_count, ctx->chain_count, ctx->memory_count);
 
     return (written >= 0 && (size_t)written < buffer_size) ? 0 : -2;
 }
 
 static int langchain_proto_encode(void *context, const void *msg, void **out_data, size_t *out_size)
 {
-    if (!context || !msg || !out_data || !out_size)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "langchain_proto_encode: invalid param");
+    if (!context || !msg || !out_data || !out_size) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "langchain_proto_encode: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     const unified_message_t *umsg = (const unified_message_t *)msg;
     const char *payload = umsg->payload ? (const char *)umsg->payload : "";
     size_t payload_len = umsg->payload_size;
     size_t buf_size = 256 + payload_len;
     char *buf = (char *)AIRY_MALLOC(buf_size);
-    if (!buf)
-        {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "langchain_proto_encode: oom");
+    if (!buf) {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "langchain_proto_encode: oom");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
-    int written = snprintf(buf, buf_size,
-                           "{\"protocol\":%d,\"direction\":%d,\"timestamp\":%llu,\"payload\":\"%.*s\"}",
-                           (int)umsg->protocol, (int)umsg->direction,
-                           (unsigned long long)umsg->timestamp, (int)payload_len, payload);
-    if (written < 0 || (size_t)written >= buf_size)
-        {
+    }
+    int written =
+        snprintf(buf, buf_size,
+                 "{\"protocol\":%d,\"direction\":%d,\"timestamp\":%llu,\"payload\":\"%.*s\"}",
+                 (int)umsg->protocol, (int)umsg->direction, (unsigned long long)umsg->timestamp,
+                 (int)payload_len, payload);
+    if (written < 0 || (size_t)written >= buf_size) {
         AIRY_FREE(buf);
-        airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__, "langchain_proto_encode: snprintf failed");
+        airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__,
+                         "langchain_proto_encode: snprintf failed");
         return AIRY_ERR_IO;
-        }
+    }
     *out_data = buf;
     *out_size = (size_t)written;
     return 0;
@@ -695,24 +698,24 @@ static int langchain_proto_encode(void *context, const void *msg, void **out_dat
 
 static int langchain_proto_decode(void *context, const void *data, size_t size, void *out_msg)
 {
-    if (!context || !data || !out_msg)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "langchain_proto_decode: invalid param");
+    if (!context || !data || !out_msg) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "langchain_proto_decode: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
-    if (size == 0)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "langchain_proto_decode: zero size");
+    }
+    if (size == 0) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "langchain_proto_decode: zero size");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
 
     unified_message_t *msg = (unified_message_t *)out_msg;
     char *copy = (char *)AIRY_MALLOC(size + 1);
-    if (!copy)
-        {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "langchain_proto_decode: oom");
+    if (!copy) {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "langchain_proto_decode: oom");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
+    }
     __builtin_memcpy(copy, data, size);
     copy[size] = '\0';
 
@@ -753,11 +756,11 @@ static int langchain_proto_decode(void *context, const void *data, size_t size, 
 
 static int langchain_proto_connect(void *context, const char *endpoint)
 {
-    if (!context)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "langchain_proto_connect: invalid param");
+    if (!context) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "langchain_proto_connect: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     langchain_adapter_context_t *ctx = (langchain_adapter_context_t *)context;
     AIRY_FREE(ctx->connected_endpoint);
     ctx->connected_endpoint = endpoint ? AIRY_STRDUP(endpoint) : NULL;
@@ -767,11 +770,11 @@ static int langchain_proto_connect(void *context, const char *endpoint)
 
 static int langchain_proto_disconnect(void *context)
 {
-    if (!context)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "langchain_proto_disconnect: invalid param");
+    if (!context) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "langchain_proto_disconnect: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     langchain_adapter_context_t *ctx = (langchain_adapter_context_t *)context;
     ctx->is_connected = false;
     AIRY_FREE(ctx->connected_endpoint);
@@ -789,20 +792,20 @@ static int langchain_proto_is_connected(void *context)
 
 static int langchain_proto_send(void *context, const void *data, size_t size)
 {
-    if (!context || !data)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "langchain_proto_send: invalid param");
+    if (!context || !data) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "langchain_proto_send: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     langchain_adapter_context_t *ctx = (langchain_adapter_context_t *)context;
     AIRY_FREE(ctx->send_buffer);
     ctx->send_buffer = AIRY_MALLOC(size + 1);
-    if (!ctx->send_buffer)
-        {
+    if (!ctx->send_buffer) {
         ctx->send_buffer_size = 0;
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "langchain_proto_send: oom");
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "langchain_proto_send: oom");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
+    }
     __builtin_memcpy(ctx->send_buffer, data, size);
     ((char *)ctx->send_buffer)[size] = '\0';
     ctx->send_buffer_size = size;
@@ -813,17 +816,17 @@ static int langchain_proto_send(void *context, const void *data, size_t size)
 static int langchain_proto_receive(void *context, void **data, size_t *size, uint32_t timeout_ms)
 {
     (void)timeout_ms;
-    if (!context || !data || !size)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "langchain_proto_receive: invalid param");
+    if (!context || !data || !size) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "langchain_proto_receive: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     langchain_adapter_context_t *ctx = (langchain_adapter_context_t *)context;
-    if (!ctx->send_buffer || ctx->send_buffer_size == 0)
-        {
-        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "langchain_proto_receive: no data");
+    if (!ctx->send_buffer || ctx->send_buffer_size == 0) {
+        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__,
+                         "langchain_proto_receive: no data");
         return AIRY_ERR_TIMEOUT;
-        }
+    }
     *data = ctx->send_buffer;
     *size = ctx->send_buffer_size;
     ctx->bytes_received += *size;
@@ -834,20 +837,20 @@ static int langchain_proto_receive(void *context, void **data, size_t *size, uin
 
 static int langchain_proto_get_stats(void *context, char *stats_json, size_t max_size)
 {
-    if (!context || !stats_json || max_size < 64)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "langchain_proto_get_stats: invalid param");
+    if (!context || !stats_json || max_size < 64) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "langchain_proto_get_stats: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     langchain_adapter_context_t *ctx = (langchain_adapter_context_t *)context;
-    int written = snprintf(stats_json, max_size,
-                           "{\"adapter\":\"langchain\",\"version\":\"%s\",\"connected\":%s,"
-                           "\"bytes_sent\":%llu,\"bytes_received\":%llu,"
-                           "\"requests\":%llu,\"tools\":%zu}",
-                           LANGCHAIN_ADAPTER_VERSION, ctx->is_connected ? "true" : "false",
-                           (unsigned long long)ctx->bytes_sent,
-                           (unsigned long long)ctx->bytes_received,
-                           (unsigned long long)ctx->total_chains_executed, ctx->tool_count);
+    int written =
+        snprintf(stats_json, max_size,
+                 "{\"adapter\":\"langchain\",\"version\":\"%s\",\"connected\":%s,"
+                 "\"bytes_sent\":%llu,\"bytes_received\":%llu,"
+                 "\"requests\":%llu,\"tools\":%zu}",
+                 LANGCHAIN_ADAPTER_VERSION, ctx->is_connected ? "true" : "false",
+                 (unsigned long long)ctx->bytes_sent, (unsigned long long)ctx->bytes_received,
+                 (unsigned long long)ctx->total_chains_executed, ctx->tool_count);
     return (written >= 0 && (size_t)written < max_size) ? 0 : AIRY_ERR_BUFFER_TOO_SMALL;
 }
 

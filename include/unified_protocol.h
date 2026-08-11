@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
-// SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+/* SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd. */
+/* SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0 */
+
 /*
  * AgentRT Unified Protocol - 统一协议接口
  *
@@ -11,7 +12,7 @@
  * 迁移至: agentrt/protocols/include/ (2026-04-19 include/整合重构)
  */
 
-// @owner: team-B
+/* @owner: team-B */
 #ifndef AIRY_RT_UNIFIED_PROTOCOL_H
 #define AIRY_RT_UNIFIED_PROTOCOL_H
 
@@ -103,8 +104,8 @@ typedef enum {
  * 导致 find_adapter_node() 按 type 查找时永远找不到这些适配器。
  * 修复方案：改为直接引用枚举值，与 PROTO_JSONRPC/PROTO_MCP 等保持一致。 */
 #define PROTO_OPENCLAW AIRY_PROTOCOL_OPENCLAW
-#define PROTO_CLAUDE   AIRY_PROTOCOL_CLAUDE
-#define PROTO_AGNTCY   AIRY_PROTOCOL_AGNTCY
+#define PROTO_CLAUDE AIRY_PROTOCOL_CLAUDE
+#define PROTO_AGNTCY AIRY_PROTOCOL_AGNTCY
 #define PROTO_CHINA_ECO AIRY_PROTOCOL_CHINA_ECO
 
 /* P0-15: 删除旧传输层常量 PROTOCOL_WEBSOCKET/GRPC/MQTT/AMQP/RAW_TCP/RAW_UDP/STDIO/IPC。
@@ -134,7 +135,7 @@ typedef struct {
     int status;
     char error_msg[256];
     void *body;
-    size_t body_length;    /* alias for payload_size */
+    size_t body_length; /* alias for payload_size */
     size_t payload_length; /* alias for payload_size */
     char correlation_id[64];
     char sender_id[64];

@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+
 // @owner: team-B
 /**
  * @file openjiuwen_adapter.c
@@ -61,8 +62,8 @@ static int openjiuwen_reconnect(openjiuwen_adapter_t *adapter)
         if (delay > OPENJIUWEN_RECONNECT_MAX_DELAY_MS)
             delay = OPENJIUWEN_RECONNECT_MAX_DELAY_MS;
 
-        LOG_WARN("OpenJiuwen: reconnect attempt %u/%u, waiting %ums", attempt + 1,
-                         max_attempts, delay);
+        LOG_WARN("OpenJiuwen: reconnect attempt %u/%u, waiting %ums", attempt + 1, max_attempts,
+                 delay);
 
 #ifdef _WIN32
         Sleep(delay);
@@ -110,7 +111,7 @@ static int openjiuwen_send_with_retry(openjiuwen_adapter_t *adapter, const char 
 
         if (adapter->consecutive_errors >= OPENJIUWEN_MAX_CONSECUTIVE_ERRORS) {
             LOG_ERROR("OpenJiuwen: too many consecutive errors (%u), forcing reconnect",
-                              adapter->consecutive_errors);
+                      adapter->consecutive_errors);
             adapter->conn_state = OPENJIUWEN_CONN_ERROR;
             if (openjiuwen_reconnect(adapter) != 0)
                 return AIRY_ERR_IO;
@@ -337,8 +338,7 @@ static int openjiuwen_send_message(void *context, const void *data, size_t size)
     if (send_result != 0) {
         adapter->consecutive_errors++;
         adapter->last_error_code = (uint32_t)(-send_result);
-        LOG_ERROR("OpenJiuwen: send failed after retries (errors=%u)",
-                          adapter->consecutive_errors);
+        LOG_ERROR("OpenJiuwen: send failed after retries (errors=%u)", adapter->consecutive_errors);
         return AIRY_ERR_OUT_OF_MEMORY;
     }
 
@@ -348,7 +348,7 @@ static int openjiuwen_send_message(void *context, const void *data, size_t size)
     }
 
     LOG_DEBUG("Message sent to OpenJiuwen (id=%u, size=%d bytes)", adapter->message_counter,
-                      result);
+              result);
 
     return (int)size;
 }
@@ -370,8 +370,7 @@ static int openjiuwen_receive_message(void *context, void **data, size_t *size, 
     }
 
     if (adapter->conn_state != OPENJIUWEN_CONN_CONNECTED) {
-        LOG_WARN("OpenJiuwen: cannot receive - not connected (state=%d)",
-                         adapter->conn_state);
+        LOG_WARN("OpenJiuwen: cannot receive - not connected (state=%d)", adapter->conn_state);
         return AIRY_ERR_NULL_POINTER;
     }
 
@@ -417,7 +416,7 @@ static int openjiuwen_destroy(void *context)
     adapter->message_counter = 0;
 
     LOG_INFO("OpenJiuwen adapter destroyed (reconnects=%u, last_error=%u)",
-                     adapter->total_reconnects, adapter->last_error_code);
+             adapter->total_reconnects, adapter->last_error_code);
     return 0;
 }
 
@@ -431,26 +430,23 @@ int openjiuwen_unified_to_native(const unified_message_t *msg, void *out_buffer,
         return AIRY_ERR_NULL_POINTER;
     }
 
-    /* 构建OpenJiuwen消息头部 */
     openjiuwen_header_t header;
     AIRY_MEMSET(&header, 0, sizeof(header));
 
     header.message_id = generate_message_id();
     header.timestamp = get_timestamp();
     header.message_type = OPENJIUWEN_MSG_TYPE_REQUEST;
-    header.flags = 0x0001; /* 标准请求标志 */
+    header.flags = 0x0001;
 
     safe_strcpy(header.source_agent, msg->source_agent, sizeof(header.source_agent));
     safe_strcpy(header.target_agent, "OpenJiuwen", sizeof(header.target_agent));
 
-    /* 计算载荷长度（根据消息内容计算） */
     size_t payload_length = 0;
     if (msg->payload && msg->payload_size > 0) {
         payload_length = msg->payload_size;
     }
     header.payload_length = (uint32_t)payload_length;
 
-    /* 写入头部到缓冲区 */
     size_t total_size = sizeof(openjiuwen_header_t) + payload_length;
     if (total_size > buffer_size) {
         LOG_ERROR("Buffer too small for OpenJiuwen message");
@@ -459,9 +455,9 @@ int openjiuwen_unified_to_native(const unified_message_t *msg, void *out_buffer,
 
     __builtin_memcpy(out_buffer, &header, sizeof(openjiuwen_header_t));
 
-    /* 写入载荷数据 */
     if (payload_length > 0 && msg->payload) {
-        __builtin_memcpy((char *)out_buffer + sizeof(openjiuwen_header_t), msg->payload, payload_length);
+        __builtin_memcpy((char *)out_buffer + sizeof(openjiuwen_header_t), msg->payload,
+                         payload_length);
     }
 
     return (int)total_size;
@@ -475,13 +471,11 @@ int openjiuwen_native_to_unified(const void *in_buffer, size_t buffer_size, unif
 
     const openjiuwen_header_t *header = (const openjiuwen_header_t *)in_buffer;
 
-    /* 验证消息完整性 */
     if (buffer_size < sizeof(openjiuwen_header_t) + header->payload_length) {
         LOG_ERROR("Invalid OpenJiuwen message: incomplete data");
         return AIRY_ERR_INVALID_PARAM;
     }
 
-    /* 填充统一消息格式 */
     AIRY_MEMSET(msg, 0, sizeof(unified_message_t));
 
     msg->protocol = AIRY_PROTOCOL_OPENJIUWEN;
@@ -491,13 +485,12 @@ int openjiuwen_native_to_unified(const void *in_buffer, size_t buffer_size, unif
     safe_strcpy(msg->source_agent, header->source_agent, sizeof(msg->source_agent));
     safe_strcpy(msg->target_agent, header->target_agent, sizeof(msg->target_agent));
 
-    /* 复制载荷数据 */
     if (header->payload_length > 0) {
         msg->payload_size = header->payload_length;
         msg->payload = AIRY_MALLOC(header->payload_length);
         if (msg->payload) {
             __builtin_memcpy(msg->payload, (const char *)in_buffer + sizeof(openjiuwen_header_t),
-                   header->payload_length);
+                             header->payload_length);
         } else {
             msg->payload_size = 0;
             return AIRY_ERR_NULL_POINTER;
@@ -535,14 +528,12 @@ const protocol_adapter_t *openjiuwen_adapter_create(const openjiuwen_config_t *c
         return NULL;
     }
 
-    /* 初始化配置 */
     if (config) {
         __builtin_memcpy(&adapter->config, config, sizeof(openjiuwen_config_t));
     } else {
         openjiuwen_get_default_config(&adapter->config);
     }
 
-    /* 设置协议适配器接口 */
     adapter->base.type = AIRY_PROTOCOL_OPENJIUWEN;
     adapter->base.name = "OpenJiuwen Protocol Adapter";
     adapter->base.version = OPENJIUWEN_PROTOCOL_VERSION;
@@ -563,8 +554,7 @@ const protocol_adapter_t *openjiuwen_adapter_create(const openjiuwen_config_t *c
     adapter->last_error_code = 0;
     adapter->last_activity_ms = 0;
 
-    LOG_INFO("OpenJiuwen adapter created successfully (endpoint=%s)",
-                     adapter->config.endpoint);
+    LOG_INFO("OpenJiuwen adapter created successfully (endpoint=%s)", adapter->config.endpoint);
 
     return &adapter->base;
 }
@@ -583,7 +573,7 @@ int openjiuwen_verify_connection(const protocol_adapter_t *adapter)
     if (impl->consecutive_errors >= OPENJIUWEN_MAX_CONSECUTIVE_ERRORS) {
         impl->conn_state = OPENJIUWEN_CONN_ERROR;
         LOG_WARN("OpenJiuwen: connection verification failed - too many errors (%u)",
-                         impl->consecutive_errors);
+                 impl->consecutive_errors);
         return AIRY_ERR_NULL_POINTER;
     }
 
@@ -644,7 +634,6 @@ int openjiuwen_get_capabilities(const protocol_adapter_t *adapter, char *capabil
  *   unified_protocol_register_adapter(stack, adapter);
  */
 
-/* 静态默认接口实例（用于注册） */
 static openjiuwen_adapter_t g_default_instance = {
     .base = {.type = AIRY_PROTOCOL_OPENJIUWEN,
              .name = "OpenJiuwen Protocol Adapter",

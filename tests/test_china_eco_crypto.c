@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+
 /**
  * @file test_china_eco_crypto.c
  * @brief ChinaEco SM3/SM4密码算法单元测试
- * @copyright (c) 2026 SPHARX. All Rights Reserved.
  *
  * SM3 测试向量来源: GB/T 32905-2016 附录A
  * SM4 测试向量来源: GB/T 32907-2016 附录A
@@ -12,7 +12,7 @@
 
 #include "china_eco_adapter.h"
 #include "logging.h"
-#include "airy_memory.h"     
+#include "airy_memory.h"
 
 #include <assert.h>
 #include <stdio.h>

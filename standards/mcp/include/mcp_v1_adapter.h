@@ -1,6 +1,7 @@
-// SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
-// SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
-// @owner: team-B
+/* SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd. */
+/* SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0 */
+
+/* @owner: team-B */
 /**
  * @file mcp_v1_adapter.h
  * @brief MCP v1.0 Protocol Adapter for AgentRT
@@ -193,7 +194,6 @@ typedef void (*mcp_log_callback_t)(mcp_log_level_t level, const char *logger, co
                                    void *user_data);
 
 /* ========== Streaming Support (PROTO-001) ========== */
-
 typedef enum {
     MCP_STREAM_EVENT_CONTENT = 0,
     MCP_STREAM_EVENT_ERROR,

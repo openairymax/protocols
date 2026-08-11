@@ -1,6 +1,7 @@
-// SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
-// SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
-// @owner: team-B
+/* SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd. */
+/* SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0 */
+
+/* @owner: team-B */
 /**
  * @file mcp_client.h
  * @brief MCP v1.0 Client（消费外部 MCP server 的工具）
@@ -34,27 +35,25 @@
 extern "C" {
 #endif
 
-#define MCP_CLIENT_DEFAULT_TIMEOUT_MS 60000 /* 单次请求/响应总超时 */
-#define MCP_CLIENT_MAX_MESSAGE_SIZE (10 * 1024 * 1024) /* 与 MCP_V1_MAX_MESSAGE_SIZE 对齐 */
-#define MCP_CLIENT_PROTOCOL_VERSION "2024-11-05" /* 协商的协议版本 */
-
+#define MCP_CLIENT_DEFAULT_TIMEOUT_MS 60000
+#define MCP_CLIENT_MAX_MESSAGE_SIZE (10 * 1024 * 1024)
+#define MCP_CLIENT_PROTOCOL_VERSION "2024-11-05"
 typedef enum {
     MCP_CLIENT_TRANSPORT_NONE = 0,
-    MCP_CLIENT_TRANSPORT_STDIO = 1, /* 子进程 stdin/stdout 帧 */
-    MCP_CLIENT_TRANSPORT_HTTP = 2   /* Streamable HTTP 短连接 */
+    MCP_CLIENT_TRANSPORT_STDIO = 1,
+    MCP_CLIENT_TRANSPORT_HTTP = 2
 } mcp_client_transport_t;
 
-/* ==================== MCP 客户端错误码 ==================== */
+
 /* 复用 AIRY_ERR_*（error.h）：AIRY_ERR_TIMEOUT/IO/PARSE_ERROR/OUT_OF_MEMORY/
  * INVALID_PARAM/NOT_FOUND/NOT_SUPPORTED/SYS_SOCKET 等；以下为客户端专属错误 */
 #define MCP_CLIENT_ERR_BASE (-2000)
-#define MCP_CLIENT_ERR_PROCESS_EXIT (MCP_CLIENT_ERR_BASE - 1) /* stdio 子进程退出/EOF */
-#define MCP_CLIENT_ERR_RPC_ERROR (MCP_CLIENT_ERR_BASE - 2)    /* 远端返回 JSON-RPC error */
-#define MCP_CLIENT_ERR_CONNECT (MCP_CLIENT_ERR_BASE - 3)      /* 连接/握手失败 */
-#define MCP_CLIENT_ERR_NOT_CONNECTED (MCP_CLIENT_ERR_BASE - 4) /* 客户端未连接 */
-#define MCP_CLIENT_ERR_FRAME (MCP_CLIENT_ERR_BASE - 5)        /* 帧协议错误（坏 Content-Length 等） */
+#define MCP_CLIENT_ERR_PROCESS_EXIT (MCP_CLIENT_ERR_BASE - 1)
+#define MCP_CLIENT_ERR_RPC_ERROR (MCP_CLIENT_ERR_BASE - 2)
+#define MCP_CLIENT_ERR_CONNECT (MCP_CLIENT_ERR_BASE - 3)
+#define MCP_CLIENT_ERR_NOT_CONNECTED (MCP_CLIENT_ERR_BASE - 4)
+#define MCP_CLIENT_ERR_FRAME (MCP_CLIENT_ERR_BASE - 5)
 
-/* ==================== 工具列表 ==================== */
 
 /**
  * @brief 单个外部工具描述（从 tools/list 结果解析）
@@ -62,9 +61,9 @@ typedef enum {
  *       可直接内嵌到本地 MCP server 的 tools/list 响应。
  */
 typedef struct {
-    char *name;              /* 工具名 */
-    char *description;       /* 描述（可能为 NULL） */
-    char *input_schema_json; /* inputSchema JSON 文本（可能为 NULL） */
+    char *name;
+    char *description;
+    char *input_schema_json;
 } mcp_client_tool_t;
 
 typedef struct {
@@ -74,7 +73,6 @@ typedef struct {
 
 typedef struct mcp_client_s mcp_client_t;
 
-/* ==================== 连接生命周期 ==================== */
 
 /**
  * @brief 以 stdio 传输连接外部 MCP server
@@ -99,7 +97,6 @@ mcp_client_t *mcp_client_connect_http(const char *name, const char *url);
  */
 int mcp_client_disconnect(mcp_client_t *client);
 
-/* ==================== 工具发现与调用 ==================== */
 
 /**
  * @brief 确保 initialize 后调用 tools/list，拉取外部工具列表

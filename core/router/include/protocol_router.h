@@ -1,6 +1,7 @@
-// SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
-// SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
-// @owner: team-B
+/* SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd. */
+/* SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0 */
+
+/* @owner: team-B */
 /**
  * @file protocol_router.h
  * @brief Protocol Routing and Transformation Engine
@@ -22,20 +23,19 @@
 extern "C" {
 #endif
 
-// ============================================================================
-// 类型定义
-// ============================================================================
+/* ============================================================================ */
 
+/* ============================================================================ */
 /**
  * @brief 协议转换规则
  */
 typedef struct {
-    protocol_type_t source_protocol; /**< 源协议类型 */
-    protocol_type_t target_protocol; /**< 目标协议类型 */
-    const char *source_endpoint;     /**< 源端点模式（支持通配符） */
-    const char *target_endpoint;     /**< 目标端点模式 */
-    uint32_t priority;               /**< 规则优先级（数字越小优先级越高） */
-    void *transformer_context;       /**< 转换器上下文 */
+    protocol_type_t source_protocol;
+    protocol_type_t target_protocol;
+    const char *source_endpoint;
+    const char *target_endpoint;
+    uint32_t priority;
+    void *transformer_context;
 } protocol_rule_t;
 
 /**
@@ -63,10 +63,9 @@ typedef int (*route_decision_func_t)(const unified_message_t *message, const pro
  */
 typedef struct protocol_router_s *protocol_router_handle_t;
 
-// ============================================================================
-// 核心API
-// ============================================================================
+/* ============================================================================ */
 
+/* ============================================================================ */
 /**
  * @brief 创建路由引擎实例
  * @param default_protocol 默认协议（当无匹配规则时使用）
@@ -143,10 +142,9 @@ int protocol_router_set_decision_func(protocol_router_handle_t router,
  */
 int protocol_router_get_stats(protocol_router_handle_t router, char **stats_json);
 
-// ============================================================================
-// 预定义转换器
-// ============================================================================
+/* ============================================================================ */
 
+/* ============================================================================ */
 /**
  * @brief JSON-RPC到MCP协议转换器
  * @param source 源消息（JSON-RPC）
@@ -201,4 +199,4 @@ int protocol_transformer_default(const unified_message_t *source, unified_messag
 }
 #endif
 
-#endif  // AIRY_RT_PROTOCOL_ROUTER_H
+#endif /* AIRY_RT_PROTOCOL_ROUTER_H */

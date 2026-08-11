@@ -1,14 +1,14 @@
-// SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
-// SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+/* SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd. */
+/* SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0 */
+
 /**
  * @file mcp_transport.h
  * @brief MCP Transport Layer Interface
- * @copyright (c) 2026 SPHARX. All Rights Reserved.
  *
  * Defines the transport abstraction for MCP protocol.
  * Supports STDIO and HTTP+SSE transport modes per MCP specification.
  */
-// @owner: team-B
+/* @owner: team-B */
 
 #ifndef AIRY_RT_MCP_TRANSPORT_H
 #define AIRY_RT_MCP_TRANSPORT_H

@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+
 // @owner: team-B
 /**
  * @file a2a_v03_adapter.c
@@ -123,16 +124,16 @@ typedef struct {
     int protocol_version;
     bool available;
     char *capabilities_json;
-    a2a_capability_t capabilities_mask;  /* bitmask：与 a2a_agent_card_t.capabilities 同步 */
+    a2a_capability_t capabilities_mask;
 } a2a_internal_card_t;
 
 /* Transport write callback type for sending data through the transport layer */
 typedef int (*a2a_transport_write_fn)(void *transport_ctx, const void *data, size_t size);
 
 /* A2A v03 protocol message frame header constants */
-#define A2A_V03_FRAME_MAGIC   "A2A/0.3"
+#define A2A_V03_FRAME_MAGIC "A2A/0.3"
 #define A2A_V03_FRAME_HDR_SEP "\r\n"
-#define A2A_V03_FRAME_END     "\r\n\r\n"
+#define A2A_V03_FRAME_END "\r\n\r\n"
 #define A2A_V03_FRAME_HDR_MAX 256
 
 /* Use header-declared types; define local adapter state */
@@ -175,11 +176,10 @@ static struct a2a_v03_adapter_s *g_a2a_instance = NULL;
 
 int a2a_v03_create(a2a_config_t config, a2a_handle_t *out_handle)
 {
-    if (!out_handle)
-        {
+    if (!out_handle) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_create: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     struct a2a_v03_adapter_s *adapter = AIRY_CALLOC(1, sizeof(struct a2a_v03_adapter_s));
     if (!adapter) {
@@ -221,7 +221,8 @@ void a2a_v03_destroy(a2a_handle_t handle)
 
     /* P0-07 修复: 释放 a2a_v03_get_agent_card() 的 static card 缓冲区。
      *
-     * 历史问题：a2a_v03_get_agent_card() 使用 static card 并每次 STRDUP id/name/url/capabilities_json，
+      * 历史问题：a2a_v03_get_agent_card() 使用 static card 并每次 STRDUP
+      * id/name/url/capabilities_json，
      * 导致：(1) 多次调用累积泄漏（每次 STRDUP 不释放上一次的字符串）
      *      (2) 程序结束时 static card 仍持有最后一次 STRDUP 的字符串，ASAN 检测到泄漏。
      *
@@ -251,11 +252,11 @@ const char *a2a_v03_version(void)
 
 int a2a_v03_register_agent(a2a_v03_context_t *ctx, const a2a_agent_card_t *card)
 {
-    if (!ctx || !card)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_register_agent: failed");
+    if (!ctx || !card) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_register_agent: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!adapter->initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
@@ -268,24 +269,27 @@ int a2a_v03_register_agent(a2a_v03_context_t *ctx, const a2a_agent_card_t *card)
     if (new_id) {
         for (size_t i = 0; i < adapter->agent_count; i++) {
             if (strcmp(adapter->agents[i].id, new_id) == 0) {
-                /* 命中重复：在原位合并更新（capabilities OR 合并；其他字段覆盖） */
+
                 a2a_internal_card_t *ic = &adapter->agents[i];
                 AIRY_STRNCPY_TERM(ic->name, card->name ? card->name : "Unknown", sizeof(ic->name));
                 AIRY_STRNCPY_TERM(ic->url, card->url ? card->url : "", sizeof(ic->url));
                 if (card->capabilities_json) {
-                    AIRY_STRNCPY_TERM(ic->capabilities, card->capabilities_json, sizeof(ic->capabilities));
+                    AIRY_STRNCPY_TERM(ic->capabilities, card->capabilities_json,
+                                      sizeof(ic->capabilities));
                 }
                 ic->version = card->protocol_version > 0 ? card->protocol_version : 3;
                 ic->available = card->available;
-                /* bitmask 合并：保留已有 caps，并 OR 入新 caps（合并语义） */
-                ic->capabilities_mask = (a2a_capability_t)((int)ic->capabilities_mask | (int)card->capabilities);
+
+                ic->capabilities_mask =
+                    (a2a_capability_t)((int)ic->capabilities_mask | (int)card->capabilities);
                 return 0;
             }
         }
     }
 
     if (adapter->agent_count >= A2A_MAX_AGENTS) {
-        airy_err_push_ex(AIRY_ERR_BUFFER_TOO_SMALL, __FILE__, __LINE__, __func__, "capacity exceeded");
+        airy_err_push_ex(AIRY_ERR_BUFFER_TOO_SMALL, __FILE__, __LINE__, __func__,
+                         "capacity exceeded");
         return AIRY_ERR_BUFFER_TOO_SMALL;
     }
 
@@ -298,11 +302,13 @@ int a2a_v03_register_agent(a2a_v03_context_t *ctx, const a2a_agent_card_t *card)
         snprintf(internal_card->id, sizeof(internal_card->id), "agent_%zu_%" PRIu64,
                  adapter->agent_count + 1, adapter->task_counter++);
     }
-    AIRY_STRNCPY_TERM(internal_card->name, card->name ? card->name : "Unknown", sizeof(internal_card->name));
+    AIRY_STRNCPY_TERM(internal_card->name, card->name ? card->name : "Unknown",
+                      sizeof(internal_card->name));
     AIRY_STRNCPY_TERM(internal_card->url, card->url ? card->url : "", sizeof(internal_card->url));
 
     if (card->capabilities_json) {
-        AIRY_STRNCPY_TERM(internal_card->capabilities, card->capabilities_json, sizeof(internal_card->capabilities));
+        AIRY_STRNCPY_TERM(internal_card->capabilities, card->capabilities_json,
+                          sizeof(internal_card->capabilities));
     }
     internal_card->version = card->protocol_version > 0 ? card->protocol_version : 3;
     internal_card->available = card->available;
@@ -315,11 +321,11 @@ int a2a_v03_register_agent(a2a_v03_context_t *ctx, const a2a_agent_card_t *card)
 int a2a_v03_discover_agents(a2a_v03_context_t *ctx, const char *capability, const char *skill_name,
                             a2a_agent_card_t ***results, size_t *result_count)
 {
-    if (!ctx || !results || !result_count)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_discover_agents: failed");
+    if (!ctx || !results || !result_count) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_discover_agents: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!adapter->initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
@@ -348,7 +354,8 @@ int a2a_v03_discover_agents(a2a_v03_context_t *ctx, const char *capability, cons
     if (matched > 0) {
         agent_array = (a2a_agent_card_t **)AIRY_CALLOC(matched, sizeof(a2a_agent_card_t *));
         if (!agent_array) {
-            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "allocation failed");
+            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                             "allocation failed");
             return AIRY_ERR_OUT_OF_MEMORY;
         }
 
@@ -387,7 +394,6 @@ const a2a_agent_card_t *a2a_v03_get_agent_card(a2a_v03_context_t *ctx, const cha
      * 但添加显式清理路径避免 ASAN 检测到泄漏。 */
     static a2a_agent_card_t g_cached_card = {0};
 
-    /* P0-07: (NULL, NULL) 是 a2a_v03_destroy() 的清理信号，释放 static card 中的字符串。 */
     if (!ctx && !agent_id) {
         a2a_agent_card_destroy(&g_cached_card);
         AIRY_MEMSET(&g_cached_card, 0, sizeof(g_cached_card));
@@ -427,11 +433,11 @@ const a2a_agent_card_t *a2a_v03_get_agent_card(a2a_v03_context_t *ctx, const cha
 int a2a_v03_delegate_task(a2a_handle_t handle, const a2a_task_request_internal_t *request,
                           a2a_task_response_internal_t *out_response)
 {
-    if (!handle || !request || !out_response)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_delegate_task: failed");
+    if (!handle || !request || !out_response) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_delegate_task: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)handle;
     if (!adapter->initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
@@ -444,7 +450,9 @@ int a2a_v03_delegate_task(a2a_handle_t handle, const a2a_task_request_internal_t
              adapter->task_counter++);
 
     out_response->status = A2A_TASK_STATUS_ACCEPTED;
-    AIRY_STRNCPY_TERM(out_response->accepted_by, request->target_agent_id ? request->target_agent_id : "coordinator", sizeof(out_response->accepted_by));
+    AIRY_STRNCPY_TERM(out_response->accepted_by,
+                      request->target_agent_id ? request->target_agent_id : "coordinator",
+                      sizeof(out_response->accepted_by));
     out_response->negotiation_rounds = 0;
     out_response->estimated_duration_ms =
         request->timeout_ms > 0 ? request->timeout_ms / 2 : A2A_DEFAULT_TIMEOUT_MS / 2;
@@ -464,11 +472,11 @@ int a2a_v03_negotiate_task(a2a_handle_t handle, const char *task_id,
                            const a2a_proposal_internal_t *proposal,
                            a2a_negotiation_result_internal_t *out_result)
 {
-    if (!handle || !task_id || !proposal || !out_result)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_negotiate_task: failed");
+    if (!handle || !task_id || !proposal || !out_result) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_negotiate_task: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)handle;
     if (!adapter->initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
@@ -503,11 +511,11 @@ int a2a_v03_negotiate_task(a2a_handle_t handle, const char *task_id,
 int a2a_v03_achieve_consensus(a2a_handle_t handle, const a2a_consensus_request_internal_t *request,
                               a2a_consensus_result_internal_t *out_result)
 {
-    if (!handle || !request || !out_result)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_achieve_consensus: failed");
+    if (!handle || !request || !out_result) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_achieve_consensus: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)handle;
     if (!adapter->initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
@@ -552,11 +560,11 @@ int a2a_v03_stream_task(a2a_handle_t handle, const a2a_task_request_internal_t *
                         a2a_stream_callback_internal_t on_chunk, void *user_data,
                         a2a_task_response_internal_t *final_response)
 {
-    if (!handle || !request || !on_chunk || !final_response)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_stream_task: failed");
+    if (!handle || !request || !on_chunk || !final_response) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_stream_task: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)handle;
     if (!adapter->initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
@@ -596,8 +604,8 @@ int a2a_v03_stream_task(a2a_handle_t handle, const a2a_task_request_internal_t *
                      final_response->task_id);
         }
         final_response->result_json =
-            result_buf ? result_buf
-                       : AIRY_STRDUP("{\"status\":\"error\",\"reason\":\"allocation_failed\"}");
+            result_buf ? result_buf :
+                         AIRY_STRDUP("{\"status\":\"error\",\"reason\":\"allocation_failed\"}");
     }
 
     return 0;
@@ -609,11 +617,11 @@ int a2a_v03_stream_task(a2a_handle_t handle, const a2a_task_request_internal_t *
 
 int a2a_v03_get_stats(a2a_handle_t handle, a2a_stats_internal_t *out_stats)
 {
-    if (!handle || !out_stats)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_get_stats: failed");
+    if (!handle || !out_stats) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_get_stats: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)handle;
     if (!adapter->initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
@@ -626,13 +634,13 @@ int a2a_v03_get_stats(a2a_handle_t handle, a2a_stats_internal_t *out_stats)
     out_stats->completed_tasks = (uint32_t)adapter->completed_task_count;
     out_stats->failed_tasks = (uint32_t)adapter->failed_task_count;
     out_stats->avg_delegation_latency_ms =
-        adapter->total_delegation_ms > 0 && adapter->completed_task_count > 0
-            ? (float)(adapter->total_delegation_ms / adapter->completed_task_count)
-            : 0.0f;
+        adapter->total_delegation_ms > 0 && adapter->completed_task_count > 0 ?
+            (float)(adapter->total_delegation_ms / adapter->completed_task_count) :
+            0.0f;
     out_stats->avg_consensus_latency_ms =
-        adapter->total_consensus_ms > 0 && adapter->completed_task_count > 0
-            ? (float)(adapter->total_consensus_ms / adapter->completed_task_count)
-            : 0.0f;
+        adapter->total_consensus_ms > 0 && adapter->completed_task_count > 0 ?
+            (float)(adapter->total_consensus_ms / adapter->completed_task_count) :
+            0.0f;
     return 0;
 }
 
@@ -735,19 +743,35 @@ static void a2a_sha256_transform(a2a_sha256_ctx_t *ctx)
         uint32_t S0 = a2a_ror32(a, 2) ^ a2a_ror32(a, 13) ^ a2a_ror32(a, 22);
         uint32_t maj = (a & b) ^ (a & c) ^ (b & c);
         uint32_t t2 = S0 + maj;
-        h = g; g = f; f = e; e = d + t1;
-        d = c; c = b; b = a; a = t1 + t2;
+        h = g;
+        g = f;
+        f = e;
+        e = d + t1;
+        d = c;
+        c = b;
+        b = a;
+        a = t1 + t2;
     }
-    ctx->state[0] += a; ctx->state[1] += b; ctx->state[2] += c; ctx->state[3] += d;
-    ctx->state[4] += e; ctx->state[5] += f; ctx->state[6] += g; ctx->state[7] += h;
+    ctx->state[0] += a;
+    ctx->state[1] += b;
+    ctx->state[2] += c;
+    ctx->state[3] += d;
+    ctx->state[4] += e;
+    ctx->state[5] += f;
+    ctx->state[6] += g;
+    ctx->state[7] += h;
 }
 
 static void a2a_sha256_init(a2a_sha256_ctx_t *ctx)
 {
-    ctx->state[0] = 0x6a09e667; ctx->state[1] = 0xbb67ae85;
-    ctx->state[2] = 0x3c6ef372; ctx->state[3] = 0xa54ff53a;
-    ctx->state[4] = 0x510e527f; ctx->state[5] = 0x9b05688c;
-    ctx->state[6] = 0x1f83d9ab; ctx->state[7] = 0x5be0cd19;
+    ctx->state[0] = 0x6a09e667;
+    ctx->state[1] = 0xbb67ae85;
+    ctx->state[2] = 0x3c6ef372;
+    ctx->state[3] = 0xa54ff53a;
+    ctx->state[4] = 0x510e527f;
+    ctx->state[5] = 0x9b05688c;
+    ctx->state[6] = 0x1f83d9ab;
+    ctx->state[7] = 0x5be0cd19;
     ctx->bitlen = 0;
     ctx->datalen = 0;
 }
@@ -790,7 +814,6 @@ static void a2a_sha256_final(a2a_sha256_ctx_t *ctx, uint8_t *out)
     }
 }
 
-/* HMAC-SHA256（RFC 2104）：key 超过块长（64B）时先压缩；out 至少 32 字节 */
 static void a2a_hmac_sha256(const void *key, size_t key_len, const void *msg, size_t msg_len,
                             uint8_t *out)
 {
@@ -824,7 +847,6 @@ static void a2a_hmac_sha256(const void *key, size_t key_len, const void *msg, si
     a2a_sha256_final(&c, out);
 }
 
-/* 常量时间比较（长度必须一致）；返回 1 相同，0 不同 */
 static int a2a_const_time_eq(const uint8_t *a, const uint8_t *b, size_t len)
 {
     uint8_t diff = 0;
@@ -833,7 +855,6 @@ static int a2a_const_time_eq(const uint8_t *a, const uint8_t *b, size_t len)
     return (diff == 0) ? 1 : 0;
 }
 
-/* 非加密用途的 djb2 哈希（session_id 后缀等装饰性场景，不得用于认证/签名） */
 static uint32_t a2a_simple_hash(const char *data, size_t len)
 {
     uint32_t hash = 5381;
@@ -843,7 +864,6 @@ static uint32_t a2a_simple_hash(const char *data, size_t len)
     return hash;
 }
 
-/* 认证全局状态（前置声明，供 token 生成等使用） */
 typedef struct {
     bool initialized;
     a2a_auth_config_t config;
@@ -892,11 +912,11 @@ static void a2a_generate_token_string(char *token_buf, size_t buf_size, const ch
 
 int a2a_v03_auth_init(a2a_v03_context_t *ctx, const a2a_auth_config_t *auth_config)
 {
-    if (!ctx || !auth_config)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_auth_init: failed");
+    if (!ctx || !auth_config) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_auth_init: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     AIRY_MEMSET(&g_a2a_auth, 0, sizeof(g_a2a_auth));
     g_a2a_auth.initialized = true;
@@ -931,11 +951,11 @@ void a2a_v03_auth_shutdown(a2a_v03_context_t *ctx)
 int a2a_v03_authenticate(a2a_v03_context_t *ctx, const char *agent_id, const char *credential,
                          a2a_auth_token_t **out_token)
 {
-    if (!ctx || !agent_id || !credential || !out_token)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_authenticate: failed");
+    if (!ctx || !agent_id || !credential || !out_token) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_authenticate: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     if (!g_a2a_auth.initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
         return AIRY_ERR_STATE_ERROR;
@@ -944,18 +964,19 @@ int a2a_v03_authenticate(a2a_v03_context_t *ctx, const char *agent_id, const cha
     uint64_t now = a2a_timestamp_ms() / 1000;
 
     if (g_a2a_auth.lockout_until > 0 && now < g_a2a_auth.lockout_until) {
-        LOG_ERROR("authentication locked out: agent_id=%s, lockout_until=%llu, now=%llu",
-                          agent_id, (unsigned long long)g_a2a_auth.lockout_until, (unsigned long long)now);
-        /* 认证锁定期：权限/状态类错误（重复失败触发锁定） */
-        airy_err_push_ex(AIRY_ERR_PERMISSION_DENIED, __FILE__, __LINE__, __func__,
-                         "a2a_v03_authenticate: authentication locked out (too many failed attempts)");
+        LOG_ERROR("authentication locked out: agent_id=%s, lockout_until=%llu, now=%llu", agent_id,
+                  (unsigned long long)g_a2a_auth.lockout_until, (unsigned long long)now);
+
+        airy_err_push_ex(
+            AIRY_ERR_PERMISSION_DENIED, __FILE__, __LINE__, __func__,
+            "a2a_v03_authenticate: authentication locked out (too many failed attempts)");
         return AIRY_ERR_PERMISSION_DENIED;
     }
 
     int cred_valid = 0;
     switch (g_a2a_auth.config.method) {
     case A2A_AUTH_API_KEY:
-        /* 常量时间比较，避免时序侧信道 */
+
         cred_valid = (strlen(credential) == (size_t)g_a2a_auth.config.secret_len) &&
                      a2a_const_time_eq((const uint8_t *)credential,
                                        (const uint8_t *)g_a2a_auth.config.shared_secret,
@@ -973,8 +994,9 @@ int a2a_v03_authenticate(a2a_v03_context_t *ctx, const char *agent_id, const cha
                         strlen(agent_id), expect);
         char expect_hex[65];
         a2a_hex_encode(expect, sizeof(expect), expect_hex, sizeof(expect_hex));
-        cred_valid = (strlen(credential) == 64) &&
-                     a2a_const_time_eq((const uint8_t *)expect_hex, (const uint8_t *)credential, 64);
+        cred_valid =
+            (strlen(credential) == 64) &&
+            a2a_const_time_eq((const uint8_t *)expect_hex, (const uint8_t *)credential, 64);
         break;
     }
     case A2A_AUTH_NONE:
@@ -984,14 +1006,15 @@ int a2a_v03_authenticate(a2a_v03_context_t *ctx, const char *agent_id, const cha
     }
 
     if (!cred_valid) {
-        LOG_ERROR("authentication failed: agent_id=%s, method=%d, failed_attempts=%d",
-                          agent_id, g_a2a_auth.config.method, g_a2a_auth.failed_attempts + 1);
+        LOG_ERROR("authentication failed: agent_id=%s, method=%d, failed_attempts=%d", agent_id,
+                  g_a2a_auth.config.method, g_a2a_auth.failed_attempts + 1);
         g_a2a_auth.failed_attempts++;
         if (g_a2a_auth.failed_attempts >= g_a2a_auth.config.max_failed_attempts) {
             g_a2a_auth.lockout_until = now + 300;
             g_a2a_auth.failed_attempts = 0;
         }
-        airy_err_push_ex(AIRY_ERR_BUFFER_TOO_SMALL, __FILE__, __LINE__, __func__, "operation failed");
+        airy_err_push_ex(AIRY_ERR_BUFFER_TOO_SMALL, __FILE__, __LINE__, __func__,
+                         "operation failed");
         return AIRY_ERR_BUFFER_TOO_SMALL;
     }
 
@@ -999,7 +1022,7 @@ int a2a_v03_authenticate(a2a_v03_context_t *ctx, const char *agent_id, const cha
 
     if (g_a2a_auth.token_count >= A2A_MAX_TOKENS) {
         __builtin_memmove(&g_a2a_auth.tokens[0], &g_a2a_auth.tokens[1],
-                (A2A_MAX_TOKENS - 1) * sizeof(a2a_auth_token_t));
+                          (A2A_MAX_TOKENS - 1) * sizeof(a2a_auth_token_t));
         g_a2a_auth.token_count--;
     }
 
@@ -1021,11 +1044,11 @@ int a2a_v03_authenticate(a2a_v03_context_t *ctx, const char *agent_id, const cha
 int a2a_v03_verify_token(a2a_v03_context_t *ctx, const char *token_str,
                          a2a_auth_token_t **out_token)
 {
-    if (!ctx || !token_str || !out_token)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_verify_token: failed");
+    if (!ctx || !token_str || !out_token) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_verify_token: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     if (!g_a2a_auth.initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
         return AIRY_ERR_STATE_ERROR;
@@ -1041,8 +1064,8 @@ int a2a_v03_verify_token(a2a_v03_context_t *ctx, const char *token_str,
             continue;
 
         if (now >= tok->expires_at) {
-            LOG_WARN("token expired: agent_id=%s, expires_at=%llu, now=%llu",
-                             tok->agent_id, (unsigned long long)tok->expires_at, (unsigned long long)now);
+            LOG_WARN("token expired: agent_id=%s, expires_at=%llu, now=%llu", tok->agent_id,
+                     (unsigned long long)tok->expires_at, (unsigned long long)now);
             tok->valid = false;
             airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "operation failed");
             return AIRY_ERR_UNKNOWN;
@@ -1060,11 +1083,11 @@ int a2a_v03_verify_token(a2a_v03_context_t *ctx, const char *token_str,
 
 int a2a_v03_invalidate_token(a2a_v03_context_t *ctx, const char *token_str)
 {
-    if (!ctx || !token_str)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_invalidate_token: invalid parameter");
+    if (!ctx || !token_str) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_invalidate_token: invalid parameter");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     for (size_t i = 0; i < g_a2a_auth.token_count; i++) {
         if (g_a2a_auth.tokens[i].valid && strcmp(g_a2a_auth.tokens[i].token, token_str) == 0) {
@@ -1073,7 +1096,8 @@ int a2a_v03_invalidate_token(a2a_v03_context_t *ctx, const char *token_str)
         }
     }
 
-    airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "memset: error AIRY_ERR_NULL_POINTER");
+    airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__,
+                     "memset: error AIRY_ERR_NULL_POINTER");
     return AIRY_ERR_NULL_POINTER;
 }
 
@@ -1104,7 +1128,6 @@ const char *a2a_v03_sign_request(a2a_v03_context_t *ctx, const char *method,
         return out_signature;
     }
 
-    /* A2A_AUTH_API_KEY / NONE：退化为 HMAC（有密钥时）或确定性哈希填充 */
     if (g_a2a_auth.config.secret_len > 0 && g_a2a_auth.config.secret_len <= 64) {
         uint8_t mac[32];
         a2a_hmac_sha256(g_a2a_auth.config.shared_secret, g_a2a_auth.config.secret_len, sign_data,
@@ -1121,11 +1144,11 @@ const char *a2a_v03_sign_request(a2a_v03_context_t *ctx, const char *method,
 int a2a_v03_verify_signature(a2a_v03_context_t *ctx, const char *method, const char *params_json,
                              const char *signature, const char *token_str)
 {
-    if (!ctx || !method || !params_json || !signature)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_verify_signature: failed");
+    if (!ctx || !method || !params_json || !signature) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_verify_signature: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     char expected[65];
     if (!a2a_v03_sign_request(ctx, method, params_json, token_str, expected, sizeof(expected))) {
@@ -1145,11 +1168,11 @@ int a2a_v03_create_session(a2a_v03_context_t *ctx, const char *remote_agent_id,
                            a2a_auth_method_t auth_method, a2a_crypto_method_t crypto_method,
                            a2a_session_t **out_session)
 {
-    if (!ctx || !remote_agent_id || !out_session)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_create_session: failed");
+    if (!ctx || !remote_agent_id || !out_session) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_create_session: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     if (!g_a2a_auth.initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
         return AIRY_ERR_STATE_ERROR;
@@ -1193,11 +1216,11 @@ int a2a_v03_create_session(a2a_v03_context_t *ctx, const char *remote_agent_id,
 int a2a_v03_validate_session(a2a_v03_context_t *ctx, const char *session_id,
                              a2a_session_t **out_session)
 {
-    if (!ctx || !session_id || !out_session)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_validate_session: failed");
+    if (!ctx || !session_id || !out_session) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_validate_session: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     for (size_t i = 0; i < g_a2a_auth.session_count; i++) {
         a2a_session_t *sess = &g_a2a_auth.sessions[i];
@@ -1209,10 +1232,10 @@ int a2a_v03_validate_session(a2a_v03_context_t *ctx, const char *session_id,
         uint64_t age_sec = (now - sess->created_at) / 1000;
 
         if (age_sec > (uint64_t)g_a2a_auth.config.token_ttl_sec * 2) {
-            LOG_WARN("session expired: session_id=%s, age_sec=%llu, ttl=%d",
-                             sess->session_id, (unsigned long long)age_sec, g_a2a_auth.config.token_ttl_sec * 2);
+            LOG_WARN("session expired: session_id=%s, age_sec=%llu, ttl=%d", sess->session_id,
+                     (unsigned long long)age_sec, g_a2a_auth.config.token_ttl_sec * 2);
             AIRY_MEMSET(sess, 0, sizeof(*sess));
-            /* session 过期：状态类错误 */
+
             airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__,
                              "a2a_v03_validate_session: session expired");
             return AIRY_ERR_STATE_ERROR;
@@ -1304,7 +1327,7 @@ a2a_v03_config_t a2a_v03_config_default(void)
 
 a2a_v03_context_t *a2a_v03_context_create(const a2a_v03_config_t *config)
 {
-    /* 测试契约：NULL config 视为调用方错误，必须返回 NULL（不允许隐式 default 回退）。 */
+
     if (!config)
         return NULL;
     a2a_v03_config_t cfg = *config;
@@ -1327,11 +1350,11 @@ void a2a_v03_context_destroy(a2a_v03_context_t *ctx)
 
 int a2a_v03_unregister_agent(a2a_v03_context_t *ctx, const char *agent_id)
 {
-    if (!ctx || !agent_id)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_unregister_agent: failed");
+    if (!ctx || !agent_id) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_unregister_agent: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!adapter->initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
@@ -1355,18 +1378,19 @@ int a2a_v03_unregister_agent(a2a_v03_context_t *ctx, const char *agent_id)
 int a2a_v03_create_task(a2a_v03_context_t *ctx, const char *agent_id, const char *description,
                         const char *input_json, a2a_task_t **task)
 {
-    if (!ctx || !task)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_create_task: failed");
+    if (!ctx || !task) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_create_task: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!adapter->initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
         return AIRY_ERR_STATE_ERROR;
     }
     if (adapter->task_count >= A2A_V03_MAX_TASKS) {
-        airy_err_push_ex(AIRY_ERR_BUFFER_TOO_SMALL, __FILE__, __LINE__, __func__, "capacity exceeded");
+        airy_err_push_ex(AIRY_ERR_BUFFER_TOO_SMALL, __FILE__, __LINE__, __func__,
+                         "capacity exceeded");
         return AIRY_ERR_BUFFER_TOO_SMALL;
     }
 
@@ -1379,7 +1403,8 @@ int a2a_v03_create_task(a2a_v03_context_t *ctx, const char *agent_id, const char
     t->id = (char *)AIRY_MALLOC(A2A_TASK_ID_SIZE);
     if (!t->id) {
         AIRY_FREE(t);
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "AIRY_MALLOC: error AIRY_ERR_OUT_OF_MEMORY");
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "AIRY_MALLOC: error AIRY_ERR_OUT_OF_MEMORY");
         return AIRY_ERR_OUT_OF_MEMORY;
     }
     snprintf(t->id, A2A_TASK_ID_SIZE, "task_%zu_%u", adapter->task_count,
@@ -1414,11 +1439,11 @@ int a2a_v03_create_task(a2a_v03_context_t *ctx, const char *agent_id, const char
 int a2a_v03_update_task(a2a_v03_context_t *ctx, const char *task_id, a2a_task_state_t new_state,
                         const char *output_json, double progress)
 {
-    if (!ctx || !task_id)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_update_task: failed");
+    if (!ctx || !task_id) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_update_task: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!adapter->initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
@@ -1445,11 +1470,11 @@ int a2a_v03_update_task(a2a_v03_context_t *ctx, const char *task_id, a2a_task_st
 
 int a2a_v03_cancel_task(a2a_v03_context_t *ctx, const char *task_id, const char *reason)
 {
-    if (!ctx || !task_id)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_cancel_task: failed");
+    if (!ctx || !task_id) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_cancel_task: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!adapter->initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
@@ -1467,17 +1492,18 @@ int a2a_v03_cancel_task(a2a_v03_context_t *ctx, const char *task_id, const char 
             return 0;
         }
     }
-    airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "AIRY_STRDUP: error AIRY_ERR_OUT_OF_MEMORY");
+    airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                     "AIRY_STRDUP: error AIRY_ERR_OUT_OF_MEMORY");
     return AIRY_ERR_OUT_OF_MEMORY;
 }
 
 int a2a_v03_get_task(a2a_v03_context_t *ctx, const char *task_id, a2a_task_t **task)
 {
-    if (!ctx || !task_id || !task)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_get_task: failed");
+    if (!ctx || !task_id || !task) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_get_task: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!adapter->initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
@@ -1498,11 +1524,11 @@ int a2a_v03_send_message(a2a_v03_context_t *ctx, const char *target_agent_id,
                          const a2a_message_t *message, a2a_message_t **response,
                          size_t *response_count)
 {
-    if (!ctx || !target_agent_id || !message)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_send_message: IO error");
+    if (!ctx || !target_agent_id || !message) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_send_message: IO error");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!adapter->initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
@@ -1531,11 +1557,11 @@ int a2a_v03_send_message(a2a_v03_context_t *ctx, const char *target_agent_id,
 int a2a_v03_negotiate(a2a_v03_context_t *ctx, const a2a_negotiation_t *proposal,
                       a2a_negotiation_action_t *response_action, char **response_terms)
 {
-    if (!ctx || !proposal)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_negotiate: failed");
+    if (!ctx || !proposal) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_negotiate: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!adapter->initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
@@ -1557,11 +1583,11 @@ int a2a_v03_negotiate(a2a_v03_context_t *ctx, const a2a_negotiation_t *proposal,
 int a2a_v03_subscribe_notifications(a2a_v03_context_t *ctx, a2a_notification_handler_t handler,
                                     void *user_data)
 {
-    if (!ctx || !handler)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_subscribe_notifications: failed");
+    if (!ctx || !handler) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_subscribe_notifications: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     adapter->notification_handler = handler;
     adapter->notification_handler_user_data = user_data;
@@ -1570,11 +1596,11 @@ int a2a_v03_subscribe_notifications(a2a_v03_context_t *ctx, a2a_notification_han
 
 int a2a_v03_unsubscribe_notifications(a2a_v03_context_t *ctx)
 {
-    if (!ctx)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_unsubscribe_notifications: failed");
+    if (!ctx) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_unsubscribe_notifications: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     adapter->notification_handler = NULL;
     adapter->notification_handler_user_data = NULL;
@@ -1583,11 +1609,11 @@ int a2a_v03_unsubscribe_notifications(a2a_v03_context_t *ctx)
 
 int a2a_v03_send_notification(a2a_v03_context_t *ctx, const a2a_notification_t *notification)
 {
-    if (!ctx || !notification)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_send_notification: IO error");
+    if (!ctx || !notification) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_send_notification: IO error");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!adapter->notification_handler) {
         airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "operation failed");
@@ -1600,11 +1626,11 @@ int a2a_v03_send_notification(a2a_v03_context_t *ctx, const a2a_notification_t *
 int a2a_v03_stream_task_update(a2a_v03_context_t *ctx, const char *task_id, double progress,
                                const char *chunk_json, bool is_final)
 {
-    if (!ctx || !task_id)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_stream_task_update: failed");
+    if (!ctx || !task_id) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_stream_task_update: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!adapter->initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
@@ -1635,11 +1661,11 @@ int a2a_v03_stream_task_update(a2a_v03_context_t *ctx, const char *task_id, doub
 
 int a2a_v03_set_task_handler(a2a_v03_context_t *ctx, a2a_task_handler_t handler, void *user_data)
 {
-    if (!ctx)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_set_task_handler: failed");
+    if (!ctx) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_set_task_handler: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     adapter->task_handler = handler;
     adapter->task_handler_user_data = user_data;
@@ -1649,11 +1675,11 @@ int a2a_v03_set_task_handler(a2a_v03_context_t *ctx, a2a_task_handler_t handler,
 int a2a_v03_set_message_handler(a2a_v03_context_t *ctx, a2a_message_handler_t handler,
                                 void *user_data)
 {
-    if (!ctx)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_set_message_handler: failed");
+    if (!ctx) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_set_message_handler: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     adapter->message_handler = handler;
     adapter->message_handler_user_data = user_data;
@@ -1663,11 +1689,11 @@ int a2a_v03_set_message_handler(a2a_v03_context_t *ctx, a2a_message_handler_t ha
 int a2a_v03_set_negotiation_handler(a2a_v03_context_t *ctx, a2a_negotiation_handler_t handler,
                                     void *user_data)
 {
-    if (!ctx)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_set_negotiation_handler: failed");
+    if (!ctx) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_set_negotiation_handler: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     adapter->negotiation_handler = handler;
     adapter->negotiation_handler_user_data = user_data;
@@ -1677,11 +1703,11 @@ int a2a_v03_set_negotiation_handler(a2a_v03_context_t *ctx, a2a_negotiation_hand
 int a2a_v03_set_streaming_handler(a2a_v03_context_t *ctx, a2a_streaming_handler_t handler,
                                   void *user_data)
 {
-    if (!ctx)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_set_streaming_handler: failed");
+    if (!ctx) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_set_streaming_handler: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     adapter->streaming_handler = handler;
     adapter->streaming_handler_user_data = user_data;
@@ -1691,12 +1717,11 @@ int a2a_v03_set_streaming_handler(a2a_v03_context_t *ctx, a2a_streaming_handler_
 int a2a_v03_set_transport(a2a_v03_context_t *ctx, int (*write_fn)(void *, const void *, size_t),
                           void *transport_ctx)
 {
-    if (!ctx || !write_fn)
-        {
+    if (!ctx || !write_fn) {
         airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
-                              "a2a_v03_set_transport: invalid parameter");
+                         "a2a_v03_set_transport: invalid parameter");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     adapter->transport_write = write_fn;
     adapter->transport_ctx = transport_ctx;
@@ -1706,11 +1731,11 @@ int a2a_v03_set_transport(a2a_v03_context_t *ctx, int (*write_fn)(void *, const 
 int a2a_v03_route_request(a2a_v03_context_t *ctx, const char *method, const char *params_json,
                           char **response_json)
 {
-    if (!ctx || !method || !response_json)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_route_request: failed");
+    if (!ctx || !method || !response_json) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_v03_route_request: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!adapter->initialized) {
         airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
@@ -1722,7 +1747,8 @@ int a2a_v03_route_request(a2a_v03_context_t *ctx, const char *method, const char
         size_t buf_size = 256 + adapter->agent_count * 128;
         char *buf = (char *)AIRY_MALLOC(buf_size);
         if (!buf) {
-            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "allocation failed");
+            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                             "allocation failed");
             return AIRY_ERR_OUT_OF_MEMORY;
         }
         int pos = snprintf(buf, buf_size, "{\"agents\":[");
@@ -1754,7 +1780,8 @@ int a2a_v03_route_request(a2a_v03_context_t *ctx, const char *method, const char
         size_t buf_size = 256 + adapter->task_count * 128;
         char *buf = (char *)AIRY_MALLOC(buf_size);
         if (!buf) {
-            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "allocation failed");
+            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                             "allocation failed");
             return AIRY_ERR_OUT_OF_MEMORY;
         }
         int pos = snprintf(buf, buf_size, "{\"tasks\":[");
@@ -1771,7 +1798,8 @@ int a2a_v03_route_request(a2a_v03_context_t *ctx, const char *method, const char
         size_t buf_size = 256;
         char *buf = (char *)AIRY_MALLOC(buf_size);
         if (!buf) {
-            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "allocation failed");
+            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                             "allocation failed");
             return AIRY_ERR_OUT_OF_MEMORY;
         }
         snprintf(buf, buf_size, "{\"agent_count\":%zu,\"task_count\":%zu,\"capabilities\":%u}",
@@ -1782,7 +1810,8 @@ int a2a_v03_route_request(a2a_v03_context_t *ctx, const char *method, const char
 
     *response_json = AIRY_STRDUP("{\"error\":\"unknown method\"}");
     LOG_WARN("unknown method in route_request: method=%s", method);
-    airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "AIRY_STRDUP: error AIRY_ERR_OUT_OF_MEMORY");
+    airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                     "AIRY_STRDUP: error AIRY_ERR_OUT_OF_MEMORY");
     return AIRY_ERR_OUT_OF_MEMORY;
 }
 
@@ -1799,19 +1828,19 @@ static int a2a_adapter_destroy_cb(void *context)
 }
 static int a2a_adapter_encode_cb(void *c, const void *m, void **o, size_t *s)
 {
-    if (!c || !m || !o || !s)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_adapter_encode_cb: failed");
+    if (!c || !m || !o || !s) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_adapter_encode_cb: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     const char *msg = (const char *)m;
     size_t len = strlen(msg) + 1;
     char *buf = (char *)AIRY_MALLOC(len);
-    if (!buf)
-        {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "strlen: allocation failed");
+    if (!buf) {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "strlen: allocation failed");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
+    }
     __builtin_memcpy(buf, msg, len);
     *o = buf;
     *s = len;
@@ -1819,35 +1848,34 @@ static int a2a_adapter_encode_cb(void *c, const void *m, void **o, size_t *s)
 }
 static int a2a_adapter_decode_cb(void *c, const void *d, size_t s, void *o)
 {
-    if (!c || !d || !o || s == 0)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_adapter_decode_cb: failed");
+    if (!c || !d || !o || s == 0) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_adapter_decode_cb: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     __builtin_memcpy(o, d, s);
     return 0;
 }
 static int a2a_adapter_connect_cb(void *c, const char *e)
 {
-    if (!c)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_adapter_connect_cb: IO error");
+    if (!c) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_adapter_connect_cb: IO error");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)c;
     adapter->connected = true;
-    LOG_DEBUG("a2a_adapter_connect_cb: connected to %s",
-                      e ? e : "(unknown)");
+    LOG_DEBUG("a2a_adapter_connect_cb: connected to %s", e ? e : "(unknown)");
     (void)e;
     return 0;
 }
 static int a2a_adapter_disconnect_cb(void *c)
 {
-    if (!c)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_adapter_disconnect_cb: IO error");
+    if (!c) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_adapter_disconnect_cb: IO error");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)c;
     adapter->connected = false;
     LOG_DEBUG("a2a_adapter_disconnect_cb: disconnected");
@@ -1864,21 +1892,20 @@ static int a2a_adapter_send_cb(void *c, const void *d, size_t s)
 {
     if (!c || !d || s == 0) {
         airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
-                              "a2a_adapter_send_cb: invalid parameter");
+                         "a2a_adapter_send_cb: invalid parameter");
         return AIRY_ERR_INVALID_PARAM;
     }
 
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)c;
     if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__,
-                              "not initialized");
+        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
         return AIRY_ERR_STATE_ERROR;
     }
 
     if (!adapter->connected || !adapter->transport_write) {
         LOG_WARN("send failed: not connected or no transport, connected=%d, transport_write=%p",
-                         adapter->connected, (void *)(uintptr_t)adapter->transport_write);
-        /* 未连接无传输：连接类错误 */
+                 adapter->connected, (void *)(uintptr_t)adapter->transport_write);
+
         airy_err_push_ex(AIRY_ENOTCONN, __FILE__, __LINE__, __func__,
                          "a2a_adapter_send_cb: not connected or no transport");
         return AIRY_ENOTCONN;
@@ -1898,8 +1925,7 @@ static int a2a_adapter_send_cb(void *c, const void *d, size_t s)
                            "Content-Type: application/json" A2A_V03_FRAME_END,
                            s);
     if (hdr_len <= 0 || (size_t)hdr_len >= sizeof(header)) {
-        airy_err_push_ex(AIRY_ERR_OVERFLOW, __FILE__, __LINE__, __func__,
-                              "header overflow");
+        airy_err_push_ex(AIRY_ERR_OVERFLOW, __FILE__, __LINE__, __func__, "header overflow");
         return AIRY_ERR_OVERFLOW;
     }
 
@@ -1909,7 +1935,7 @@ static int a2a_adapter_send_cb(void *c, const void *d, size_t s)
     int rc = adapter->transport_write(adapter->transport_ctx, header, (size_t)hdr_len);
     if (rc != AIRY_OK) {
         airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__,
-                              "transport write header failed");
+                         "transport write header failed");
         return AIRY_ERR_IO;
     }
 
@@ -1917,7 +1943,7 @@ static int a2a_adapter_send_cb(void *c, const void *d, size_t s)
     rc = adapter->transport_write(adapter->transport_ctx, d, s);
     if (rc != AIRY_OK) {
         airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__,
-                              "transport write payload failed");
+                         "transport write payload failed");
         return AIRY_ERR_IO;
     }
 
@@ -1925,17 +1951,17 @@ static int a2a_adapter_send_cb(void *c, const void *d, size_t s)
     adapter->messages_sent++;
 
     LOG_DEBUG("a2a_adapter_send_cb: sent message #%llu (%zu bytes payload)",
-                      (unsigned long long)adapter->messages_sent, s);
+              (unsigned long long)adapter->messages_sent, s);
 
     return AIRY_OK;
 }
 static int a2a_adapter_receive_cb(void *c, void **d, size_t *s, uint32_t t)
 {
-    if (!c || !d || !s)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_adapter_receive_cb: failed");
+    if (!c || !d || !s) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_adapter_receive_cb: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     (void)t;
     *d = NULL;
     *s = 0;
@@ -1943,11 +1969,11 @@ static int a2a_adapter_receive_cb(void *c, void **d, size_t *s, uint32_t t)
 }
 static int a2a_adapter_handle_request_cb(void *c, const void *r, void **rp)
 {
-    if (!c || !r)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_adapter_handle_request_cb: failed");
+    if (!c || !r) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_adapter_handle_request_cb: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     if (rp)
         *rp = NULL;
     return a2a_v03_route_request((a2a_v03_context_t *)c, (const char *)r, NULL, (char **)rp);
@@ -1965,11 +1991,11 @@ static uint32_t a2a_adapter_capabilities_cb(void *c)
 }
 static int a2a_adapter_get_stats_cb(void *c, char *b, size_t s)
 {
-    if (!c || !b || s == 0)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_adapter_get_stats_cb: failed");
+    if (!c || !b || s == 0) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_adapter_get_stats_cb: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct a2a_v03_adapter_s *a = (struct a2a_v03_adapter_s *)c;
     snprintf(b, s, "{\"agents\":%zu,\"tasks\":%zu}", a->agent_count, a->task_count);
     return 0;

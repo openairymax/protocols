@@ -1,6 +1,7 @@
-// SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
-// SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
-// @owner: team-B
+/* SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd. */
+/* SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0 */
+
+/* @owner: team-B */
 /**
  * @file openai_enterprise_adapter.h
  * @brief OpenAI API Enterprise Adapter for AgentRT
@@ -188,8 +189,8 @@ typedef void (*openai_audit_handler_t)(const char *method, const char *model,
 
 openai_enterprise_config_t openai_enterprise_config_default(void);
 
-openai_enterprise_context_t *
-openai_enterprise_context_create(const openai_enterprise_config_t *config);
+openai_enterprise_context_t *openai_enterprise_context_create(
+    const openai_enterprise_config_t *config);
 void openai_enterprise_context_destroy(openai_enterprise_context_t *ctx);
 
 int openai_enterprise_register_model(openai_enterprise_context_t *ctx, const openai_model_t *model);

@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+
 /**
  * @file test_claude_adapter.c
  * @brief Anthropic Claude API Adapter Unit Tests
- * @copyright (c) 2026 SPHARX. All Rights Reserved.
  */
 // @owner: team-B
 
@@ -18,8 +18,8 @@
 static int tests_passed = 0;
 static int tests_failed = 0;
 
-#define TEST(name)                              \
-    do {                                        \
+#define TEST(name)                         \
+    do {                                   \
         LOG_INFO("  TEST: %s ... ", name); \
     } while (0)
 #define PASS()            \
@@ -27,10 +27,10 @@ static int tests_failed = 0;
         LOG_INFO("PASS"); \
         tests_passed++;   \
     } while (0)
-#define FAIL(msg)                  \
-    do {                           \
+#define FAIL(msg)                   \
+    do {                            \
         LOG_ERROR("FAIL: %s", msg); \
-        tests_failed++;            \
+        tests_failed++;             \
     } while (0)
 #define ASSERT_TRUE(cond, msg) \
     do {                       \

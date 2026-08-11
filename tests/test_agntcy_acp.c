@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+
 /**
  * @file test_agntcy_acp.c
  * @brief AGNTCY ACP协议适配器单元测试
- * @copyright (c) 2026 SPHARX. All Rights Reserved.
  */
 // @owner: team-B
 
@@ -230,8 +230,9 @@ static int test_task_orchestrate(void)
     worker.online = true;
     agntcy_agent_register(h, &worker);
 
-    int ret __attribute__((unused)) = agntcy_task_orchestrate(
-        h, "task-001", "{\"steps\":[{\"id\":\"step1\",\"action\":\"process\"}]}");
+    int ret __attribute__((unused)) =
+        agntcy_task_orchestrate(h, "task-001",
+                                "{\"steps\":[{\"id\":\"step1\",\"action\":\"process\"}]}");
     assert(ret == 0);
     assert(h->task_count == 1);
     assert(h->tasks[0]->state == AGNTCY_TASK_DISPATCHED);

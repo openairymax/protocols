@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+
 // @owner: team-B
 /**
  * @file openclaw_adapter.c
@@ -209,11 +210,11 @@ const char *openclaw_adapter_platform_version(void)
 static int openclaw_parse_endpoint(const char *endpoint_url, char *host, size_t host_size,
                                    int *port)
 {
-    if (!endpoint_url || !host || !port)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_parse_endpoint: parse error");
+    if (!endpoint_url || !host || !port) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_parse_endpoint: parse error");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     const char *url = endpoint_url;
     const char *host_start = url;
@@ -263,11 +264,10 @@ static int __attribute__((unused)) openclaw_socket_set_nonblocking(socket_fd_t f
     return ioctlsocket(fd, FIONBIO, &mode);
 #else
     int flags = fcntl(fd, F_GETFL, 0);
-    if (flags < 0)
-        {
+    if (flags < 0) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "ioctlsocket: IO error");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 #endif
 }
@@ -287,11 +287,10 @@ static int openclaw_socket_connect(socket_fd_t fd, const char *host, int port, u
     snprintf(port_str, sizeof(port_str), "%d", port);
 
     int ret = getaddrinfo(host, port_str, &hints, &result);
-    if (ret != 0)
-        {
+    if (ret != 0) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "snprintf: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     int connected = -1;
     for (rp = result; rp != NULL; rp = rp->ai_next) {
@@ -340,11 +339,10 @@ static int openclaw_socket_send(socket_fd_t fd, const void *data, size_t len, ui
         pfd.events = POLLOUT;
 
         int poll_ret = poll(&pfd, 1, (int)timeout_ms);
-        if (poll_ret <= 0)
-            {
+        if (poll_ret <= 0) {
             airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "poll: timeout");
             return AIRY_ERR_TIMEOUT;
-            }
+        }
 
         ssize_t sent = send(fd, (const char *)data + total_sent, len - total_sent, 0);
         if (sent < 0) {
@@ -366,11 +364,10 @@ static int openclaw_socket_recv(socket_fd_t fd, char *buffer, size_t buffer_size
     pfd.events = POLLIN;
 
     int poll_ret = poll(&pfd, 1, (int)timeout_ms);
-    if (poll_ret <= 0)
-        {
+    if (poll_ret <= 0) {
         airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "poll: timeout");
         return AIRY_ERR_TIMEOUT;
-        }
+    }
 
     ssize_t recvd = recv(fd, buffer, buffer_size - 1, 0);
     if (recvd < 0) {
@@ -391,11 +388,11 @@ static int openclaw_socket_recv(socket_fd_t fd, char *buffer, size_t buffer_size
 static int openclaw_serialize_message(const openclaw_message_t *msg, char *buffer,
                                       size_t buffer_size)
 {
-    if (!msg || !buffer)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_serialize_message: failed");
+    if (!msg || !buffer) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_serialize_message: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     const char *sender = msg->sender_id ? msg->sender_id : "";
     const char *receiver = msg->receiver_id ? msg->receiver_id : "";
@@ -424,11 +421,11 @@ static int openclaw_serialize_message(const openclaw_message_t *msg, char *buffe
 
 int openclaw_connect(openclaw_adapter_context_t *ctx)
 {
-    if (!ctx || !ctx->initialized)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_connect: not initialized");
+    if (!ctx || !ctx->initialized) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_connect: not initialized");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     if (ctx->connected)
         return 0;
 
@@ -462,11 +459,11 @@ int openclaw_connect(openclaw_adapter_context_t *ctx)
 
 int openclaw_disconnect(openclaw_adapter_context_t *ctx)
 {
-    if (!ctx || !ctx->connected)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_disconnect: IO error");
+    if (!ctx || !ctx->connected) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_disconnect: IO error");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     for (size_t i = 0; i < ctx->active_session_count; i++) {
         if (ctx->active_sessions[i].is_active)
@@ -489,11 +486,11 @@ bool openclaw_is_connected(const openclaw_adapter_context_t *ctx)
 
 int openclaw_register_agent(openclaw_adapter_context_t *ctx, const openclaw_agent_card_t *card)
 {
-    if (!ctx || !card || !card->agent_id)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_register_agent: failed");
+    if (!ctx || !card || !card->agent_id) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_register_agent: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     if (!ctx->connected) {
         snprintf(ctx->last_error, sizeof(ctx->last_error), "Not connected to OpenClaw platform");
         AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
@@ -520,7 +517,8 @@ int openclaw_register_agent(openclaw_adapter_context_t *ctx, const openclaw_agen
         AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
 
     ctx->registered_agents = new_agents;
-    AIRY_MEMSET(&ctx->registered_agents[ctx->registered_agent_count], 0, sizeof(openclaw_agent_card_t));
+    AIRY_MEMSET(&ctx->registered_agents[ctx->registered_agent_count], 0,
+                sizeof(openclaw_agent_card_t));
 
     openclaw_agent_card_t *target = &ctx->registered_agents[ctx->registered_agent_count];
     target->agent_id = card->agent_id ? AIRY_STRDUP(card->agent_id) : NULL;
@@ -542,11 +540,11 @@ int openclaw_discover_agents(openclaw_adapter_context_t *ctx, const char *capabi
                              openclaw_security_level_t min_level, openclaw_agent_card_t **agents,
                              size_t *count)
 {
-    if (!ctx || !agents || !count)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_discover_agents: failed");
+    if (!ctx || !agents || !count) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_discover_agents: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     *agents = NULL;
     *count = 0;
 
@@ -575,8 +573,7 @@ int openclaw_discover_agents(openclaw_adapter_context_t *ctx, const char *capabi
             (*agents)[idx] = *card;
             (*agents)[idx].agent_id = card->agent_id ? AIRY_STRDUP(card->agent_id) : NULL;
             (*agents)[idx].name = card->name ? AIRY_STRDUP(card->name) : NULL;
-            (*agents)[idx].description =
-                card->description ? AIRY_STRDUP(card->description) : NULL;
+            (*agents)[idx].description = card->description ? AIRY_STRDUP(card->description) : NULL;
             (*agents)[idx].version = card->version ? AIRY_STRDUP(card->version) : NULL;
             idx++;
         }
@@ -588,18 +585,19 @@ int openclaw_discover_agents(openclaw_adapter_context_t *ctx, const char *capabi
 
 int openclaw_unregister_agent(openclaw_adapter_context_t *ctx, const char *agent_id)
 {
-    if (!ctx || !agent_id)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_unregister_agent: failed");
+    if (!ctx || !agent_id) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_unregister_agent: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     for (size_t i = 0; i < ctx->registered_agent_count; i++) {
         if (strcmp(ctx->registered_agents[i].agent_id, agent_id) == 0) {
             openclaw_agent_card_destroy(&ctx->registered_agents[i]);
             if (i < ctx->registered_agent_count - 1) {
                 __builtin_memmove(&ctx->registered_agents[i], &ctx->registered_agents[i + 1],
-                        (ctx->registered_agent_count - i - 1) * sizeof(openclaw_agent_card_t));
+                                  (ctx->registered_agent_count - i - 1) *
+                                      sizeof(openclaw_agent_card_t));
             }
             ctx->registered_agent_count--;
             return 0;
@@ -610,11 +608,11 @@ int openclaw_unregister_agent(openclaw_adapter_context_t *ctx, const char *agent
 
 int openclaw_register_tool(openclaw_adapter_context_t *ctx, const openclaw_tool_info_t *tool)
 {
-    if (!ctx || !tool || !tool->tool_id)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_register_tool: failed");
+    if (!ctx || !tool || !tool->tool_id) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_register_tool: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     if (!ctx->connected) {
         snprintf(ctx->last_error, sizeof(ctx->last_error), "Not connected");
         AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
@@ -642,7 +640,8 @@ int openclaw_register_tool(openclaw_adapter_context_t *ctx, const openclaw_tool_
         AIRY_ERROR(AIRY_ERR_NULL_POINTER, "null pointer");
 
     ctx->registered_tools = new_tools;
-    AIRY_MEMSET(&ctx->registered_tools[ctx->registered_tool_count], 0, sizeof(openclaw_tool_info_t));
+    AIRY_MEMSET(&ctx->registered_tools[ctx->registered_tool_count], 0,
+                sizeof(openclaw_tool_info_t));
 
     openclaw_tool_info_t *target = &ctx->registered_tools[ctx->registered_tool_count];
     target->tool_id = tool->tool_id ? AIRY_STRDUP(tool->tool_id) : NULL;
@@ -660,11 +659,11 @@ int openclaw_register_tool(openclaw_adapter_context_t *ctx, const openclaw_tool_
 int openclaw_list_tools(openclaw_adapter_context_t *ctx, const char *agent_id,
                         openclaw_tool_info_t **tools, size_t *count)
 {
-    if (!ctx || !tools || !count)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_list_tools: failed");
+    if (!ctx || !tools || !count) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_list_tools: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     *tools = NULL;
     *count = 0;
 
@@ -691,15 +690,14 @@ int openclaw_list_tools(openclaw_adapter_context_t *ctx, const char *agent_id,
         if (!agent_id || (ctx->registered_tools[i].owner_agent_id &&
                           strcmp(ctx->registered_tools[i].owner_agent_id, agent_id) == 0)) {
             (*tools)[idx] = ctx->registered_tools[i];
-            (*tools)[idx].tool_id = ctx->registered_tools[i].tool_id
-                                        ? AIRY_STRDUP(ctx->registered_tools[i].tool_id)
-                                        : NULL;
-            (*tools)[idx].name = ctx->registered_tools[i].name
-                                     ? AIRY_STRDUP(ctx->registered_tools[i].name)
-                                     : NULL;
-            (*tools)[idx].description = ctx->registered_tools[i].description
-                                            ? AIRY_STRDUP(ctx->registered_tools[i].description)
-                                            : NULL;
+            (*tools)[idx].tool_id = ctx->registered_tools[i].tool_id ?
+                                        AIRY_STRDUP(ctx->registered_tools[i].tool_id) :
+                                        NULL;
+            (*tools)[idx].name =
+                ctx->registered_tools[i].name ? AIRY_STRDUP(ctx->registered_tools[i].name) : NULL;
+            (*tools)[idx].description = ctx->registered_tools[i].description ?
+                                            AIRY_STRDUP(ctx->registered_tools[i].description) :
+                                            NULL;
             idx++;
         }
     }
@@ -712,11 +710,11 @@ int openclaw_create_session(openclaw_adapter_context_t *ctx,
                             const openclaw_session_t *session_template,
                             openclaw_session_t *out_session)
 {
-    if (!ctx || !out_session)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_create_session: failed");
+    if (!ctx || !out_session) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_create_session: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     if (!ctx->connected)
         AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 
@@ -743,13 +741,14 @@ int openclaw_create_session(openclaw_adapter_context_t *ctx,
     out_session->last_activity = out_session->created_at;
     out_session->is_active = true;
 
-    openclaw_session_t *new_sessions = (openclaw_session_t *)AIRY_REALLOC(
-        ctx->active_sessions, (ctx->active_session_count + 1) * sizeof(openclaw_session_t));
+    openclaw_session_t *new_sessions =
+        (openclaw_session_t *)AIRY_REALLOC(ctx->active_sessions, (ctx->active_session_count + 1) *
+                                                                     sizeof(openclaw_session_t));
     if (!new_sessions)
         return AIRY_ERR_OUT_OF_MEMORY;
     ctx->active_sessions = new_sessions;
     __builtin_memcpy(&ctx->active_sessions[ctx->active_session_count], out_session,
-           sizeof(openclaw_session_t));
+                     sizeof(openclaw_session_t));
     ctx->active_sessions[ctx->active_session_count].session_id =
         AIRY_STRDUP(out_session->session_id);
     ctx->active_sessions[ctx->active_session_count].agent_id =
@@ -761,11 +760,11 @@ int openclaw_create_session(openclaw_adapter_context_t *ctx,
 
 int openclaw_close_session(openclaw_adapter_context_t *ctx, const char *session_id)
 {
-    if (!ctx || !session_id)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_close_session: failed");
+    if (!ctx || !session_id) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_close_session: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     for (size_t i = 0; i < ctx->active_session_count; i++) {
         if (strcmp(ctx->active_sessions[i].session_id, session_id) == 0) {
@@ -773,7 +772,7 @@ int openclaw_close_session(openclaw_adapter_context_t *ctx, const char *session_
             openclaw_session_destroy(&ctx->active_sessions[i]);
             if (i < ctx->active_session_count - 1) {
                 __builtin_memmove(&ctx->active_sessions[i], &ctx->active_sessions[i + 1],
-                        (ctx->active_session_count - i - 1) * sizeof(openclaw_session_t));
+                                  (ctx->active_session_count - i - 1) * sizeof(openclaw_session_t));
             }
             ctx->active_session_count--;
             return 0;
@@ -785,11 +784,11 @@ int openclaw_close_session(openclaw_adapter_context_t *ctx, const char *session_
 int openclaw_send_message(openclaw_adapter_context_t *ctx, const openclaw_message_t *msg,
                           openclaw_message_t *response)
 {
-    if (!ctx || !msg || !response)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_send_message: IO error");
+    if (!ctx || !msg || !response) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_send_message: IO error");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     if (!ctx->connected)
         AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 
@@ -822,15 +821,15 @@ int openclaw_send_message(openclaw_adapter_context_t *ctx, const openclaw_messag
                     AIRY_MEMSET(response, 0, sizeof(openclaw_message_t));
                     response->message_id = msg->message_id ? AIRY_STRDUP(msg->message_id) : NULL;
                     response->session_id = msg->session_id ? AIRY_STRDUP(msg->session_id) : NULL;
-                    response->sender_id =
-                        msg->receiver_id ? AIRY_STRDUP(msg->receiver_id) : NULL;
+                    response->sender_id = msg->receiver_id ? AIRY_STRDUP(msg->receiver_id) : NULL;
                     response->receiver_id = msg->sender_id ? AIRY_STRDUP(msg->sender_id) : NULL;
                     response->modality = msg->modality;
                     response->timestamp = (uint64_t)(time(NULL));
                     if (payload_len > 0) {
                         response->payload = AIRY_MALLOC(payload_len + 1);
                         if (response->payload) {
-                            __builtin_memcpy(response->payload, recv_buf + payload_offset, payload_len);
+                            __builtin_memcpy(response->payload, recv_buf + payload_offset,
+                                             payload_len);
                             ((char *)response->payload)[payload_len] = '\0';
                             response->payload_size = payload_len;
                         }
@@ -857,11 +856,11 @@ int openclaw_send_message(openclaw_adapter_context_t *ctx, const openclaw_messag
 int openclaw_delegate_task(openclaw_adapter_context_t *ctx, const openclaw_task_t *task,
                            const char *target_agent_id, openclaw_task_t *result)
 {
-    if (!ctx || !task || !result)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_delegate_task: failed");
+    if (!ctx || !task || !result) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_delegate_task: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     if (!ctx->connected)
         AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 
@@ -895,8 +894,9 @@ int openclaw_delegate_task(openclaw_adapter_context_t *ctx, const openclaw_task_
     result->progress = 1.0;
     result->completed_at = (uint64_t)(time(NULL));
 
-    openclaw_task_t *new_tasks = (openclaw_task_t *)AIRY_REALLOC(
-        ctx->tracked_tasks, (ctx->tracked_task_count + 1) * sizeof(openclaw_task_t));
+    openclaw_task_t *new_tasks =
+        (openclaw_task_t *)AIRY_REALLOC(ctx->tracked_tasks,
+                                        (ctx->tracked_task_count + 1) * sizeof(openclaw_task_t));
     if (!new_tasks)
         return AIRY_ERR_OUT_OF_MEMORY;
     ctx->tracked_tasks = new_tasks;
@@ -917,38 +917,36 @@ int openclaw_delegate_task(openclaw_adapter_context_t *ctx, const openclaw_task_
 int openclaw_query_task(openclaw_adapter_context_t *ctx, const char *task_id,
                         openclaw_task_t *result)
 {
-    if (!ctx || !task_id || !result)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_query_task: failed");
+    if (!ctx || !task_id || !result) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_query_task: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     AIRY_MEMSET(result, 0, sizeof(openclaw_task_t));
 
     for (size_t i = 0; i < ctx->tracked_task_count; i++) {
         if (ctx->tracked_tasks[i].task_id && strcmp(ctx->tracked_tasks[i].task_id, task_id) == 0) {
             *result = ctx->tracked_tasks[i];
-            result->task_id = ctx->tracked_tasks[i].task_id
-                                  ? AIRY_STRDUP(ctx->tracked_tasks[i].task_id)
-                                  : NULL;
-            result->session_id = ctx->tracked_tasks[i].session_id
-                                     ? AIRY_STRDUP(ctx->tracked_tasks[i].session_id)
-                                     : NULL;
-            result->description = ctx->tracked_tasks[i].description
-                                      ? AIRY_STRDUP(ctx->tracked_tasks[i].description)
-                                      : NULL;
-            result->assigned_agent_id =
-                ctx->tracked_tasks[i].assigned_agent_id
-                    ? AIRY_STRDUP(ctx->tracked_tasks[i].assigned_agent_id)
-                    : NULL;
-            result->input_data_json = ctx->tracked_tasks[i].input_data_json
-                                          ? AIRY_STRDUP(ctx->tracked_tasks[i].input_data_json)
-                                          : NULL;
-            result->result_json = ctx->tracked_tasks[i].result_json
-                                      ? AIRY_STRDUP(ctx->tracked_tasks[i].result_json)
-                                      : NULL;
-            result->error_message = ctx->tracked_tasks[i].error_message
-                                        ? AIRY_STRDUP(ctx->tracked_tasks[i].error_message)
-                                        : NULL;
+            result->task_id =
+                ctx->tracked_tasks[i].task_id ? AIRY_STRDUP(ctx->tracked_tasks[i].task_id) : NULL;
+            result->session_id = ctx->tracked_tasks[i].session_id ?
+                                     AIRY_STRDUP(ctx->tracked_tasks[i].session_id) :
+                                     NULL;
+            result->description = ctx->tracked_tasks[i].description ?
+                                      AIRY_STRDUP(ctx->tracked_tasks[i].description) :
+                                      NULL;
+            result->assigned_agent_id = ctx->tracked_tasks[i].assigned_agent_id ?
+                                            AIRY_STRDUP(ctx->tracked_tasks[i].assigned_agent_id) :
+                                            NULL;
+            result->input_data_json = ctx->tracked_tasks[i].input_data_json ?
+                                          AIRY_STRDUP(ctx->tracked_tasks[i].input_data_json) :
+                                          NULL;
+            result->result_json = ctx->tracked_tasks[i].result_json ?
+                                      AIRY_STRDUP(ctx->tracked_tasks[i].result_json) :
+                                      NULL;
+            result->error_message = ctx->tracked_tasks[i].error_message ?
+                                        AIRY_STRDUP(ctx->tracked_tasks[i].error_message) :
+                                        NULL;
             return 0;
         }
     }
@@ -958,11 +956,11 @@ int openclaw_query_task(openclaw_adapter_context_t *ctx, const char *task_id,
 
 int openclaw_cancel_task(openclaw_adapter_context_t *ctx, const char *task_id)
 {
-    if (!ctx || !task_id)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_cancel_task: failed");
+    if (!ctx || !task_id) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_cancel_task: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     for (size_t i = 0; i < ctx->tracked_task_count; i++) {
         if (ctx->tracked_tasks[i].task_id && strcmp(ctx->tracked_tasks[i].task_id, task_id) == 0) {
@@ -979,11 +977,11 @@ int openclaw_cancel_task(openclaw_adapter_context_t *ctx, const char *task_id)
 
 int openclaw_get_cluster_status(openclaw_adapter_context_t *ctx, openclaw_cluster_status_t *status)
 {
-    if (!ctx || !status)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_get_cluster_status: failed");
+    if (!ctx || !status) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_get_cluster_status: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     AIRY_MEMSET(status, 0, sizeof(openclaw_cluster_status_t));
     status->node_id = "agentrt-node-001";
@@ -1008,11 +1006,11 @@ int openclaw_get_cluster_status(openclaw_adapter_context_t *ctx, openclaw_cluste
 int openclaw_set_message_handler(openclaw_adapter_context_t *ctx,
                                  openclaw_message_handler_t handler, void *user_data)
 {
-    if (!ctx)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_set_message_handler: failed");
+    if (!ctx) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_set_message_handler: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     ctx->message_handler = handler;
     ctx->message_handler_data = user_data;
     return 0;
@@ -1021,11 +1019,11 @@ int openclaw_set_message_handler(openclaw_adapter_context_t *ctx,
 int openclaw_set_task_handler(openclaw_adapter_context_t *ctx, openclaw_task_handler_t handler,
                               void *user_data)
 {
-    if (!ctx)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_set_task_handler: failed");
+    if (!ctx) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_set_task_handler: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     ctx->task_handler = handler;
     ctx->task_handler_data = user_data;
     return 0;
@@ -1034,11 +1032,11 @@ int openclaw_set_task_handler(openclaw_adapter_context_t *ctx, openclaw_task_han
 int openclaw_set_event_callback(openclaw_adapter_context_t *ctx, openclaw_event_callback_t callback,
                                 void *user_data)
 {
-    if (!ctx)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_set_event_callback: failed");
+    if (!ctx) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_set_event_callback: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     ctx->event_callback = callback;
     ctx->event_callback_data = user_data;
     return 0;
@@ -1047,11 +1045,11 @@ int openclaw_set_event_callback(openclaw_adapter_context_t *ctx, openclaw_event_
 int openclaw_set_status_callback(openclaw_adapter_context_t *ctx,
                                  openclaw_status_callback_t callback, void *user_data)
 {
-    if (!ctx)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_set_status_callback: failed");
+    if (!ctx) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_set_status_callback: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     ctx->status_callback = callback;
     ctx->status_callback_data = user_data;
     return 0;
@@ -1059,11 +1057,11 @@ int openclaw_set_status_callback(openclaw_adapter_context_t *ctx,
 
 int openclaw_send_heartbeat(openclaw_adapter_context_t *ctx)
 {
-    if (!ctx || !ctx->connected)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_send_heartbeat: IO error");
+    if (!ctx || !ctx->connected) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_send_heartbeat: IO error");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     ctx->connection_uptime_sec += ctx->config.heartbeat_interval_sec;
 
@@ -1084,11 +1082,11 @@ int openclaw_send_heartbeat(openclaw_adapter_context_t *ctx)
 
 int openclaw_get_statistics(openclaw_adapter_context_t *ctx, char *stats_json, size_t buffer_size)
 {
-    if (!ctx || !stats_json || buffer_size < 64)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_get_statistics: failed");
+    if (!ctx || !stats_json || buffer_size < 64) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_get_statistics: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     openclaw_cluster_status_t status;
     openclaw_get_cluster_status(ctx, &status);
@@ -1115,10 +1113,10 @@ int openclaw_get_statistics(openclaw_adapter_context_t *ctx, char *stats_json, s
         "}"
         "}",
         OPENCLAW_ADAPTER_VERSION, OPENCLAW_PLATFORM_VERSION,
-        ctx->config.mode == OPENCLAW_MODE_STANDALONE  ? "standalone"
-        : ctx->config.mode == OPENCLAW_MODE_CLUSTERED ? "clustered"
-        : ctx->config.mode == OPENCLAW_MODE_HYBRID    ? "hybrid"
-                                                      : "embedded",
+        ctx->config.mode == OPENCLAW_MODE_STANDALONE ? "standalone" :
+        ctx->config.mode == OPENCLAW_MODE_CLUSTERED  ? "clustered" :
+        ctx->config.mode == OPENCLAW_MODE_HYBRID     ? "hybrid" :
+                                                       "embedded",
         ctx->connected ? "true" : "false", ctx->registered_agent_count, ctx->active_session_count,
         (unsigned long long)ctx->messages_sent, (unsigned long long)ctx->messages_received,
         (unsigned long long)ctx->tasks_delegated, (unsigned long long)ctx->tasks_completed,
@@ -1135,11 +1133,11 @@ static int openclaw_proto_init(void *context)
 {
     openclaw_config_t config = openclaw_config_default();
     openclaw_adapter_context_t *ctx = openclaw_adapter_create(&config);
-    if (!ctx)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_proto_init: failed");
+    if (!ctx) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_proto_init: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     *(void **)context = ctx;
     return 0;
 }
@@ -1154,11 +1152,11 @@ static int openclaw_proto_destroy(void *context)
 
 static int openclaw_proto_handle_request(void *context, const void *req, void **resp)
 {
-    if (!context || !req)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_proto_handle_request: failed");
+    if (!context || !req) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_proto_handle_request: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     openclaw_adapter_context_t *ctx = (openclaw_adapter_context_t *)context;
 
     const char *raw_request = (const char *)req;
@@ -1204,11 +1202,11 @@ static int openclaw_proto_handle_request(void *context, const void *req, void **
 
 static int openclaw_proto_get_version(void *context, char *buf, size_t max_size)
 {
-    if (!buf || max_size == 0)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openclaw_proto_get_version: failed");
+    if (!buf || max_size == 0) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openclaw_proto_get_version: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     const char *ver = openclaw_adapter_version();
     size_t len = strlen(ver);
     if (len >= max_size)
@@ -1226,31 +1224,32 @@ static uint32_t openclaw_proto_capabilities(void *context)
 
 static int openclaw_proto_encode(void *context, const void *msg, void **out_data, size_t *out_size)
 {
-    if (!context || !msg || !out_data || !out_size)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "openclaw_proto_encode: invalid param");
+    if (!context || !msg || !out_data || !out_size) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "openclaw_proto_encode: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     const unified_message_t *umsg = (const unified_message_t *)msg;
     const char *payload = umsg->payload ? (const char *)umsg->payload : "";
     size_t payload_len = umsg->payload_size;
     size_t buf_size = 256 + payload_len;
     char *buf = (char *)AIRY_MALLOC(buf_size);
-    if (!buf)
-        {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "openclaw_proto_encode: oom");
+    if (!buf) {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "openclaw_proto_encode: oom");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
-    int written = snprintf(buf, buf_size,
-                           "{\"protocol\":%d,\"direction\":%d,\"timestamp\":%llu,\"payload\":\"%.*s\"}",
-                           (int)umsg->protocol, (int)umsg->direction,
-                           (unsigned long long)umsg->timestamp, (int)payload_len, payload);
-    if (written < 0 || (size_t)written >= buf_size)
-        {
+    }
+    int written =
+        snprintf(buf, buf_size,
+                 "{\"protocol\":%d,\"direction\":%d,\"timestamp\":%llu,\"payload\":\"%.*s\"}",
+                 (int)umsg->protocol, (int)umsg->direction, (unsigned long long)umsg->timestamp,
+                 (int)payload_len, payload);
+    if (written < 0 || (size_t)written >= buf_size) {
         AIRY_FREE(buf);
-        airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__, "openclaw_proto_encode: snprintf failed");
+        airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__,
+                         "openclaw_proto_encode: snprintf failed");
         return AIRY_ERR_IO;
-        }
+    }
     *out_data = buf;
     *out_size = (size_t)written;
     return 0;
@@ -1258,24 +1257,24 @@ static int openclaw_proto_encode(void *context, const void *msg, void **out_data
 
 static int openclaw_proto_decode(void *context, const void *data, size_t size, void *out_msg)
 {
-    if (!context || !data || !out_msg)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "openclaw_proto_decode: invalid param");
+    if (!context || !data || !out_msg) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "openclaw_proto_decode: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
-    if (size == 0)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "openclaw_proto_decode: zero size");
+    }
+    if (size == 0) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "openclaw_proto_decode: zero size");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
 
     unified_message_t *msg = (unified_message_t *)out_msg;
     char *copy = (char *)AIRY_MALLOC(size + 1);
-    if (!copy)
-        {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "openclaw_proto_decode: oom");
+    if (!copy) {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "openclaw_proto_decode: oom");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
+    }
     __builtin_memcpy(copy, data, size);
     copy[size] = '\0';
 
@@ -1316,11 +1315,11 @@ static int openclaw_proto_decode(void *context, const void *data, size_t size, v
 
 static int openclaw_proto_connect(void *context, const char *endpoint)
 {
-    if (!context)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "openclaw_proto_connect: invalid param");
+    if (!context) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "openclaw_proto_connect: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     openclaw_adapter_context_t *ctx = (openclaw_adapter_context_t *)context;
     AIRY_FREE(ctx->connected_endpoint);
     ctx->connected_endpoint = endpoint ? AIRY_STRDUP(endpoint) : NULL;
@@ -1330,11 +1329,11 @@ static int openclaw_proto_connect(void *context, const char *endpoint)
 
 static int openclaw_proto_disconnect(void *context)
 {
-    if (!context)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "openclaw_proto_disconnect: invalid param");
+    if (!context) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "openclaw_proto_disconnect: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     openclaw_adapter_context_t *ctx = (openclaw_adapter_context_t *)context;
     ctx->connected = false;
     AIRY_FREE(ctx->connected_endpoint);
@@ -1352,20 +1351,20 @@ static int openclaw_proto_is_connected(void *context)
 
 static int openclaw_proto_send(void *context, const void *data, size_t size)
 {
-    if (!context || !data)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "openclaw_proto_send: invalid param");
+    if (!context || !data) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "openclaw_proto_send: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     openclaw_adapter_context_t *ctx = (openclaw_adapter_context_t *)context;
     AIRY_FREE(ctx->send_buffer);
     ctx->send_buffer = AIRY_MALLOC(size + 1);
-    if (!ctx->send_buffer)
-        {
+    if (!ctx->send_buffer) {
         ctx->send_buffer_size = 0;
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "openclaw_proto_send: oom");
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "openclaw_proto_send: oom");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
+    }
     __builtin_memcpy(ctx->send_buffer, data, size);
     ((char *)ctx->send_buffer)[size] = '\0';
     ctx->send_buffer_size = size;
@@ -1376,17 +1375,17 @@ static int openclaw_proto_send(void *context, const void *data, size_t size)
 static int openclaw_proto_receive(void *context, void **data, size_t *size, uint32_t timeout_ms)
 {
     (void)timeout_ms;
-    if (!context || !data || !size)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "openclaw_proto_receive: invalid param");
+    if (!context || !data || !size) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "openclaw_proto_receive: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     openclaw_adapter_context_t *ctx = (openclaw_adapter_context_t *)context;
-    if (!ctx->send_buffer || ctx->send_buffer_size == 0)
-        {
-        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "openclaw_proto_receive: no data");
+    if (!ctx->send_buffer || ctx->send_buffer_size == 0) {
+        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__,
+                         "openclaw_proto_receive: no data");
         return AIRY_ERR_TIMEOUT;
-        }
+    }
     *data = ctx->send_buffer;
     *size = ctx->send_buffer_size;
     ctx->bytes_received += *size;
@@ -1397,23 +1396,22 @@ static int openclaw_proto_receive(void *context, void **data, size_t *size, uint
 
 static int openclaw_proto_get_stats(void *context, char *stats_json, size_t max_size)
 {
-    if (!context || !stats_json || max_size < 64)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "openclaw_proto_get_stats: invalid param");
+    if (!context || !stats_json || max_size < 64) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "openclaw_proto_get_stats: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     openclaw_adapter_context_t *ctx = (openclaw_adapter_context_t *)context;
-    int written = snprintf(stats_json, max_size,
-                           "{\"adapter\":\"openclaw\",\"version\":\"%s\",\"connected\":%s,"
-                           "\"bytes_sent\":%llu,\"bytes_received\":%llu,"
-                           "\"messages_sent\":%llu,\"messages_received\":%llu,"
-                           "\"agents\":%zu,\"sessions\":%zu}",
-                           OPENCLAW_ADAPTER_VERSION, ctx->connected ? "true" : "false",
-                           (unsigned long long)ctx->bytes_sent,
-                           (unsigned long long)ctx->bytes_received,
-                           (unsigned long long)ctx->messages_sent,
-                           (unsigned long long)ctx->messages_received,
-                           ctx->registered_agent_count, ctx->active_session_count);
+    int written =
+        snprintf(stats_json, max_size,
+                 "{\"adapter\":\"openclaw\",\"version\":\"%s\",\"connected\":%s,"
+                 "\"bytes_sent\":%llu,\"bytes_received\":%llu,"
+                 "\"messages_sent\":%llu,\"messages_received\":%llu,"
+                 "\"agents\":%zu,\"sessions\":%zu}",
+                 OPENCLAW_ADAPTER_VERSION, ctx->connected ? "true" : "false",
+                 (unsigned long long)ctx->bytes_sent, (unsigned long long)ctx->bytes_received,
+                 (unsigned long long)ctx->messages_sent, (unsigned long long)ctx->messages_received,
+                 ctx->registered_agent_count, ctx->active_session_count);
     return (written >= 0 && (size_t)written < max_size) ? 0 : AIRY_ERR_BUFFER_TOO_SMALL;
 }
 
@@ -1426,7 +1424,7 @@ static void openclaw_adapter_init_once(void)
     g_openclaw_adapter.version = OPENCLAW_ADAPTER_VERSION;
     g_openclaw_adapter.description = "OpenClaw Platform Integration Adapter - offline private AI "
                                      "Agent platform with multimodal capabilities";
-    g_openclaw_adapter.type = AIRY_PROTOCOL_OPENCLAW;  /* P0-15: PROTO_OPENCLAW→枚举值 */
+    g_openclaw_adapter.type = AIRY_PROTOCOL_OPENCLAW;
     g_openclaw_adapter.init = openclaw_proto_init;
     g_openclaw_adapter.destroy = openclaw_proto_destroy;
     g_openclaw_adapter.encode = openclaw_proto_encode;

@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+
 // @owner: team-B
 /**
  * @file protocol_registry.c
@@ -137,7 +138,7 @@ int proto_registry_unregister(protocol_registry_t *registry, const char *name)
 
             if (i < registry->entry_count - 1) {
                 __builtin_memmove(&registry->entries[i], &registry->entries[i + 1],
-                        (registry->entry_count - i - 1) * sizeof(proto_registry_entry_t));
+                                  (registry->entry_count - i - 1) * sizeof(proto_registry_entry_t));
             }
             registry->entry_count--;
 
@@ -200,11 +201,12 @@ size_t proto_registry_list_all(protocol_registry_t *registry, proto_registry_ent
         return 0;
 
     *entries = (proto_registry_entry_t *)AIRY_CALLOC(registry->entry_count,
-                                                        sizeof(proto_registry_entry_t));
+                                                     sizeof(proto_registry_entry_t));
     if (!*entries && registry->entry_count > 0)
         return 0;
 
-    __builtin_memcpy(*entries, registry->entries, registry->entry_count * sizeof(proto_registry_entry_t));
+    __builtin_memcpy(*entries, registry->entries,
+                     registry->entry_count * sizeof(proto_registry_entry_t));
     return registry->entry_count;
 }
 
@@ -329,11 +331,11 @@ bool proto_registry_check_dependencies(const proto_registry_entry_t *entry)
 
 int proto_registry_activate(protocol_registry_t *registry, const char *name)
 {
-    if (!registry || !name)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_registry_activate: failed");
+    if (!registry || !name) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_registry_activate: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     proto_registry_entry_t *entry = proto_registry_find(registry, name);
     if (!entry)
@@ -385,11 +387,11 @@ int proto_registry_heartbeat(protocol_registry_t *registry, const char *name)
 int proto_registry_record_request(protocol_registry_t *registry, const char *name, bool success,
                                   double latency_ms)
 {
-    if (!registry || !name)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_registry_record_request: failed");
+    if (!registry || !name) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_registry_record_request: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     proto_registry_entry_t *entry = proto_registry_find(registry, name);
     if (!entry)

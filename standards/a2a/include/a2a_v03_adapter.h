@@ -1,6 +1,7 @@
-// SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
-// SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
-// @owner: team-B
+/* SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd. */
+/* SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0 */
+
+/* @owner: team-B */
 /**
  * @file a2a_v03_adapter.h
  * @brief A2A v0.3.0 Protocol Adapter for AgentRT
@@ -218,18 +219,17 @@ typedef void (*a2a_streaming_handler_t)(a2a_v03_context_t *ctx, const char *task
                                         void *user_data);
 
 /* ========== Authentication Types (PROTO-002) ========== */
-
 typedef enum {
     A2A_AUTH_NONE = 0,
-    A2A_AUTH_API_KEY,     /* Simple API key authentication */
+    A2A_AUTH_API_KEY, /* Simple API key authentication */
     A2A_AUTH_HMAC_SHA256, /* HMAC-SHA256 request signing */
-    A2A_AUTH_JWT_BEARER   /* JWT Bearer token (future) */
+    A2A_AUTH_JWT_BEARER /* JWT Bearer token (future) */
 } a2a_auth_method_t;
 
 typedef enum {
     A2A_CRYPTO_NONE = 0,
     A2A_CRYPTO_AES_128_GCM, /* AES-128-GCM payload encryption */
-    A2A_CRYPTO_AES_256_GCM  /* AES-256-GCM payload encryption */
+    A2A_CRYPTO_AES_256_GCM /* AES-256-GCM payload encryption */
 } a2a_crypto_method_t;
 
 typedef struct {
@@ -257,14 +257,13 @@ typedef struct {
     a2a_auth_method_t method;
     char shared_secret[A2A_AUTH_SECRET_MAX_LEN]; /**< HMAC key or API key */
     size_t secret_len;
-    bool require_auth;       /**< Reject unauthenticated requests */
+    bool require_auth; /**< Reject unauthenticated requests */
     int max_failed_attempts; /**< Lockout after N failures */
-    uint32_t token_ttl_sec;  /**< Token time-to-live */
-    size_t max_sessions;     /**< Max concurrent sessions */
+    uint32_t token_ttl_sec; /**< Token time-to-live */
+    size_t max_sessions; /**< Max concurrent sessions */
 } a2a_auth_config_t;
 
 /* ========== Authentication API (PROTO-002) ========== */
-
 int a2a_v03_auth_init(a2a_v03_context_t *ctx, const a2a_auth_config_t *auth_config);
 void a2a_v03_auth_shutdown(a2a_v03_context_t *ctx);
 

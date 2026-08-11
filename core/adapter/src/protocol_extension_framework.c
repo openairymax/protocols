@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+
 // @owner: team-B
 /**
  * @file protocol_extension_framework.c
@@ -83,11 +84,11 @@ void proto_ext_framework_destroy(proto_ext_framework_t *fw)
 int proto_ext_register(proto_ext_framework_t *fw, const proto_ext_descriptor_t *descriptor,
                        const proto_ext_callbacks_t *callbacks)
 {
-    if (!fw || !descriptor || !callbacks)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_register: failed");
+    if (!fw || !descriptor || !callbacks) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_ext_register: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     if (fw->adapter_count >= PROTO_EXT_MAX_ADAPTERS)
         AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 
@@ -124,11 +125,11 @@ int proto_ext_register(proto_ext_framework_t *fw, const proto_ext_descriptor_t *
 
 int proto_ext_unregister(proto_ext_framework_t *fw, const char *name)
 {
-    if (!fw || !name)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_unregister: failed");
+    if (!fw || !name) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_ext_unregister: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, name) == 0) {
             if (fw->adapters[i].state >= PROTO_EXT_STATE_RUNNING) {
@@ -138,7 +139,7 @@ int proto_ext_unregister(proto_ext_framework_t *fw, const char *name)
                 proto_ext_unload(fw, name);
             }
             __builtin_memmove(&fw->adapters[i], &fw->adapters[i + 1],
-                    (fw->adapter_count - i - 1) * sizeof(proto_ext_adapter_entry_t));
+                              (fw->adapter_count - i - 1) * sizeof(proto_ext_adapter_entry_t));
             fw->adapter_count--;
             return 0;
         }
@@ -148,11 +149,10 @@ int proto_ext_unregister(proto_ext_framework_t *fw, const char *name)
 
 int proto_ext_load(proto_ext_framework_t *fw, const char *name, const char *config_json)
 {
-    if (!fw || !name)
-        {
+    if (!fw || !name) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_load: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, name) == 0) {
             if (fw->adapters[i].state != PROTO_EXT_STATE_UNLOADED)
@@ -186,11 +186,11 @@ int proto_ext_load(proto_ext_framework_t *fw, const char *name, const char *conf
 
 int proto_ext_unload(proto_ext_framework_t *fw, const char *name)
 {
-    if (!fw || !name)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_unload: failed");
+    if (!fw || !name) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_ext_unload: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, name) == 0) {
             if (fw->adapters[i].callbacks.on_unload) {
@@ -206,11 +206,10 @@ int proto_ext_unload(proto_ext_framework_t *fw, const char *name)
 
 int proto_ext_start(proto_ext_framework_t *fw, const char *name)
 {
-    if (!fw || !name)
-        {
+    if (!fw || !name) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_start: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, name) == 0) {
             if (fw->adapters[i].state < PROTO_EXT_STATE_LOADED) {
@@ -234,11 +233,10 @@ int proto_ext_start(proto_ext_framework_t *fw, const char *name)
 
 int proto_ext_stop(proto_ext_framework_t *fw, const char *name)
 {
-    if (!fw || !name)
-        {
+    if (!fw || !name) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_stop: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, name) == 0) {
             if (fw->adapters[i].callbacks.on_stop) {
@@ -256,11 +254,11 @@ int proto_ext_stop(proto_ext_framework_t *fw, const char *name)
 int proto_ext_send_message(proto_ext_framework_t *fw, const char *adapter_name,
                            const unified_message_t *message)
 {
-    if (!fw || !adapter_name || !message)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_send_message: IO error");
+    if (!fw || !adapter_name || !message) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_ext_send_message: IO error");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, adapter_name) == 0) {
             if (fw->adapters[i].state != PROTO_EXT_STATE_RUNNING)
@@ -281,8 +279,9 @@ int proto_ext_send_message(proto_ext_framework_t *fw, const char *adapter_name,
                     char params_json[64];
                     snprintf(params_json, sizeof(params_json), "{\"size\":%zu}", encoded_size);
                     char *response = NULL;
-                    int send_rc = fw->adapters[i].callbacks.handle_request(
-                        fw->adapters[i].adapter_context, "send", params_json, &response);
+                    int send_rc =
+                        fw->adapters[i].callbacks.handle_request(fw->adapters[i].adapter_context,
+                                                                 "send", params_json, &response);
                     AIRY_FREE(response);
                     if (send_rc != 0) {
                         fw->adapters[i].error_count++;
@@ -304,11 +303,11 @@ int proto_ext_send_message(proto_ext_framework_t *fw, const char *adapter_name,
 int proto_ext_handle_request(proto_ext_framework_t *fw, const char *adapter_name,
                              const char *method, const char *params_json, char **response_json)
 {
-    if (!fw || !adapter_name || !response_json)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_handle_request: failed");
+    if (!fw || !adapter_name || !response_json) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_ext_handle_request: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, adapter_name) == 0) {
             if (fw->adapters[i].state != PROTO_EXT_STATE_RUNNING)
@@ -334,11 +333,11 @@ int proto_ext_handle_request(proto_ext_framework_t *fw, const char *adapter_name
 int proto_ext_auto_route(proto_ext_framework_t *fw, const unified_message_t *message,
                          char **adapter_name)
 {
-    if (!fw || !message || !adapter_name)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_auto_route: failed");
+    if (!fw || !message || !adapter_name) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_ext_auto_route: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (fw->adapters[i].state != PROTO_EXT_STATE_RUNNING)
@@ -364,11 +363,11 @@ int proto_ext_auto_route(proto_ext_framework_t *fw, const unified_message_t *mes
 int proto_ext_negotiate(proto_ext_framework_t *fw, const char *adapter_name,
                         const char *client_version, char **agreed_version)
 {
-    if (!fw || !adapter_name)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_negotiate: failed");
+    if (!fw || !adapter_name) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_ext_negotiate: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, adapter_name) == 0) {
             if (!fw->adapters[i].callbacks.negotiate_version) {
@@ -386,11 +385,11 @@ int proto_ext_add_middleware(proto_ext_framework_t *fw, const char *name,
                              proto_middleware_fn middleware, proto_ext_priority_t priority,
                              void *user_data)
 {
-    if (!fw || !name || !middleware)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_add_middleware: failed");
+    if (!fw || !name || !middleware) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_ext_add_middleware: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     if (fw->middleware_count >= PROTO_EXT_MAX_MIDDLEWARE)
         AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
 
@@ -426,15 +425,15 @@ int proto_ext_add_middleware(proto_ext_framework_t *fw, const char *name,
 
 int proto_ext_remove_middleware(proto_ext_framework_t *fw, const char *name)
 {
-    if (!fw || !name)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_remove_middleware: failed");
+    if (!fw || !name) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_ext_remove_middleware: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     for (size_t i = 0; i < fw->middleware_count; i++) {
         if (strcmp(fw->middlewares[i].name, name) == 0) {
             __builtin_memmove(&fw->middlewares[i], &fw->middlewares[i + 1],
-                    (fw->middleware_count - i - 1) * sizeof(proto_middleware_t));
+                              (fw->middleware_count - i - 1) * sizeof(proto_middleware_t));
             fw->middleware_count--;
             return 0;
         }
@@ -444,11 +443,11 @@ int proto_ext_remove_middleware(proto_ext_framework_t *fw, const char *name)
 
 int proto_ext_enable_middleware(proto_ext_framework_t *fw, const char *name)
 {
-    if (!fw || !name)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_enable_middleware: failed");
+    if (!fw || !name) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_ext_enable_middleware: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     for (size_t i = 0; i < fw->middleware_count; i++) {
         if (strcmp(fw->middlewares[i].name, name) == 0) {
             fw->middlewares[i].enabled = true;
@@ -460,11 +459,11 @@ int proto_ext_enable_middleware(proto_ext_framework_t *fw, const char *name)
 
 int proto_ext_disable_middleware(proto_ext_framework_t *fw, const char *name)
 {
-    if (!fw || !name)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_disable_middleware: failed");
+    if (!fw || !name) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_ext_disable_middleware: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     for (size_t i = 0; i < fw->middleware_count; i++) {
         if (strcmp(fw->middlewares[i].name, name) == 0) {
             fw->middlewares[i].enabled = false;
@@ -477,11 +476,11 @@ int proto_ext_disable_middleware(proto_ext_framework_t *fw, const char *name)
 int proto_ext_process_middleware_chain(proto_ext_framework_t *fw, const unified_message_t *request,
                                        unified_message_t *response)
 {
-    if (!fw || !request || !response)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_process_middleware_chain: failed");
+    if (!fw || !request || !response) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_ext_process_middleware_chain: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     for (size_t i = 0; i < fw->middleware_count; i++) {
         if (!fw->middlewares[i].enabled)
@@ -496,11 +495,11 @@ int proto_ext_process_middleware_chain(proto_ext_framework_t *fw, const unified_
 int proto_ext_get_adapter_stats(proto_ext_framework_t *fw, const char *name,
                                 proto_ext_stats_t *stats)
 {
-    if (!fw || !name || !stats)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_get_adapter_stats: failed");
+    if (!fw || !name || !stats) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_ext_get_adapter_stats: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     for (size_t i = 0; i < fw->adapter_count; i++) {
         if (strcmp(fw->adapters[i].descriptor.name, name) == 0) {
             AIRY_STRNCPY_TERM(stats->name, fw->adapters[i].descriptor.name, PROTO_EXT_MAX_NAME_LEN);
@@ -516,11 +515,11 @@ int proto_ext_get_adapter_stats(proto_ext_framework_t *fw, const char *name,
 
 int proto_ext_list_adapters(proto_ext_framework_t *fw, char **names_json)
 {
-    if (!fw || !names_json)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_list_adapters: failed");
+    if (!fw || !names_json) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_ext_list_adapters: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     size_t buf_size = 4096 + fw->adapter_count * 128;
     char *buf = AIRY_MALLOC(buf_size);
     if (!buf)
@@ -563,11 +562,11 @@ int proto_ext_list_adapters(proto_ext_framework_t *fw, char **names_json)
 
 int proto_ext_list_capabilities(proto_ext_framework_t *fw, char **caps_json)
 {
-    if (!fw || !caps_json)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_list_capabilities: failed");
+    if (!fw || !caps_json) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_ext_list_capabilities: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     uint32_t all_caps = 0;
     for (size_t i = 0; i < fw->adapter_count; i++) {
@@ -631,11 +630,11 @@ int proto_ext_list_capabilities(proto_ext_framework_t *fw, char **caps_json)
 int proto_ext_find_by_capability(proto_ext_framework_t *fw, uint32_t capability,
                                  char ***adapter_names, size_t *count)
 {
-    if (!fw || !adapter_names || !count)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_find_by_capability: failed");
+    if (!fw || !adapter_names || !count) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_ext_find_by_capability: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     size_t found = 0;
     char **results = AIRY_CALLOC(fw->adapter_count, sizeof(char *));
@@ -703,11 +702,11 @@ static int json_extract_int(const char *json, const char *key, int default_val)
 
 int proto_ext_load_from_config(proto_ext_framework_t *fw, const char *config_json)
 {
-    if (!fw || !config_json)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "proto_ext_load_from_config: failed");
+    if (!fw || !config_json) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "proto_ext_load_from_config: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     const char *adapters_start = strstr(config_json, "\"adapters\"");
     if (!adapters_start) {
@@ -757,7 +756,8 @@ int proto_ext_load_from_config(proto_ext_framework_t *fw, const char *config_jso
             if (desc)
                 AIRY_STRNCPY_TERM(desc_struct.description, desc, sizeof(desc_struct.description));
             else {
-                AIRY_STRNCPY_TERM(desc_struct.description, "Loaded from config", sizeof(desc_struct.description));
+                AIRY_STRNCPY_TERM(desc_struct.description, "Loaded from config",
+                                  sizeof(desc_struct.description));
             }
             if (author)
                 AIRY_STRNCPY_TERM(desc_struct.author, author, sizeof(desc_struct.author));
@@ -805,11 +805,11 @@ static int fw_adapter_destroy(void *ctx)
 
 static int fw_adapter_encode(void *ctx, const void *msg, void **out_data, size_t *out_size)
 {
-    if (!msg || !out_data || !out_size)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_encode: failed");
+    if (!msg || !out_data || !out_size) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "fw_adapter_encode: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     unified_message_t *umsg = (unified_message_t *)msg;
     size_t in_len =
         umsg->payload_size ? umsg->payload_size : (umsg->payload ? strlen(umsg->payload) : 0);
@@ -829,11 +829,11 @@ static int fw_adapter_encode(void *ctx, const void *msg, void **out_data, size_t
 
 static int fw_adapter_decode(void *ctx, const void *data, size_t size, void *out_msg)
 {
-    if (!data || !out_msg || size == 0)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_decode: failed");
+    if (!data || !out_msg || size == 0) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "fw_adapter_decode: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     unified_message_t *msg = (unified_message_t *)out_msg;
     AIRY_MEMSET(msg, 0, sizeof(*msg));
@@ -853,11 +853,11 @@ static int fw_adapter_is_connected(void *ctx)
 
 static int fw_adapter_get_stats(void *ctx, char *stats_json, size_t max_size)
 {
-    if (!stats_json || max_size < 64)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_get_stats: failed");
+    if (!stats_json || max_size < 64) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "fw_adapter_get_stats: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     int written = snprintf(stats_json, max_size,
                            "{\"adapter\":\"protocol_extension_framework\",\"status\":\"active\"}");
     return (written >= 0 && (size_t)written < max_size) ? 0 : -2;
@@ -865,11 +865,11 @@ static int fw_adapter_get_stats(void *ctx, char *stats_json, size_t max_size)
 
 static int fw_adapter_connect(void *ctx, const char *endpoint)
 {
-    if (!endpoint)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_connect: IO error");
+    if (!endpoint) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "fw_adapter_connect: IO error");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     if (!g_framework_instance)
         AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
     for (size_t i = 0; i < g_framework_instance->adapter_count; i++) {
@@ -896,11 +896,11 @@ static int fw_adapter_disconnect(void *ctx)
 
 static int fw_adapter_send(void *ctx, const void *data, size_t size)
 {
-    if (!data || size == 0)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_send: IO error");
+    if (!data || size == 0) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "fw_adapter_send: IO error");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     if (!g_framework_instance)
         AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
     for (size_t i = 0; i < g_framework_instance->adapter_count; i++) {
@@ -916,11 +916,11 @@ static int fw_adapter_send(void *ctx, const void *data, size_t size)
 
 static int fw_adapter_receive(void *ctx, void **data, size_t *size, uint32_t timeout_ms)
 {
-    if (!data || !size)
-        {
-        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "fw_adapter_receive: timeout");
+    if (!data || !size) {
+        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__,
+                         "fw_adapter_receive: timeout");
         return AIRY_ERR_TIMEOUT;
-        }
+    }
     if (!g_framework_instance)
         AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
     *data = NULL;
@@ -935,11 +935,11 @@ static int fw_adapter_receive(void *ctx, void **data, size_t *size, uint32_t tim
 
 static int fw_adapter_handle_request(void *ctx, const void *req, void **resp)
 {
-    if (!req || !resp)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "fw_adapter_handle_request: failed");
+    if (!req || !resp) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "fw_adapter_handle_request: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     if (!g_framework_instance)
         AIRY_ERROR(AIRY_ERR_INVALID_PARAM, "invalid parameter");
     size_t running = 0;
