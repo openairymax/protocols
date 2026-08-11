@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+
 // @owner: team-B
 /**
  * @file claude_adapter.c
@@ -30,10 +31,9 @@
 #include <string.h>
 #include <time.h>
 
-
 #ifdef AIRY_HAS_CURL
 #include <cjson/cJSON.h>
-/* P0.18.2: 引入 cjson_helpers.h 提供 CJSON_PARSE_GUARD/CJSON_AUTO_FREE 宏 */
+
 #include <cjson_helpers.h>
 #include <curl/curl.h>
 #endif
@@ -106,7 +106,7 @@ static int claude_api_call(const char *api_key, const char *base_url, const char
     }
 
     if (http_code == 200 && response_buf.data) {
-        /* P0.18.2: 模式 C — 用 do { ... } while (0) + break 配合 CJSON_PARSE_GUARD */
+
         do {
             CJSON_PARSE_GUARD(root, response_buf.data, { break; });
             cJSON *content_arr = cJSON_GetObjectItem(root, "content");
@@ -116,13 +116,13 @@ static int claude_api_call(const char *api_key, const char *base_url, const char
                     cJSON *text = cJSON_GetObjectItem(first, "text");
                     if (text && text->valuestring) {
                         snprintf(out_buf, buf_len, "%s", text->valuestring);
-                        /* root 由 CJSON_AUTO_FREE 自动释放 */
+
                         AIRY_FREE(response_buf.data);
                         return (int)strlen(out_buf);
                     }
                 }
             }
-            /* root 由 CJSON_AUTO_FREE 自动释放 */
+
         } while (0);
     }
 
@@ -265,7 +265,7 @@ static int claude_proto_handle_request(void *context, const void *req, void **re
 
 #ifdef AIRY_HAS_CURL
     if (request->payload) {
-        /* P0.18.2: 模式 C — 用 do { ... } while (0) + break 配合 CJSON_PARSE_GUARD */
+
         do {
             CJSON_PARSE_GUARD(json, request->payload, { break; });
             cJSON *msgs = cJSON_GetObjectItem(json, "messages");
@@ -283,7 +283,7 @@ static int claude_proto_handle_request(void *context, const void *req, void **re
                         system_content = cs;
                 }
             }
-            /* json 由 CJSON_AUTO_FREE 自动释放 */
+
         } while (0);
     }
 #else
@@ -308,7 +308,8 @@ static int claude_proto_handle_request(void *context, const void *req, void **re
     response->payload_size = resp_len;
     response->status = 200;
     if (request) {
-        AIRY_STRNCPY_TERM(response->correlation_id, request->correlation_id, sizeof(response->correlation_id));
+        AIRY_STRNCPY_TERM(response->correlation_id, request->correlation_id,
+                          sizeof(response->correlation_id));
     }
 
     ctx->total_requests++;
@@ -604,7 +605,6 @@ int claude_messages_create(claude_adapter_context_t *ctx, const claude_message_t
     if (api_result <= 0)
         return AIRY_ERR_UNKNOWN;
 
-    /* P0.18.2: 模式 A — CJSON_PARSE_GUARD 自动释放 + NULL 检查 */
     CJSON_PARSE_GUARD(root, api_response, { return AIRY_ERR_UNKNOWN; });
 
     static uint32_t msg_counter = 0;
@@ -622,8 +622,9 @@ int claude_messages_create(claude_adapter_context_t *ctx, const claude_message_t
         block_count = cJSON_GetArraySize(content_arr);
 
     if (block_count > 0) {
-        response->content_blocks = (claude_content_block_t *)AIRY_CALLOC(
-            (size_t)block_count, sizeof(claude_content_block_t));
+        response->content_blocks =
+            (claude_content_block_t *)AIRY_CALLOC((size_t)block_count,
+                                                  sizeof(claude_content_block_t));
         response->block_count = (size_t)block_count;
         for (int i = 0; i < block_count; i++) {
             cJSON *block = cJSON_GetArrayItem(content_arr, i);
@@ -657,7 +658,6 @@ int claude_messages_create(claude_adapter_context_t *ctx, const claude_message_t
         response->output_tokens = ot ? ot->valueint : 0;
     }
 
-    /* root 由 CJSON_AUTO_FREE 自动释放 */
     ctx->total_tokens_in += response->input_tokens;
     ctx->total_tokens_out += response->output_tokens;
     return 0;
@@ -762,7 +762,7 @@ int claude_list_models(claude_adapter_context_t *ctx, claude_model_info_t **mode
         return AIRY_ERR_NULL_POINTER;
 
     *models = (claude_model_info_t *)AIRY_CALLOC((size_t)g_builtin_model_count,
-                                                    sizeof(claude_model_info_t));
+                                                 sizeof(claude_model_info_t));
     if (!*models)
         return AIRY_ERR_OUT_OF_MEMORY;
 
@@ -834,31 +834,32 @@ int claude_get_usage_statistics(claude_adapter_context_t *ctx, char *stats_json,
 
 static int claude_proto_encode(void *context, const void *msg, void **out_data, size_t *out_size)
 {
-    if (!context || !msg || !out_data || !out_size)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "claude_proto_encode: invalid param");
+    if (!context || !msg || !out_data || !out_size) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "claude_proto_encode: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     const unified_message_t *umsg = (const unified_message_t *)msg;
     const char *payload = umsg->payload ? (const char *)umsg->payload : "";
     size_t payload_len = umsg->payload_size;
     size_t buf_size = 256 + payload_len;
     char *buf = (char *)AIRY_MALLOC(buf_size);
-    if (!buf)
-        {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "claude_proto_encode: oom");
+    if (!buf) {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "claude_proto_encode: oom");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
-    int written = snprintf(buf, buf_size,
-                           "{\"protocol\":%d,\"direction\":%d,\"timestamp\":%llu,\"payload\":\"%.*s\"}",
-                           (int)umsg->protocol, (int)umsg->direction,
-                           (unsigned long long)umsg->timestamp, (int)payload_len, payload);
-    if (written < 0 || (size_t)written >= buf_size)
-        {
+    }
+    int written =
+        snprintf(buf, buf_size,
+                 "{\"protocol\":%d,\"direction\":%d,\"timestamp\":%llu,\"payload\":\"%.*s\"}",
+                 (int)umsg->protocol, (int)umsg->direction, (unsigned long long)umsg->timestamp,
+                 (int)payload_len, payload);
+    if (written < 0 || (size_t)written >= buf_size) {
         AIRY_FREE(buf);
-        airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__, "claude_proto_encode: snprintf failed/truncated");
+        airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__,
+                         "claude_proto_encode: snprintf failed/truncated");
         return AIRY_ERR_IO;
-        }
+    }
     *out_data = buf;
     *out_size = (size_t)written;
     return 0;
@@ -866,24 +867,24 @@ static int claude_proto_encode(void *context, const void *msg, void **out_data, 
 
 static int claude_proto_decode(void *context, const void *data, size_t size, void *out_msg)
 {
-    if (!context || !data || !out_msg)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "claude_proto_decode: invalid param");
+    if (!context || !data || !out_msg) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "claude_proto_decode: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
-    if (size == 0)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "claude_proto_decode: zero size");
+    }
+    if (size == 0) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "claude_proto_decode: zero size");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
 
     unified_message_t *msg = (unified_message_t *)out_msg;
     char *copy = (char *)AIRY_MALLOC(size + 1);
-    if (!copy)
-        {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "claude_proto_decode: oom");
+    if (!copy) {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "claude_proto_decode: oom");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
+    }
     __builtin_memcpy(copy, data, size);
     copy[size] = '\0';
 
@@ -924,11 +925,11 @@ static int claude_proto_decode(void *context, const void *data, size_t size, voi
 
 static int claude_proto_connect(void *context, const char *endpoint)
 {
-    if (!context)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "claude_proto_connect: invalid param");
+    if (!context) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "claude_proto_connect: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     claude_adapter_context_t *ctx = (claude_adapter_context_t *)context;
     AIRY_FREE(ctx->connected_endpoint);
     ctx->connected_endpoint = endpoint ? AIRY_STRDUP(endpoint) : NULL;
@@ -938,11 +939,11 @@ static int claude_proto_connect(void *context, const char *endpoint)
 
 static int claude_proto_disconnect(void *context)
 {
-    if (!context)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "claude_proto_disconnect: invalid param");
+    if (!context) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "claude_proto_disconnect: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     claude_adapter_context_t *ctx = (claude_adapter_context_t *)context;
     ctx->is_connected = false;
     AIRY_FREE(ctx->connected_endpoint);
@@ -960,20 +961,20 @@ static int claude_proto_is_connected(void *context)
 
 static int claude_proto_send(void *context, const void *data, size_t size)
 {
-    if (!context || !data)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "claude_proto_send: invalid param");
+    if (!context || !data) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "claude_proto_send: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     claude_adapter_context_t *ctx = (claude_adapter_context_t *)context;
     AIRY_FREE(ctx->send_buffer);
     ctx->send_buffer = AIRY_MALLOC(size + 1);
-    if (!ctx->send_buffer)
-        {
+    if (!ctx->send_buffer) {
         ctx->send_buffer_size = 0;
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "claude_proto_send: oom");
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "claude_proto_send: oom");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
+    }
     __builtin_memcpy(ctx->send_buffer, data, size);
     ((char *)ctx->send_buffer)[size] = '\0';
     ctx->send_buffer_size = size;
@@ -984,17 +985,17 @@ static int claude_proto_send(void *context, const void *data, size_t size)
 static int claude_proto_receive(void *context, void **data, size_t *size, uint32_t timeout_ms)
 {
     (void)timeout_ms;
-    if (!context || !data || !size)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "claude_proto_receive: invalid param");
+    if (!context || !data || !size) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "claude_proto_receive: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     claude_adapter_context_t *ctx = (claude_adapter_context_t *)context;
-    if (!ctx->send_buffer || ctx->send_buffer_size == 0)
-        {
-        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "claude_proto_receive: no data");
+    if (!ctx->send_buffer || ctx->send_buffer_size == 0) {
+        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__,
+                         "claude_proto_receive: no data");
         return AIRY_ERR_TIMEOUT;
-        }
+    }
     *data = ctx->send_buffer;
     *size = ctx->send_buffer_size;
     ctx->bytes_received += *size;
@@ -1005,24 +1006,23 @@ static int claude_proto_receive(void *context, void **data, size_t *size, uint32
 
 static int claude_proto_get_stats(void *context, char *stats_json, size_t max_size)
 {
-    if (!context || !stats_json || max_size < 64)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "claude_proto_get_stats: invalid param");
+    if (!context || !stats_json || max_size < 64) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "claude_proto_get_stats: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     claude_adapter_context_t *ctx = (claude_adapter_context_t *)context;
-    int written = snprintf(stats_json, max_size,
-                           "{\"adapter\":\"claude\",\"version\":\"%s\",\"connected\":%s,"
-                           "\"bytes_sent\":%llu,\"bytes_received\":%llu,"
-                           "\"total_requests\":%llu,\"total_tokens_in\":%llu,"
-                           "\"total_tokens_out\":%llu,\"total_tool_calls\":%llu}",
-                           CLAUDE_ADAPTER_VERSION, ctx->is_connected ? "true" : "false",
-                           (unsigned long long)ctx->bytes_sent,
-                           (unsigned long long)ctx->bytes_received,
-                           (unsigned long long)ctx->total_requests,
-                           (unsigned long long)ctx->total_tokens_in,
-                           (unsigned long long)ctx->total_tokens_out,
-                           (unsigned long long)ctx->total_tool_calls);
+    int written =
+        snprintf(stats_json, max_size,
+                 "{\"adapter\":\"claude\",\"version\":\"%s\",\"connected\":%s,"
+                 "\"bytes_sent\":%llu,\"bytes_received\":%llu,"
+                 "\"total_requests\":%llu,\"total_tokens_in\":%llu,"
+                 "\"total_tokens_out\":%llu,\"total_tool_calls\":%llu}",
+                 CLAUDE_ADAPTER_VERSION, ctx->is_connected ? "true" : "false",
+                 (unsigned long long)ctx->bytes_sent, (unsigned long long)ctx->bytes_received,
+                 (unsigned long long)ctx->total_requests, (unsigned long long)ctx->total_tokens_in,
+                 (unsigned long long)ctx->total_tokens_out,
+                 (unsigned long long)ctx->total_tool_calls);
     return (written >= 0 && (size_t)written < max_size) ? 0 : AIRY_ERR_BUFFER_TOO_SMALL;
 }
 
@@ -1036,7 +1036,7 @@ const proto_adapter_t *claude_get_protocol_adapter(void)
         adapter.version = CLAUDE_ADAPTER_VERSION;
         adapter.description = "Anthropic Claude API Adapter - advanced LLM with extended thinking, "
                               "vision, and tool use capabilities";
-        adapter.type = AIRY_PROTOCOL_CLAUDE;  /* P0-15: PROTO_CLAUDE→枚举值 */
+        adapter.type = AIRY_PROTOCOL_CLAUDE;
         adapter.init = claude_proto_init;
         adapter.destroy = claude_proto_destroy;
         adapter.encode = claude_proto_encode;

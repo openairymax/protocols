@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+
 // @owner: team-B
 /**
  * @file protocol_router.c
@@ -40,7 +41,6 @@ typedef struct {
 } route_match_info_t;
 
 // ============================================================================
-// 内部数据结构
 // ============================================================================
 
 typedef struct rule_node_s {
@@ -55,7 +55,6 @@ struct protocol_router_s {
     size_t rule_count;
     route_decision_func_t decision_func;
 
-    // 统计信息
     uint64_t total_messages_routed;
     uint64_t messages_routed_success;
     uint64_t messages_routed_failed;
@@ -63,7 +62,6 @@ struct protocol_router_s {
 };
 
 // ============================================================================
-// 静态函数声明
 // ============================================================================
 
 static rule_node_t *create_rule_node(const protocol_rule_t *rule,
@@ -74,7 +72,6 @@ static int default_decision_func(const unified_message_t *message, const protoco
                                  size_t rule_count);
 
 // ============================================================================
-// 核心API实现
 // ============================================================================
 
 protocol_router_handle_t protocol_router_create(protocol_type_t default_protocol)
@@ -105,7 +102,6 @@ void protocol_router_destroy(protocol_router_handle_t router)
 
     struct protocol_router_s *r = (struct protocol_router_s *)router;
 
-    // 销毁所有规则节点
     rule_node_t *node = r->rules;
     while (node) {
         rule_node_t *next = node->next;
@@ -120,20 +116,20 @@ int protocol_router_add_rule(protocol_router_handle_t router, const protocol_rul
                              message_transformer_t transformer)
 {
     if (!router || !rule) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_router_add_rule: failed");
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "protocol_router_add_rule: failed");
         return AIRY_ERR_UNKNOWN;
     }
 
     struct protocol_router_s *r = (struct protocol_router_s *)router;
 
-    // 创建规则节点
     rule_node_t *node = create_rule_node(rule, transformer);
     if (!node) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "create_rule_node: failed");
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "create_rule_node: failed");
         return AIRY_ERR_UNKNOWN;
     }
 
-    // 添加到链表（按优先级排序）
     rule_node_t **pp = &r->rules;
     while (*pp && (*pp)->rule.priority <= rule->priority) {
         pp = &(*pp)->next;
@@ -157,7 +153,6 @@ int protocol_router_remove_rule(protocol_router_handle_t router,
 
     struct protocol_router_s *r = (struct protocol_router_s *)router;
 
-    /* 遍历链表，删除所有 source_endpoint 精确匹配的规则节点 */
     rule_node_t **pp = &r->rules;
     int removed = 0;
     while (*pp) {
@@ -166,7 +161,7 @@ int protocol_router_remove_rule(protocol_router_handle_t router,
         if (rule->source_endpoint) {
             matched = (strcmp(rule->source_endpoint, source_endpoint_pattern) == 0);
         } else {
-            /* 无源端点（通配）的规则：仅当请求删除 "*" 时视为匹配 */
+
             matched = (strcmp(source_endpoint_pattern, "*") == 0);
         }
 
@@ -188,7 +183,8 @@ int protocol_router_route(protocol_router_handle_t router, const unified_message
                           unified_message_t *transformed)
 {
     if (!router || !message || !transformed) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_router_route: failed");
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "protocol_router_route: failed");
         return AIRY_ERR_UNKNOWN;
     }
 
@@ -197,7 +193,6 @@ int protocol_router_route(protocol_router_handle_t router, const unified_message
 
     uint64_t start_time = airy_time_ns();
 
-    // 收集所有规则到临时数组供决策函数使用
     protocol_rule_t *rule_array = NULL;
     if (r->rule_count > 0) {
         SAFE_MALLOC_ARRAY(rule_array, r->rule_count, sizeof(protocol_rule_t));
@@ -212,13 +207,11 @@ int protocol_router_route(protocol_router_handle_t router, const unified_message
         }
     }
 
-    // 使用决策函数选择规则
     int rule_index = -1;
     if (r->decision_func && rule_array) {
         rule_index = r->decision_func(message, rule_array, r->rule_count);
     }
 
-    // 查找匹配的规则节点
     rule_node_t *matched_node = NULL;
     if (rule_index >= 0 && rule_index < (int)r->rule_count) {
         rule_node_t *node = r->rules;
@@ -230,9 +223,7 @@ int protocol_router_route(protocol_router_handle_t router, const unified_message
         }
     }
 
-    // 如果没有匹配规则，使用默认协议
     if (!matched_node) {
-        // 直接复制消息，只修改协议类型为默认协议
         *transformed = *message;
         transformed->protocol = r->default_protocol;
 
@@ -249,7 +240,6 @@ int protocol_router_route(protocol_router_handle_t router, const unified_message
         return 0;
     }
 
-    // 应用转换器
     message_transformer_t transformer = matched_node->transformer;
     if (!transformer) {
         transformer = protocol_transformer_default;
@@ -257,13 +247,13 @@ int protocol_router_route(protocol_router_handle_t router, const unified_message
 
     int result = transformer(message, transformed, matched_node->rule.transformer_context);
 
-    // 更新目标协议和端点（如果转换器未设置）
     if (result == 0) {
         if (transformed->protocol == PROTOCOL_CUSTOM) {
             transformed->protocol = matched_node->rule.target_protocol;
         }
         if (!transformed->endpoint[0] && matched_node->rule.target_endpoint) {
-            AIRY_STRNCPY_TERM(transformed->endpoint, matched_node->rule.target_endpoint, sizeof(transformed->endpoint));
+            AIRY_STRNCPY_TERM(transformed->endpoint, matched_node->rule.target_endpoint,
+                              sizeof(transformed->endpoint));
         }
     }
 
@@ -289,7 +279,8 @@ int protocol_router_route_batch(protocol_router_handle_t router, const unified_m
                                 size_t count, unified_message_t *transformed)
 {
     if (!router || !messages || !transformed || count == 0) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_router_route_batch: failed");
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "protocol_router_route_batch: failed");
         return AIRY_ERR_UNKNOWN;
     }
 
@@ -308,7 +299,8 @@ int protocol_router_set_decision_func(protocol_router_handle_t router,
                                       route_decision_func_t decision_func)
 {
     if (!router) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_router_set_decision_func: failed");
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "protocol_router_set_decision_func: failed");
         return AIRY_ERR_UNKNOWN;
     }
 
@@ -321,13 +313,13 @@ int protocol_router_set_decision_func(protocol_router_handle_t router,
 int protocol_router_get_stats(protocol_router_handle_t router, char **stats_json)
 {
     if (!router || !stats_json) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_router_get_stats: failed");
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "protocol_router_get_stats: failed");
         return AIRY_ERR_UNKNOWN;
     }
 
     struct protocol_router_s *r = (struct protocol_router_s *)router;
 
-    // 构建简单的JSON统计信息
     const char *fmt = "{"
                       "\"total_messages_routed\": %llu,"
                       "\"messages_routed_success\": %llu,"
@@ -348,7 +340,8 @@ int protocol_router_get_stats(protocol_router_handle_t router, char **stats_json
 
     char *buf = (char *)AIRY_MALLOC(buf_size);
     if (!buf) {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "AIRY_MALLOC: allocation failed");
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "AIRY_MALLOC: allocation failed");
         return AIRY_ERR_OUT_OF_MEMORY;
     }
 
@@ -361,7 +354,6 @@ int protocol_router_get_stats(protocol_router_handle_t router, char **stats_json
 }
 
 // ============================================================================
-// 预定义转换器实现
 // ============================================================================
 
 int protocol_transformer_jsonrpc_to_mcp(const unified_message_t *source, unified_message_t *target,
@@ -392,7 +384,8 @@ int protocol_transformer_default(const unified_message_t *source, unified_messag
                                  void *context)
 {
     if (!source || !target) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "protocol_transformer_default: failed");
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "protocol_transformer_default: failed");
         return AIRY_ERR_UNKNOWN;
     }
 
@@ -401,7 +394,7 @@ int protocol_transformer_default(const unified_message_t *source, unified_messag
     if (source->payload && source->payload_size > 0) {
         void *new_payload = AIRY_MALLOC(source->payload_size);
         if (!new_payload) {
-            /* 深拷贝失败：置 NULL 防止与 source 浅拷贝别名双释放 */
+
             target->payload = NULL;
             target->payload_size = 0;
             airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
@@ -431,7 +424,6 @@ int protocol_transformer_default(const unified_message_t *source, unified_messag
 }
 
 // ============================================================================
-// 静态函数实现
 // ============================================================================
 
 static rule_node_t *create_rule_node(const protocol_rule_t *rule, message_transformer_t transformer)
@@ -443,7 +435,6 @@ static rule_node_t *create_rule_node(const protocol_rule_t *rule, message_transf
 
     node->rule = *rule;
 
-    // 复制字符串字段
     if (rule->source_endpoint) {
         size_t len = strlen(rule->source_endpoint) + 1;
         char *copy = (char *)AIRY_MALLOC(len);
@@ -766,29 +757,27 @@ static int default_decision_func(const unified_message_t *message, const protoco
                                  size_t rule_count)
 {
     if (!message || !rules || rule_count == 0) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "default_decision_func: failed");
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "default_decision_func: failed");
         return AIRY_ERR_UNKNOWN;
     }
 
-    // 简单决策：按顺序匹配第一个符合的规则
     for (size_t i = 0; i < rule_count; i++) {
         const protocol_rule_t *rule = &rules[i];
 
-        // 检查协议匹配
         if (rule->source_protocol != PROTOCOL_CUSTOM &&
             rule->source_protocol != message->protocol) {
             continue;
         }
 
-        // 检查端点匹配
         if (rule->source_endpoint && message->endpoint[0]) {
             if (!match_endpoint(rule->source_endpoint, message->endpoint)) {
                 continue;
             }
         }
 
-        return (int)i;  // 匹配成功
+        return (int)i;
     }
 
-    return INDEX_NOT_FOUND;  /* 无匹配 */
+    return INDEX_NOT_FOUND;
 }

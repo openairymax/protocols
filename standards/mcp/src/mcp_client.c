@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+
 // @owner: team-B
 /**
  * @file mcp_client.c
@@ -45,13 +46,10 @@
 #include <unistd.h>
 #endif
 
-#define MCP_CLIENT_READ_CHUNK 4096  /* 单次 read 缓冲 */
-#define MCP_CLIENT_HEADER_MAX 8192  /* 帧头最大长度（防恶意头部撑爆缓冲） */
+#define MCP_CLIENT_READ_CHUNK 4096
+#define MCP_CLIENT_HEADER_MAX 8192
 
-typedef enum {
-    MCP_FRAME_STATE_HEADER = 0, /* 等待 Content-Length 头 + 空行 */
-    MCP_FRAME_STATE_BODY = 1    /* 等待 body 数据 */
-} mcp_frame_state_t;
+typedef enum { MCP_FRAME_STATE_HEADER = 0, MCP_FRAME_STATE_BODY = 1 } mcp_frame_state_t;
 
 /**
  * @brief 帧解析状态机
@@ -64,36 +62,30 @@ typedef struct {
     size_t len;
     size_t cap;
     mcp_frame_state_t state;
-    size_t hdr_end;        /* "\r\n\r\n" 结束偏移（BODY 状态有效） */
-    size_t body_expected;  /* Content-Length */
-    char *header_text;     /* 最近一帧的头部副本（HTTP 层解析状态码用） */
+    size_t hdr_end;
+    size_t body_expected; /* Content-Length */
+    char *header_text;
 } mcp_frame_parser_t;
 
 struct mcp_client_s {
     char *name;
     mcp_client_transport_t transport;
 
-    /* stdio 传输 */
     pid_t child_pid;
-    int stdio_write_fd; /* 父 -> 子 stdin */
-    int stdio_read_fd;  /* 子 stdout -> 父 */
-    char **argv_copy;   /* 深拷贝的命令行（argv[0] 即 command） */
+    int stdio_write_fd;
+    int stdio_read_fd;
+    char **argv_copy;
 
-    /* http 传输 */
     char *http_host;
     char *http_path;
     uint16_t http_port;
 
-    /* 帧解析状态机 */
     mcp_frame_parser_t parser;
 
-    /* JSON-RPC 状态 */
     uint64_t request_id;
     bool initialized;
-    char *server_name; /* initialize 响应中 serverInfo.name */
+    char *server_name;
 };
-
-/* ==================== 工具函数 ==================== */
 
 static int64_t now_ms(void)
 {
@@ -149,8 +141,6 @@ static char *json_string_escape(const char *str)
     return escaped;
 }
 
-/* ==================== 帧解析状态机 ==================== */
-
 static void frame_parser_init(mcp_frame_parser_t *p)
 {
     AIRY_MEMSET(p, 0, sizeof(*p));
@@ -166,8 +156,7 @@ static bool find_header_end(const char *buf, size_t len, size_t *out)
     if (len < 4)
         return false;
     for (size_t i = 0; i + 3 < len; i++) {
-        if (buf[i] == '\r' && buf[i + 1] == '\n' && buf[i + 2] == '\r' &&
-            buf[i + 3] == '\n') {
+        if (buf[i] == '\r' && buf[i + 1] == '\n' && buf[i + 2] == '\r' && buf[i + 3] == '\n') {
             *out = i + 4;
             return true;
         }
@@ -183,7 +172,7 @@ static int parse_content_length(const char *hdr, size_t hdr_len, size_t *out)
 {
     size_t pos = 0;
     while (pos < hdr_len) {
-        /* 找行尾 \r\n */
+
         size_t line_end = pos;
         while (line_end + 1 < hdr_len && !(hdr[line_end] == '\r' && hdr[line_end + 1] == '\n'))
             line_end++;
@@ -196,8 +185,7 @@ static int parse_content_length(const char *hdr, size_t hdr_len, size_t *out)
                 v++;
             char num_buf[32];
             size_t n = 0;
-            while (v < line_end && n < sizeof(num_buf) - 1 &&
-                   isdigit((unsigned char)hdr[v]))
+            while (v < line_end && n < sizeof(num_buf) - 1 && isdigit((unsigned char)hdr[v]))
                 num_buf[n++] = hdr[v++];
             num_buf[n] = '\0';
             if (n == 0)
@@ -205,7 +193,7 @@ static int parse_content_length(const char *hdr, size_t hdr_len, size_t *out)
             *out = (size_t)strtoul(num_buf, NULL, 10);
             return 0;
         }
-        pos = line_end + 2; /* 跳过 \r\n */
+        pos = line_end + 2;
     }
     return -1;
 }
@@ -263,7 +251,7 @@ static int frame_parser_take_frame(mcp_frame_parser_t *p, char **out)
             LOG_WARN("mcp client: invalid Content-Length %zu", clen);
             return MCP_CLIENT_ERR_FRAME;
         }
-        /* 保存头部副本（HTTP 层解析状态码/Content-Type；stdio 层忽略） */
+
         AIRY_FREE(p->header_text);
         p->header_text = AIRY_STRNDUP(p->buf, hdr_end);
         if (!p->header_text)
@@ -287,8 +275,6 @@ static int frame_parser_take_frame(mcp_frame_parser_t *p, char **out)
     p->body_expected = 0;
     return 0;
 }
-
-/* ==================== 写入（带超时） ==================== */
 
 static int write_all_with_timeout(int fd, const char *data, size_t len, int timeout_ms)
 {
@@ -321,8 +307,6 @@ static int write_all_with_timeout(int fd, const char *data, size_t len, int time
     return 0;
 }
 
-/* ==================== stdio 传输 ==================== */
-
 static int stdio_send_message(mcp_client_t *c, const char *body)
 {
     size_t len = strlen(body);
@@ -332,8 +316,7 @@ static int stdio_send_message(mcp_client_t *c, const char *body)
                                     MCP_CLIENT_DEFAULT_TIMEOUT_MS);
     if (rc != 0)
         return rc;
-    return write_all_with_timeout(c->stdio_write_fd, body, len,
-                                  MCP_CLIENT_DEFAULT_TIMEOUT_MS);
+    return write_all_with_timeout(c->stdio_write_fd, body, len, MCP_CLIENT_DEFAULT_TIMEOUT_MS);
 }
 
 /**
@@ -374,7 +357,7 @@ static int stdio_read_message(mcp_client_t *c, char **out, int timeout_ms)
             n = read(c->stdio_read_fd, tmp, sizeof(tmp));
         } while (n < 0 && errno == EINTR);
         if (n == 0) {
-            /* EOF：子进程退出或关闭了 stdout */
+
             LOG_WARN("mcp client '%s': stdio EOF, child process exited", c->name);
             return MCP_CLIENT_ERR_PROCESS_EXIT;
         }
@@ -418,13 +401,10 @@ static void free_argv(char **argv)
     AIRY_FREE(argv);
 }
 
-/* ==================== http 传输 ==================== */
-
 /**
- * @brief 解析 http://host[:port]/path，默认端口 80、默认路径 /mcp
+ * @brief 解析 http:
  */
-static int parse_http_url(const char *url, char **host_out, uint16_t *port_out,
-                          char **path_out)
+static int parse_http_url(const char *url, char **host_out, uint16_t *port_out, char **path_out)
 {
     *host_out = NULL;
     *path_out = NULL;
@@ -483,8 +463,8 @@ static int http_connect_fd(mcp_client_t *c)
     snprintf(port_str, sizeof(port_str), "%u", (unsigned)c->http_port);
     int grc = getaddrinfo(c->http_host, port_str, &hints, &res);
     if (grc != 0) {
-        LOG_WARN("mcp client '%s': getaddrinfo failed for %s (%s)", c->name,
-                 c->http_host, gai_strerror(grc));
+        LOG_WARN("mcp client '%s': getaddrinfo failed for %s (%s)", c->name, c->http_host,
+                 gai_strerror(grc));
         return -1;
     }
     int fd = -1;
@@ -610,7 +590,7 @@ static int http_read_response(mcp_client_t *c, int fd, char **out_body)
         LOG_WARN("mcp client '%s': http status %d", c->name, status);
 
     if (is_sse && *out_body) {
-        /* Streamable HTTP 流式响应：提取 data: 行（基础支持单条消息） */
+
         char *data = extract_sse_data(*out_body);
         AIRY_FREE(*out_body);
         if (data) {
@@ -648,8 +628,7 @@ static int http_send_message(mcp_client_t *c, const char *body, char **out_body)
                         "Connection: close\r\n"
                         "\r\n"
                         "%s",
-                        c->http_path, c->http_host, MCP_CLIENT_PROTOCOL_VERSION, blen,
-                        body);
+                        c->http_path, c->http_host, MCP_CLIENT_PROTOCOL_VERSION, blen, body);
     int rc = write_all_with_timeout(fd, req, (size_t)rlen, MCP_CLIENT_DEFAULT_TIMEOUT_MS);
     AIRY_FREE(req);
     if (rc != 0) {
@@ -661,8 +640,6 @@ static int http_send_message(mcp_client_t *c, const char *body, char **out_body)
     return rc;
 }
 
-/* ==================== JSON-RPC 交换 ==================== */
-
 /**
  * @brief 判断帧是否为指定 id 的响应
  * @return 1 匹配；0 不匹配（通知帧/其他 id）；<0 解析错误码
@@ -672,7 +649,7 @@ static int response_id_matches(const char *frame, uint64_t expected)
     CJSON_PARSE_GUARD(root, frame, { return AIRY_ERR_PARSE_ERROR; });
     cJSON *rid = cJSON_GetObjectItem(root, "id");
     if (!rid)
-        return 0; /* 通知帧 */
+        return 0;
     if (cJSON_IsNumber(rid))
         return ((uint64_t)rid->valuedouble == expected) ? 1 : 0;
     if (cJSON_IsString(rid) && rid->valuestring)
@@ -729,7 +706,7 @@ static int client_rpc_exchange(mcp_client_t *c, const char *method, const char *
                 AIRY_FREE(frame);
                 return m;
             }
-            AIRY_FREE(frame); /* 通知/其他帧：丢弃继续读 */
+            AIRY_FREE(frame);
         }
     } else if (c->transport == MCP_CLIENT_TRANSPORT_HTTP) {
         char *resp_body = NULL;
@@ -745,7 +722,7 @@ static int client_rpc_exchange(mcp_client_t *c, const char *method, const char *
             AIRY_FREE(resp_body);
             return AIRY_ERR_PARSE_ERROR;
         }
-        *out_response = resp_body; /* 结果 JSON 原样返回 */
+        *out_response = resp_body;
         return 0;
     }
     AIRY_FREE(req_str);
@@ -759,8 +736,8 @@ static int parse_initialize_response(mcp_client_t *c, const char *resp)
     if (cJSON_IsObject(err)) {
         cJSON *msg = cJSON_GetObjectItem(err, "message");
         LOG_WARN("mcp client '%s': initialize rejected: %s", c->name,
-                 msg && cJSON_IsString(msg) && msg->valuestring ? msg->valuestring
-                                                                : "unknown error");
+                 msg && cJSON_IsString(msg) && msg->valuestring ? msg->valuestring :
+                                                                  "unknown error");
         return MCP_CLIENT_ERR_RPC_ERROR;
     }
     cJSON *result = cJSON_GetObjectItem(root, "result");
@@ -771,8 +748,7 @@ static int parse_initialize_response(mcp_client_t *c, const char *resp)
         cJSON *sn = cJSON_GetObjectItem(si, "name");
         if (cJSON_IsString(sn) && sn->valuestring) {
             c->server_name = AIRY_STRDUP(sn->valuestring);
-            LOG_INFO("mcp client '%s': initialized, remote server=%s", c->name,
-                     sn->valuestring);
+            LOG_INFO("mcp client '%s': initialized, remote server=%s", c->name, sn->valuestring);
         }
     } else {
         LOG_INFO("mcp client '%s': initialized", c->name);
@@ -787,10 +763,9 @@ static int client_ensure_initialized(mcp_client_t *c)
 {
     if (c->initialized)
         return 0;
-    const char *params =
-        "{\"protocolVersion\":\"2024-11-05\","
-        "\"capabilities\":{},"
-        "\"clientInfo\":{\"name\":\"agentrt-gateway\",\"version\":\"0.1.1\"}}";
+    const char *params = "{\"protocolVersion\":\"2024-11-05\","
+                         "\"capabilities\":{},"
+                         "\"clientInfo\":{\"name\":\"agentrt-gateway\",\"version\":\"0.1.1\"}}";
     char *resp = NULL;
     int rc = client_rpc_exchange(c, "initialize", params, true, &resp);
     if (rc != 0)
@@ -800,18 +775,14 @@ static int client_ensure_initialized(mcp_client_t *c)
     if (rc != 0)
         return rc;
     c->initialized = true;
-    /* notifications/initialized：通知无响应，发送失败仅告警 */
+
     rc = client_rpc_exchange(c, "notifications/initialized", "{}", false, NULL);
     if (rc != 0)
-        LOG_WARN("mcp client '%s': failed to send initialized notification (rc=%d)",
-                 c->name, rc);
+        LOG_WARN("mcp client '%s': failed to send initialized notification (rc=%d)", c->name, rc);
     return 0;
 }
 
-/* ==================== 公开 API ==================== */
-
-mcp_client_t *mcp_client_connect_stdio(const char *name, const char *command,
-                                       char *const argv[])
+mcp_client_t *mcp_client_connect_stdio(const char *name, const char *command, char *const argv[])
 {
 #ifdef _WIN32
     (void)name;
@@ -854,7 +825,7 @@ mcp_client_t *mcp_client_connect_stdio(const char *name, const char *command,
         return NULL;
     }
     if (pid == 0) {
-        /* 子进程：stdin/stdout 接到管道，stderr 保持继承便于排查 */
+
         (void)dup2(to_child[0], STDIN_FILENO);
         (void)dup2(from_child[1], STDOUT_FILENO);
         close(to_child[0]);
@@ -862,10 +833,9 @@ mcp_client_t *mcp_client_connect_stdio(const char *name, const char *command,
         close(from_child[0]);
         close(from_child[1]);
         execvp(argv_copy[0], argv_copy);
-        _exit(127); /* exec 失败 */
+        _exit(127);
     }
 
-    /* 父进程 */
     close(to_child[0]);
     close(from_child[1]);
 
@@ -887,8 +857,7 @@ mcp_client_t *mcp_client_connect_stdio(const char *name, const char *command,
     c->request_id = 0;
     c->initialized = false;
     frame_parser_init(&c->parser);
-    LOG_INFO("mcp client '%s': stdio connected (pid=%d, command=%s)", name, (int)pid,
-             command);
+    LOG_INFO("mcp client '%s': stdio connected (pid=%d, command=%s)", name, (int)pid, command);
     return c;
 #endif
 }
@@ -918,8 +887,7 @@ mcp_client_t *mcp_client_connect_http(const char *name, const char *url)
     c->request_id = 0;
     c->initialized = false;
     frame_parser_init(&c->parser);
-    LOG_INFO("mcp client '%s': http endpoint http://%s:%u%s", name, host,
-             (unsigned)port, path);
+    LOG_INFO("mcp client '%s': http endpoint http://%s:%u%s", name, host, (unsigned)port, path);
     return c;
 }
 
@@ -948,8 +916,8 @@ int mcp_client_list_tools(mcp_client_t *c, mcp_client_tool_list_t *out)
     if (cJSON_IsObject(err)) {
         cJSON *msg = cJSON_GetObjectItem(err, "message");
         LOG_WARN("mcp client '%s': tools/list failed: %s", c->name,
-                 msg && cJSON_IsString(msg) && msg->valuestring ? msg->valuestring
-                                                                : "unknown error");
+                 msg && cJSON_IsString(msg) && msg->valuestring ? msg->valuestring :
+                                                                  "unknown error");
         AIRY_FREE(resp);
         return MCP_CLIENT_ERR_RPC_ERROR;
     }
@@ -967,7 +935,7 @@ int mcp_client_list_tools(mcp_client_t *c, mcp_client_tool_list_t *out)
     int n = cJSON_GetArraySize(tools);
     if (n <= 0) {
         AIRY_FREE(resp);
-        return 0; /* 外部 server 无工具 */
+        return 0;
     }
     mcp_client_tool_t *arr = AIRY_CALLOC((size_t)n, sizeof(mcp_client_tool_t));
     if (!arr) {
@@ -1041,13 +1009,11 @@ int mcp_client_extract_text(const char *response_json, char **text_json)
         return AIRY_ERR_INVALID_PARAM;
     CJSON_PARSE_GUARD(root, response_json, { return AIRY_ERR_PARSE_ERROR; });
 
-    /* 顶层 JSON-RPC error：输出 message（gateway 侧嵌入 text 返回） */
     cJSON *err = cJSON_GetObjectItem(root, "error");
     if (cJSON_IsObject(err)) {
         cJSON *msg = cJSON_GetObjectItem(err, "message");
-        const char *raw = (cJSON_IsString(msg) && msg->valuestring)
-                              ? msg->valuestring
-                              : "MCP RPC error";
+        const char *raw =
+            (cJSON_IsString(msg) && msg->valuestring) ? msg->valuestring : "MCP RPC error";
         *text_json = json_string_escape(raw);
         return *text_json ? 0 : AIRY_ERR_OUT_OF_MEMORY;
     }
@@ -1063,11 +1029,11 @@ int mcp_client_extract_text(const char *response_json, char **text_json)
             *text_json = json_string_escape(text->valuestring);
             return *text_json ? 0 : AIRY_ERR_OUT_OF_MEMORY;
         }
-        /* 非 text content（image/resource）：原样序列化该节点 */
+
         *text_json = cJSON_PrintUnformatted(first);
         return *text_json ? 0 : AIRY_ERR_OUT_OF_MEMORY;
     }
-    /* 无 content：序列化整个 result 供上层排查 */
+
     *text_json = cJSON_PrintUnformatted(result);
     return *text_json ? 0 : AIRY_ERR_OUT_OF_MEMORY;
 }
@@ -1086,7 +1052,7 @@ int mcp_client_disconnect(mcp_client_t *c)
             c->stdio_read_fd = -1;
         }
         if (c->child_pid > 0) {
-            /* 先优雅 SIGTERM，2s 内未退出再 SIGKILL */
+
             (void)kill(c->child_pid, SIGTERM);
             for (int i = 0; i < 20; i++) {
                 int st = 0;

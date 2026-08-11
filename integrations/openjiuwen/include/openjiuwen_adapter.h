@@ -1,6 +1,7 @@
-// SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
-// SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
-// @owner: team-B
+/* SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd. */
+/* SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0 */
+
+/* @owner: team-B */
 /**
  * @file openjiuwen_adapter.h
  * @brief OpenJiuwen Protocol Adapter Interface
@@ -48,36 +49,36 @@ typedef enum {
  * @brief OpenJiuwen配置结构体
  */
 typedef struct openjiuwen_config_s {
-    char endpoint[256];      /* API端点URL */
-    char api_key[128];       /* API密钥（可选） */
-    int timeout_ms;          /* 超时时间（毫秒） */
-    bool enable_compression; /* 是否启用压缩 */
-    bool enable_encryption;  /* 是否启用加密 */
-    uint32_t max_retries;    /* 最大重试次数 */
+    char endpoint[256];
+    char api_key[128];
+    int timeout_ms;
+    bool enable_compression;
+    bool enable_encryption;
+    uint32_t max_retries;
 } openjiuwen_config_t;
 
 /**
  * @brief OpenJiuwen消息头部
  */
 typedef struct openjiuwen_header_s {
-    uint32_t message_id;     /* 消息ID */
-    uint32_t timestamp;      /* 时间戳 */
-    uint16_t message_type;   /* 消息类型 */
-    uint16_t flags;          /* 标志位 */
-    uint32_t payload_length; /* 载荷长度 */
-    char source_agent[64];   /* 来源智能体ID */
-    char target_agent[64];   /* 目标智能体ID */
+    uint32_t message_id;
+    uint32_t timestamp;
+    uint16_t message_type;
+    uint16_t flags;
+    uint32_t payload_length;
+    char source_agent[64];
+    char target_agent[64];
 } openjiuwen_header_t;
 
 /**
  * @brief OpenJiuwen消息类型枚举
  */
 typedef enum openjiuwen_message_type_e {
-    OPENJIUWEN_MSG_TYPE_REQUEST = 0x0001,      /* 请求消息 */
-    OPENJIUWEN_MSG_TYPE_RESPONSE = 0x0002,     /* 响应消息 */
-    OPENJIUWEN_MSG_TYPE_NOTIFICATION = 0x0003, /* 通知消息 */
-    OPENJIUWEN_MSG_TYPE_HEARTBEAT = 0x0004,    /* 心跳消息 */
-    OPENJIUWEN_MSG_TYPE_ERROR = 0x0005         /* 错误消息 */
+    OPENJIUWEN_MSG_TYPE_REQUEST = 0x0001,
+    OPENJIUWEN_MSG_TYPE_RESPONSE = 0x0002,
+    OPENJIUWEN_MSG_TYPE_NOTIFICATION = 0x0003,
+    OPENJIUWEN_MSG_TYPE_HEARTBEAT = 0x0004,
+    OPENJIUWEN_MSG_TYPE_ERROR = 0x0005
 } openjiuwen_message_type_t;
 
 /**

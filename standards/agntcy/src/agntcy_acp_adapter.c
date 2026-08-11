@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+
 // @owner: team-B
 /**
  * @file agntcy_acp_adapter.c
@@ -89,7 +90,7 @@ int agntcy_agent_unregister(agntcy_handle_t *h, const char *agent_id)
         if (strcmp(h->agents[i].agent_id, agent_id) == 0) {
             if (i < h->agent_count - 1) {
                 __builtin_memmove(&h->agents[i], &h->agents[i + 1],
-                        (h->agent_count - i - 1) * sizeof(agntcy_agent_card_t));
+                                  (h->agent_count - i - 1) * sizeof(agntcy_agent_card_t));
             }
             h->agent_count--;
             return 0;
@@ -165,7 +166,7 @@ int agntcy_channel_close(agntcy_handle_t *h, const char *channel_id)
         if (strcmp(h->channels[i].channel_id, channel_id) == 0) {
             if (i < h->channel_count - 1) {
                 __builtin_memmove(&h->channels[i], &h->channels[i + 1],
-                        (h->channel_count - i - 1) * sizeof(agntcy_channel_t));
+                                  (h->channel_count - i - 1) * sizeof(agntcy_channel_t));
             }
             h->channel_count--;
             return 0;
@@ -270,7 +271,8 @@ int agntcy_task_orchestrate(agntcy_handle_t *h, const char *task_id, const char 
 
     for (size_t i = 0; i < h->agent_count && task->assigned_count < AGNTCY_ACP_MAX_AGENTS; i++) {
         if (h->agents[i].online && (h->agents[i].capabilities_mask & AGNTCY_CAP_ORCHESTRATE)) {
-            AIRY_STRNCPY_TERM(task->assigned_agent_ids[task->assigned_count], h->agents[i].agent_id, sizeof(task->assigned_agent_ids[task->assigned_count]));
+            AIRY_STRNCPY_TERM(task->assigned_agent_ids[task->assigned_count], h->agents[i].agent_id,
+                              sizeof(task->assigned_agent_ids[task->assigned_count]));
             task->assigned_count++;
         }
     }
@@ -296,11 +298,11 @@ int agntcy_task_get_state(agntcy_handle_t *h, const char *task_id, agntcy_task_s
 int agntcy_ack_negotiate(agntcy_handle_t *h, const char *agent_id, const agntcy_ack_t *ack_request,
                          agntcy_ack_t *ack_response)
 {
-    if (!h || !agent_id || !ack_request || !ack_response)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "agntcy_ack_negotiate: failed");
+    if (!h || !agent_id || !ack_request || !ack_response) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "agntcy_ack_negotiate: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     bool agent_found = false;
     for (size_t i = 0; i < h->agent_count; i++) {
@@ -415,31 +417,32 @@ static uint32_t agntcy_proto_capabilities_adapter(void *context)
 static int agntcy_proto_encode(void *context, const void *msg, void **out_data, size_t *out_size)
 {
     (void)context;
-    if (!msg || !out_data || !out_size)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "agntcy_proto_encode: invalid param");
+    if (!msg || !out_data || !out_size) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "agntcy_proto_encode: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     const unified_message_t *umsg = (const unified_message_t *)msg;
     const char *payload = umsg->payload ? (const char *)umsg->payload : "";
     size_t payload_len = umsg->payload_size;
     size_t buf_size = 256 + payload_len;
     char *buf = (char *)AIRY_MALLOC(buf_size);
-    if (!buf)
-        {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "agntcy_proto_encode: oom");
+    if (!buf) {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "agntcy_proto_encode: oom");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
-    int written = snprintf(buf, buf_size,
-                           "{\"protocol\":%d,\"direction\":%d,\"timestamp\":%llu,\"payload\":\"%.*s\"}",
-                           (int)umsg->protocol, (int)umsg->direction,
-                           (unsigned long long)umsg->timestamp, (int)payload_len, payload);
-    if (written < 0 || (size_t)written >= buf_size)
-        {
+    }
+    int written =
+        snprintf(buf, buf_size,
+                 "{\"protocol\":%d,\"direction\":%d,\"timestamp\":%llu,\"payload\":\"%.*s\"}",
+                 (int)umsg->protocol, (int)umsg->direction, (unsigned long long)umsg->timestamp,
+                 (int)payload_len, payload);
+    if (written < 0 || (size_t)written >= buf_size) {
         AIRY_FREE(buf);
-        airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__, "agntcy_proto_encode: snprintf failed");
+        airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__,
+                         "agntcy_proto_encode: snprintf failed");
         return AIRY_ERR_IO;
-        }
+    }
     *out_data = buf;
     *out_size = (size_t)written;
     return 0;
@@ -448,24 +451,24 @@ static int agntcy_proto_encode(void *context, const void *msg, void **out_data, 
 static int agntcy_proto_decode(void *context, const void *data, size_t size, void *out_msg)
 {
     (void)context;
-    if (!data || !out_msg)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "agntcy_proto_decode: invalid param");
+    if (!data || !out_msg) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "agntcy_proto_decode: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
-    if (size == 0)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "agntcy_proto_decode: zero size");
+    }
+    if (size == 0) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "agntcy_proto_decode: zero size");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
 
     unified_message_t *msg = (unified_message_t *)out_msg;
     char *copy = (char *)AIRY_MALLOC(size + 1);
-    if (!copy)
-        {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "agntcy_proto_decode: oom");
+    if (!copy) {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "agntcy_proto_decode: oom");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
+    }
     __builtin_memcpy(copy, data, size);
     copy[size] = '\0';
 
@@ -531,19 +534,19 @@ static int agntcy_proto_is_connected(void *context)
 static int agntcy_proto_send(void *context, const void *data, size_t size)
 {
     (void)context;
-    if (!data)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "agntcy_proto_send: invalid param");
+    if (!data) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "agntcy_proto_send: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     AIRY_FREE(g_agntcy_state.send_buffer);
     g_agntcy_state.send_buffer = AIRY_MALLOC(size + 1);
-    if (!g_agntcy_state.send_buffer)
-        {
+    if (!g_agntcy_state.send_buffer) {
         g_agntcy_state.send_buffer_size = 0;
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "agntcy_proto_send: oom");
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "agntcy_proto_send: oom");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
+    }
     __builtin_memcpy(g_agntcy_state.send_buffer, data, size);
     ((char *)g_agntcy_state.send_buffer)[size] = '\0';
     g_agntcy_state.send_buffer_size = size;
@@ -555,16 +558,16 @@ static int agntcy_proto_receive(void *context, void **data, size_t *size, uint32
 {
     (void)context;
     (void)timeout_ms;
-    if (!data || !size)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "agntcy_proto_receive: invalid param");
+    if (!data || !size) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "agntcy_proto_receive: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
-    if (!g_agntcy_state.send_buffer || g_agntcy_state.send_buffer_size == 0)
-        {
-        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "agntcy_proto_receive: no data");
+    }
+    if (!g_agntcy_state.send_buffer || g_agntcy_state.send_buffer_size == 0) {
+        airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__,
+                         "agntcy_proto_receive: no data");
         return AIRY_ERR_TIMEOUT;
-        }
+    }
     *data = g_agntcy_state.send_buffer;
     *size = g_agntcy_state.send_buffer_size;
     g_agntcy_state.bytes_received += *size;
@@ -576,11 +579,11 @@ static int agntcy_proto_receive(void *context, void **data, size_t *size, uint32
 static int agntcy_proto_get_stats(void *context, char *stats_json, size_t max_size)
 {
     (void)context;
-    if (!stats_json || max_size < 64)
-        {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__, "agntcy_proto_get_stats: invalid param");
+    if (!stats_json || max_size < 64) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "agntcy_proto_get_stats: invalid param");
         return AIRY_ERR_INVALID_PARAM;
-        }
+    }
     int written = snprintf(stats_json, max_size,
                            "{\"adapter\":\"agntcy_acp\",\"version\":\"%s\",\"connected\":%s,"
                            "\"bytes_sent\":%llu,\"bytes_received\":%llu,"
@@ -589,8 +592,7 @@ static int agntcy_proto_get_stats(void *context, char *stats_json, size_t max_si
                            AGNTCY_ACP_VERSION, g_agntcy_state.is_connected ? "true" : "false",
                            (unsigned long long)g_agntcy_state.bytes_sent,
                            (unsigned long long)g_agntcy_state.bytes_received,
-                           g_agntcy_state.handle.agent_count,
-                           g_agntcy_state.handle.channel_count,
+                           g_agntcy_state.handle.agent_count, g_agntcy_state.handle.channel_count,
                            g_agntcy_state.handle.task_count,
                            (unsigned long long)g_agntcy_state.handle.message_counter);
     return (written >= 0 && (size_t)written < max_size) ? 0 : AIRY_ERR_BUFFER_TOO_SMALL;
@@ -606,7 +608,7 @@ const proto_adapter_t *agntcy_get_protocol_adapter(void)
         adapter.version = AGNTCY_ACP_VERSION;
         adapter.description =
             "Agent Communication Protocol - open standard for agent-to-agent communication";
-        adapter.type = AIRY_PROTOCOL_AGNTCY;  /* P0-15: PROTO_AGNTCY→枚举值 */
+        adapter.type = AIRY_PROTOCOL_AGNTCY;
         adapter.init = agntcy_proto_init_adapter;
         adapter.destroy = agntcy_proto_destroy;
         adapter.encode = agntcy_proto_encode;

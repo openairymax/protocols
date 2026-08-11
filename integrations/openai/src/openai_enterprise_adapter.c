@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+
 // @owner: team-B
 /**
  * @file openai_enterprise_adapter.c
@@ -31,7 +32,7 @@
 
 #ifdef AIRY_HAS_CJSON
 #include <cjson/cJSON.h>
-/* P0.18.2: 引入 cjson_helpers.h 提供 CJSON_PARSE_GUARD/CJSON_AUTO_FREE 宏 */
+
 #include <cjson_helpers.h>
 #endif
 
@@ -147,18 +148,18 @@ static void openai_register_builtin_models(struct openai_enterprise_adapter_s *a
 
 int openai_create(openai_enterprise_config_t config, openai_handle_t *out_handle)
 {
-    if (!out_handle)
-        {
+    if (!out_handle) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_create: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     struct openai_enterprise_adapter_s *adapter =
         AIRY_CALLOC(1, sizeof(struct openai_enterprise_adapter_s));
     if (!adapter) {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "openai: out of memory");
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "openai: out of memory");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
+    }
 
     adapter->config = config;
     adapter->model_count = 0;
@@ -259,16 +260,17 @@ static void openai_register_builtin_models(struct openai_enterprise_adapter_s *a
 
 int openai_list_models(openai_handle_t handle, const char *search_query, void *out_results)
 {
-    if (!handle)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_list_models: failed");
+    if (!handle) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_list_models: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)handle;
     if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_SYS_NOT_INIT, __FILE__, __LINE__, __func__, "openai: not initialized");
+        airy_err_push_ex(AIRY_ERR_SYS_NOT_INIT, __FILE__, __LINE__, __func__,
+                         "openai: not initialized");
         return AIRY_ERR_SYS_NOT_INIT;
-        }
+    }
 
     int count = 0;
     for (size_t i = 0; i < adapter->model_count; i++) {
@@ -413,18 +415,16 @@ static size_t openai_curl_write_cb(void *ptr, size_t size, size_t nmemb, void *u
 static int openai_api_call(const char *api_key, const char *base_url, const char *endpoint,
                            const char *request_json, char *out_buf, size_t buf_len)
 {
-    if (!api_key || !request_json || !out_buf)
-        {
+    if (!api_key || !request_json || !out_buf) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_api_call: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     CURL *curl = curl_easy_init();
-    if (!curl)
-        {
+    if (!curl) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "if: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     openai_curl_buffer_t response_buf = {.data = NULL, .size = 0};
 
@@ -476,12 +476,12 @@ static int openai_api_call(const char *api_key, const char *base_url, const char
 static int openai_parse_chat_response(const char *json_str, char *content_out, size_t content_len,
                                       openai_usage_t *usage)
 {
-    if (!json_str || !content_out)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_parse_chat_response: parse error");
+    if (!json_str || !content_out) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_parse_chat_response: parse error");
         return AIRY_ERR_UNKNOWN;
-        }
-    /* P0.18.2: 模式 A — CJSON_PARSE_GUARD 自动释放 + NULL 检查 */
+    }
+
     CJSON_PARSE_GUARD(root, json_str, {
         airy_err_push_ex(AIRY_ERR_NOT_FOUND, __FILE__, __LINE__, __func__, "openai: not found");
         return AIRY_ERR_NOT_FOUND;
@@ -514,7 +514,6 @@ static int openai_parse_chat_response(const char *json_str, char *content_out, s
         }
     }
 
-    /* root 由 CJSON_AUTO_FREE 自动释放 */
     return result;
 }
 #endif
@@ -562,9 +561,8 @@ static openai_rate_result_t openai_check_rate_limit(struct openai_enterprise_ada
     return OPENAI_RATE_OK;
 }
 
-__attribute__((unused))
-static void openai_record_request(struct openai_enterprise_adapter_s *adapter,
-                                  uint32_t input_tokens, uint32_t output_tokens)
+__attribute__((unused)) static void openai_record_request(
+    struct openai_enterprise_adapter_s *adapter, uint32_t input_tokens, uint32_t output_tokens)
 {
     adapter->rate_window_requests++;
     adapter->rate_window_tokens += input_tokens + output_tokens;
@@ -590,8 +588,8 @@ static void openai_on_429(struct openai_enterprise_adapter_s *adapter)
     adapter->rate_backoff_until = now + delay_sec;
 }
 
-static int __attribute__((unused))
-openai_compute_retry_delay_ms(struct openai_enterprise_adapter_s *adapter, int attempt)
+static int __attribute__((unused)) openai_compute_retry_delay_ms(
+    struct openai_enterprise_adapter_s *adapter, int attempt)
 {
     uint32_t base_delay = (uint32_t)(OPENAI_RETRY_BASE_DELAY_MS * adapter->rate_backoff_multiplier);
     double exponential = base_delay * (1 << attempt);
@@ -606,16 +604,17 @@ openai_compute_retry_delay_ms(struct openai_enterprise_adapter_s *adapter, int a
 int openai_chat_completion(openai_handle_t handle, const openai_chat_request_t *request,
                            openai_chat_response_t *out_response)
 {
-    if (!handle || !request || !out_response)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_chat_completion: failed");
+    if (!handle || !request || !out_response) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_chat_completion: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)handle;
     if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_SYS_NOT_INIT, __FILE__, __LINE__, __func__, "openai: not initialized");
+        airy_err_push_ex(AIRY_ERR_SYS_NOT_INIT, __FILE__, __LINE__, __func__,
+                         "openai: not initialized");
         return AIRY_ERR_SYS_NOT_INIT;
-        }
+    }
 
     uint32_t est_tokens = 100;
     if (request->num_messages > 0 && request->messages) {
@@ -629,21 +628,23 @@ int openai_chat_completion(openai_handle_t handle, const openai_chat_request_t *
     if (rate_status != OPENAI_RATE_OK) {
         AIRY_MEMSET(out_response, 0, sizeof(*out_response));
         out_response->created = (uint64_t)time(NULL);
-        AIRY_STRNCPY_TERM(out_response->model, request->model ? request->model : "gpt-4o", sizeof(out_response->model));
+        AIRY_STRNCPY_TERM(out_response->model, request->model ? request->model : "gpt-4o",
+                          sizeof(out_response->model));
         out_response->finish_reasons = AIRY_CALLOC(1, sizeof(openai_finish_reason_t));
         if (out_response->finish_reasons)
             out_response->finish_reasons[0] = OPENAI_FINISH_RATE_LIMITED;
         openai_on_429(adapter);
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "openai: out of memory");
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "openai: out of memory");
         return AIRY_ERR_OUT_OF_MEMORY;
     }
 
     AIRY_MEMSET(out_response, 0, sizeof(*out_response));
-    AIRY_STRNCPY_TERM(out_response->model, request->model ? request->model : "gpt-4o", sizeof(out_response->model));
+    AIRY_STRNCPY_TERM(out_response->model, request->model ? request->model : "gpt-4o",
+                      sizeof(out_response->model));
     out_response->created = (uint64_t)time(NULL);
 
-    __attribute__((unused))
-    uint64_t ts_start_ms = airy_time_ms();
+    __attribute__((unused)) uint64_t ts_start_ms = airy_time_ms();
 
 #ifndef AIRY_HAS_CURL
     return -ENOSYS;
@@ -651,7 +652,7 @@ int openai_chat_completion(openai_handle_t handle, const openai_chat_request_t *
     if (!adapter->config.api_key || !adapter->config.api_key[0]) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai: unknown error");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     cJSON *req_json = cJSON_CreateObject();
     cJSON_AddStringToObject(req_json, "model", request->model ? request->model : "gpt-4o");
@@ -669,20 +670,21 @@ int openai_chat_completion(openai_handle_t handle, const openai_chat_request_t *
             cJSON *tool_obj = cJSON_CreateObject();
             cJSON_AddStringToObject(tool_obj, "type", "function");
             cJSON *func_obj = cJSON_CreateObject();
-            cJSON_AddStringToObject(
-                func_obj, "name",
-                request->tools[i].function.name ? request->tools[i].function.name : "");
+            cJSON_AddStringToObject(func_obj, "name",
+                                    request->tools[i].function.name ?
+                                        request->tools[i].function.name :
+                                        "");
             cJSON_AddStringToObject(func_obj, "description",
-                                    request->tools[i].function.description
-                                        ? request->tools[i].function.description
-                                        : "");
+                                    request->tools[i].function.description ?
+                                        request->tools[i].function.description :
+                                        "");
             if (request->tools[i].function.parameters_schema_json) {
-                /* P0.18.2: 模式 A 变体 — CJSON_PARSE_GUARD + 所有权转移后置 NULL */
+
                 CJSON_PARSE_GUARD(params, request->tools[i].function.parameters_schema_json,
                                   { (void)0; });
                 if (params) {
                     cJSON_AddItemToObject(func_obj, "parameters", params);
-                    params = NULL; /* 所有权已转移到 func_obj，防止 CJSON_AUTO_FREE 重复释放 */
+                    params = NULL;
                 } else {
                     cJSON_AddItemToObject(func_obj, "parameters", cJSON_CreateObject());
                 }
@@ -754,7 +756,8 @@ int openai_chat_completion(openai_handle_t handle, const openai_chat_request_t *
                 out_response->finish_reasons[0] = OPENAI_FINISH_STOP;
             out_response->usage = api_usage;
         } else {
-            airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai: unknown error");
+            airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                             "openai: unknown error");
             return AIRY_ERR_UNKNOWN;
         }
     } else {
@@ -777,16 +780,17 @@ int openai_chat_completion_streaming(openai_handle_t handle, const openai_chat_r
                                      openai_streaming_handler_t on_chunk, void *user_data,
                                      openai_chat_response_t *final_summary)
 {
-    if (!handle || !request || !on_chunk || !final_summary)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_chat_completion_streaming: failed");
+    if (!handle || !request || !on_chunk || !final_summary) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_chat_completion_streaming: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)handle;
     if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_SYS_NOT_INIT, __FILE__, __LINE__, __func__, "openai: not initialized");
+        airy_err_push_ex(AIRY_ERR_SYS_NOT_INIT, __FILE__, __LINE__, __func__,
+                         "openai: not initialized");
         return AIRY_ERR_SYS_NOT_INIT;
-        }
+    }
 
 #ifndef AIRY_HAS_CURL
     (void)request;
@@ -797,13 +801,14 @@ int openai_chat_completion_streaming(openai_handle_t handle, const openai_chat_r
     if (!adapter->config.api_key || !adapter->config.api_key[0]) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai: unknown error");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     uint64_t ts_start_ms = airy_time_ms();
 
     AIRY_MEMSET(final_summary, 0, sizeof(*final_summary));
     final_summary->created = (uint64_t)time(NULL);
-    AIRY_STRNCPY_TERM(final_summary->model, request->model ? request->model : "gpt-4o", sizeof(final_summary->model));
+    AIRY_STRNCPY_TERM(final_summary->model, request->model ? request->model : "gpt-4o",
+                      sizeof(final_summary->model));
 
     cJSON *req_json = cJSON_CreateObject();
     cJSON_AddStringToObject(req_json, "model", request->model ? request->model : "gpt-4o");
@@ -852,7 +857,7 @@ int openai_chat_completion_streaming(openai_handle_t handle, const openai_chat_r
     if (api_result <= 0) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai: unknown error");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     char full_response[OPENAI_MAX_RESPONSE_LEN];
     AIRY_MEMSET(full_response, 0, sizeof(full_response));
@@ -862,7 +867,7 @@ int openai_chat_completion_streaming(openai_handle_t handle, const openai_chat_r
     if (parse_result != 0) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai: unknown error");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
 
     size_t response_len = strlen(full_response);
     size_t pos = 0;
@@ -922,22 +927,25 @@ int openai_chat_completion_streaming(openai_handle_t handle, const openai_chat_r
 int openai_create_embedding(openai_handle_t handle, const openai_embedding_request_t *request,
                             openai_embedding_response_t *out_response)
 {
-    if (!handle || !request || !out_response)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_create_embedding: failed");
+    if (!handle || !request || !out_response) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_create_embedding: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)handle;
     if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_SYS_NOT_INIT, __FILE__, __LINE__, __func__, "openai: not initialized");
+        airy_err_push_ex(AIRY_ERR_SYS_NOT_INIT, __FILE__, __LINE__, __func__,
+                         "openai: not initialized");
         return AIRY_ERR_SYS_NOT_INIT;
-        }
+    }
 
     uint64_t ts_start_ms = airy_time_ms();
 
     AIRY_MEMSET(out_response, 0, sizeof(*out_response));
 
-    AIRY_STRNCPY_TERM(out_response->model, request->model ? request->model : "text-embedding-ada-002", sizeof(out_response->model));
+    AIRY_STRNCPY_TERM(out_response->model,
+                      request->model ? request->model : "text-embedding-ada-002",
+                      sizeof(out_response->model));
 
     int dims = OPENAI_EMBEDDING_DIM_DEFAULT;
     if (request->model) {
@@ -949,9 +957,10 @@ int openai_create_embedding(openai_handle_t handle, const openai_embedding_reque
 
     out_response->embeddings = AIRY_CALLOC(dims, sizeof(double));
     if (!out_response->embeddings) {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "openai: out of memory");
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "openai: out of memory");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
+    }
     out_response->embedding_dim = (size_t)dims;
 
     float *accum = AIRY_CALLOC(dims, sizeof(float));
@@ -1027,16 +1036,17 @@ int openai_create_embedding(openai_handle_t handle, const openai_embedding_reque
 
 int openai_get_stats(void *handle, openai_rate_limit_t *out_stats)
 {
-    if (!handle || !out_stats)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_get_stats: failed");
+    if (!handle || !out_stats) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_get_stats: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)handle;
     if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_SYS_NOT_INIT, __FILE__, __LINE__, __func__, "openai: not initialized");
+        airy_err_push_ex(AIRY_ERR_SYS_NOT_INIT, __FILE__, __LINE__, __func__,
+                         "openai: not initialized");
         return AIRY_ERR_SYS_NOT_INIT;
-        }
+    }
 
     AIRY_MEMSET(out_stats, 0, sizeof(*out_stats));
     out_stats->current_rpm = (double)adapter->rate_window_requests;
@@ -1090,11 +1100,11 @@ void openai_free_embedding_response(openai_embedding_response_t *response)
 
 int openai_set_rate_limits(void *handle, uint32_t rpm, uint32_t tpm)
 {
-    if (!handle)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_set_rate_limits: failed");
+    if (!handle) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_set_rate_limits: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)handle;
     if (rpm > 0)
         adapter->rate_limit_rpm = rpm;
@@ -1106,23 +1116,23 @@ int openai_set_rate_limits(void *handle, uint32_t rpm, uint32_t tpm)
 int openai_get_rate_status(void *handle, uint32_t *out_remaining_rpm, uint32_t *out_remaining_tpm,
                            uint32_t *out_429_count, double *out_backoff)
 {
-    if (!handle)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_get_rate_status: failed");
+    if (!handle) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_get_rate_status: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)handle;
     openai_rate_window_rotate(adapter);
 
     if (out_remaining_rpm) {
-        *out_remaining_rpm = (adapter->rate_limit_rpm > adapter->rate_window_requests)
-                                 ? (adapter->rate_limit_rpm - adapter->rate_window_requests)
-                                 : 0;
+        *out_remaining_rpm = (adapter->rate_limit_rpm > adapter->rate_window_requests) ?
+                                 (adapter->rate_limit_rpm - adapter->rate_window_requests) :
+                                 0;
     }
     if (out_remaining_tpm && adapter->rate_limit_tpm > 0) {
-        *out_remaining_tpm = (adapter->rate_window_tokens < adapter->rate_limit_tpm)
-                                 ? (adapter->rate_limit_tpm - adapter->rate_window_tokens)
-                                 : 0;
+        *out_remaining_tpm = (adapter->rate_window_tokens < adapter->rate_limit_tpm) ?
+                                 (adapter->rate_limit_tpm - adapter->rate_window_tokens) :
+                                 0;
     }
     if (out_429_count)
         *out_429_count = adapter->rate_429_count;
@@ -1155,7 +1165,7 @@ openai_enterprise_config_t openai_enterprise_config_default(void)
      *
      * 历史问题：原实现用 AIRY_STRDUP() 分配 base_url/default_model，但 config 按值返回，
      * 调用方（如 test_openai_adapter.c）通常不释放这些字符串，导致 ASAN 检测到
-     * 26B("https://api.openai.com/v1") + 7B("gpt-4o") × 多次调用泄漏。
+     * 26B("https:
      *
      * 修复方案：default config 直接指向字符串字面量（只读，静态存储期）。
      * openai_create() 和 openai_enterprise_context_create() 都按值拷贝 config，
@@ -1179,8 +1189,8 @@ openai_enterprise_config_t openai_enterprise_config_default(void)
     return cfg;
 }
 
-openai_enterprise_context_t *
-openai_enterprise_context_create(const openai_enterprise_config_t *config)
+openai_enterprise_context_t *openai_enterprise_context_create(
+    const openai_enterprise_config_t *config)
 {
     if (!config)
         return NULL;
@@ -1210,20 +1220,22 @@ void openai_enterprise_context_destroy(openai_enterprise_context_t *ctx)
 
 int openai_enterprise_register_model(openai_enterprise_context_t *ctx, const openai_model_t *model)
 {
-    if (!ctx || !ctx->handle || !model)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_enterprise_register_model: failed");
+    if (!ctx || !ctx->handle || !model) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_enterprise_register_model: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)ctx->handle;
     if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_SYS_NOT_INIT, __FILE__, __LINE__, __func__, "openai: not initialized");
+        airy_err_push_ex(AIRY_ERR_SYS_NOT_INIT, __FILE__, __LINE__, __func__,
+                         "openai: not initialized");
         return AIRY_ERR_SYS_NOT_INIT;
-        }
+    }
     if (adapter->model_count >= OPENAI_MAX_MODELS) {
-        airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "openai: null pointer");
+        airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__,
+                         "openai: null pointer");
         return AIRY_ERR_NULL_POINTER;
-        }
+    }
     openai_model_t *slot = &adapter->models[adapter->model_count];
     slot->id = model->id ? AIRY_STRDUP(model->id) : NULL;
     slot->name = model->name ? AIRY_STRDUP(model->name) : NULL;
@@ -1245,11 +1257,10 @@ int openai_enterprise_chat_completion(openai_enterprise_context_t *ctx, const ch
                                       double temperature, double top_p, int max_tokens,
                                       openai_chat_response_t *response)
 {
-    if (!ctx || !ctx->handle || !response)
-        {
+    if (!ctx || !ctx->handle || !response) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "if: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     const char *effective_model = model ? model : "gpt-4o";
     openai_chat_request_t req;
     AIRY_MEMSET(&req, 0, sizeof(req));
@@ -1270,11 +1281,11 @@ int openai_enterprise_chat_streaming(openai_enterprise_context_t *ctx, const cha
                                      const openai_message_t *messages, size_t message_count,
                                      openai_streaming_handler_t handler, void *user_data)
 {
-    if (!ctx || !ctx->handle || !handler)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_enterprise_chat_streaming: failed");
+    if (!ctx || !ctx->handle || !handler) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_enterprise_chat_streaming: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     const char *effective_model = model ? model : "gpt-4o";
     openai_chat_request_t req;
     AIRY_MEMSET(&req, 0, sizeof(req));
@@ -1292,11 +1303,11 @@ int openai_enterprise_embeddings(openai_enterprise_context_t *ctx, const char *m
                                  const char **inputs, size_t input_count,
                                  openai_embedding_response_t *response)
 {
-    if (!ctx || !ctx->handle || !response)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_enterprise_embeddings: failed");
+    if (!ctx || !ctx->handle || !response) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_enterprise_embeddings: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     openai_embedding_request_t req;
     AIRY_MEMSET(&req, 0, sizeof(req));
     req.input_text =
@@ -1314,16 +1325,17 @@ int openai_enterprise_embeddings(openai_enterprise_context_t *ctx, const char *m
 int openai_enterprise_list_models(openai_enterprise_context_t *ctx, openai_model_t **models,
                                   size_t *model_count)
 {
-    if (!ctx || !ctx->handle || !models || !model_count)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_enterprise_list_models: failed");
+    if (!ctx || !ctx->handle || !models || !model_count) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_enterprise_list_models: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)ctx->handle;
     if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_SYS_NOT_INIT, __FILE__, __LINE__, __func__, "openai: not initialized");
+        airy_err_push_ex(AIRY_ERR_SYS_NOT_INIT, __FILE__, __LINE__, __func__,
+                         "openai: not initialized");
         return AIRY_ERR_SYS_NOT_INIT;
-        }
+    }
     *model_count = adapter->model_count;
     if (adapter->model_count == 0) {
         *models = NULL;
@@ -1331,13 +1343,13 @@ int openai_enterprise_list_models(openai_enterprise_context_t *ctx, openai_model
     }
     *models = AIRY_CALLOC(adapter->model_count, sizeof(openai_model_t));
     if (!*models) {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "openai: out of memory");
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "openai: out of memory");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
+    }
     for (size_t i = 0; i < adapter->model_count; i++) {
         (*models)[i].id = adapter->models[i].id ? AIRY_STRDUP(adapter->models[i].id) : NULL;
-        (*models)[i].name =
-            adapter->models[i].name ? AIRY_STRDUP(adapter->models[i].name) : NULL;
+        (*models)[i].name = adapter->models[i].name ? AIRY_STRDUP(adapter->models[i].name) : NULL;
         (*models)[i].owned_by =
             adapter->models[i].owned_by ? AIRY_STRDUP(adapter->models[i].owned_by) : NULL;
         (*models)[i].capabilities = adapter->models[i].capabilities;
@@ -1365,11 +1377,11 @@ bool openai_enterprise_check_rate_limit(openai_enterprise_context_t *ctx, int es
 int openai_enterprise_set_chat_handler(openai_enterprise_context_t *ctx,
                                        openai_chat_handler_t handler, void *user_data)
 {
-    if (!ctx)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_enterprise_set_chat_handler: failed");
+    if (!ctx) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_enterprise_set_chat_handler: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     ctx->chat_handler = handler;
     ctx->chat_handler_user_data = user_data;
     return 0;
@@ -1378,11 +1390,11 @@ int openai_enterprise_set_chat_handler(openai_enterprise_context_t *ctx,
 int openai_enterprise_set_embedding_handler(openai_enterprise_context_t *ctx,
                                             openai_embedding_handler_t handler, void *user_data)
 {
-    if (!ctx)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_enterprise_set_embedding_handler: failed");
+    if (!ctx) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_enterprise_set_embedding_handler: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     ctx->embedding_handler = handler;
     ctx->embedding_handler_user_data = user_data;
     return 0;
@@ -1391,11 +1403,11 @@ int openai_enterprise_set_embedding_handler(openai_enterprise_context_t *ctx,
 int openai_enterprise_set_audit_handler(openai_enterprise_context_t *ctx,
                                         openai_audit_handler_t handler, void *user_data)
 {
-    if (!ctx)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_enterprise_set_audit_handler: failed");
+    if (!ctx) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_enterprise_set_audit_handler: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     ctx->audit_handler = handler;
     ctx->audit_handler_user_data = user_data;
     return 0;
@@ -1404,17 +1416,16 @@ int openai_enterprise_set_audit_handler(openai_enterprise_context_t *ctx,
 int openai_enterprise_route_request(openai_enterprise_context_t *ctx, const char *path,
                                     const char *method, const char *body_json, char **response_json)
 {
-    if (!ctx || !path || !method || !response_json)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_enterprise_route_request: failed");
+    if (!ctx || !path || !method || !response_json) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_enterprise_route_request: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     *response_json = NULL;
     if (strcmp(path, "/v1/chat/completions") == 0) {
         openai_message_t msg = {0};
         msg.role = OPENAI_ROLE_USER;
-        msg.content =
-            (body_json && body_json[0]) ? AIRY_STRDUP(body_json) : AIRY_STRDUP("hello");
+        msg.content = (body_json && body_json[0]) ? AIRY_STRDUP(body_json) : AIRY_STRDUP("hello");
         openai_chat_response_t resp;
         AIRY_MEMSET(&resp, 0, sizeof(resp));
         int rc =
@@ -1471,7 +1482,8 @@ int openai_enterprise_route_request(openai_enterprise_context_t *ctx, const char
         char *json = (char *)AIRY_MALLOC(json_sz);
         if (!json) {
             openai_embedding_response_destroy(&emb_resp);
-            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "json_escape_string: allocation failed");
+            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                             "json_escape_string: allocation failed");
             return AIRY_ERR_OUT_OF_MEMORY;
         }
         size_t pos = 0;
@@ -1578,20 +1590,20 @@ static int openai_adapter_destroy_cb(void *context)
 
 static int openai_adapter_encode_cb(void *c, const void *m, void **o, size_t *s)
 {
-    if (!m || !o || !s)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_adapter_encode_cb: failed");
+    if (!m || !o || !s) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_adapter_encode_cb: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     (void)c;
     const char *msg = (const char *)m;
     size_t len = strlen(msg) + 1;
     char *buf = (char *)AIRY_MALLOC(len);
-    if (!buf)
-        {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "strlen: allocation failed");
+    if (!buf) {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "strlen: allocation failed");
         return AIRY_ERR_OUT_OF_MEMORY;
-        }
+    }
     __builtin_memcpy(buf, msg, len);
     *o = buf;
     *s = len;
@@ -1600,11 +1612,11 @@ static int openai_adapter_encode_cb(void *c, const void *m, void **o, size_t *s)
 
 static int openai_adapter_decode_cb(void *c, const void *d, size_t s, void *o)
 {
-    if (!d || !o || s == 0)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_adapter_decode_cb: failed");
+    if (!d || !o || s == 0) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_adapter_decode_cb: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     (void)c;
     __builtin_memcpy(o, d, s);
     return 0;
@@ -1615,11 +1627,10 @@ static int openai_adapter_connect_cb(void *c, const char *endpoint)
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)c;
     if (!adapter)
         adapter = g_openai_instance;
-    if (!endpoint)
-        {
+    if (!endpoint) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "if: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     if (adapter) {
         if (adapter->config.base_url)
             AIRY_FREE(adapter->config.base_url);
@@ -1650,19 +1661,18 @@ static int openai_adapter_is_connected_cb(void *c)
 
 static int openai_adapter_send_cb(void *c, const void *d, size_t s)
 {
-    if (!d || s == 0)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_adapter_send_cb: IO error");
+    if (!d || s == 0) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_adapter_send_cb: IO error");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)c;
     if (!adapter)
         adapter = g_openai_instance;
-    if (!adapter || !adapter->initialized)
-        {
+    if (!adapter || !adapter->initialized) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "if: not initialized");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     adapter->request_counter++;
     adapter->stats_chat_completions++;
     return (int)s;
@@ -1670,18 +1680,19 @@ static int openai_adapter_send_cb(void *c, const void *d, size_t s)
 
 static int openai_adapter_receive_cb(void *c, void **d, size_t *s, uint32_t t)
 {
-    if (!d || !s)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_adapter_receive_cb: failed");
+    if (!d || !s) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_adapter_receive_cb: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)c;
     if (!adapter)
         adapter = g_openai_instance;
     if (!adapter || !adapter->initialized) {
         *d = NULL;
         *s = 0;
-        airy_err_push_ex(AIRY_ERR_SYS_NOT_INIT, __FILE__, __LINE__, __func__, "openai: not initialized");
+        airy_err_push_ex(AIRY_ERR_SYS_NOT_INIT, __FILE__, __LINE__, __func__,
+                         "openai: not initialized");
         return AIRY_ERR_SYS_NOT_INIT;
     }
 
@@ -1691,7 +1702,8 @@ static int openai_adapter_receive_cb(void *c, void **d, size_t *s, uint32_t t)
         if (!buf) {
             *d = NULL;
             *s = 0;
-            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "openai: out of memory");
+            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                             "openai: out of memory");
             return AIRY_ERR_OUT_OF_MEMORY;
         }
         __builtin_memcpy(buf, adapter->last_response_body, len);
@@ -1709,11 +1721,11 @@ static int openai_adapter_receive_cb(void *c, void **d, size_t *s, uint32_t t)
 
 static int openai_adapter_handle_request_cb(void *c, const void *r, void **rp)
 {
-    if (!r)
-        {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai_adapter_handle_request_cb: failed");
+    if (!r) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "openai_adapter_handle_request_cb: failed");
         return AIRY_ERR_UNKNOWN;
-        }
+    }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)c;
     if (!adapter)
         adapter = g_openai_instance;
@@ -1782,9 +1794,9 @@ static int openai_adapter_get_stats_cb(void *c, char *b, size_t s)
              (unsigned long)adapter->request_counter, adapter->stats_chat_completions,
              adapter->stats_embeddings, (unsigned long)adapter->stats_total_input_tokens,
              (unsigned long)adapter->stats_total_output_tokens,
-             adapter->stats_latency_count > 0
-                 ? adapter->stats_total_latency_ms / adapter->stats_latency_count
-                 : 0.0,
+             adapter->stats_latency_count > 0 ?
+                 adapter->stats_total_latency_ms / adapter->stats_latency_count :
+                 0.0,
              adapter->rate_429_count);
     return 0;
 }

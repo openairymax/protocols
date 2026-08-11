@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+
 // @owner: team-B
 /**
  * @file airy_protocol_interface.c
@@ -78,7 +79,6 @@ static int router_std_remove_route(proto_router_iface_t *router, const char *sou
     AIRY_CHECK(impl != NULL, AIRY_EINVAL, "impl is NULL");
     AIRY_CHECK(impl->handle != NULL, AIRY_EINVAL, "impl->handle is NULL");
 
-    /* 真实删除：从路由表中移除所有 source_endpoint == source_pattern 的规则 */
     return protocol_router_remove_rule(impl->handle, source_pattern);
 }
 
@@ -172,8 +172,7 @@ static int router_std_get_stats(proto_router_iface_t *router, char **stats_json)
 
 proto_router_iface_t *proto_router_standard_create(void)
 {
-    proto_router_full_t *full =
-        (proto_router_full_t *)AIRY_CALLOC(1, sizeof(proto_router_full_t));
+    proto_router_full_t *full = (proto_router_full_t *)AIRY_CALLOC(1, sizeof(proto_router_full_t));
     if (!full)
         return NULL;
 
@@ -331,10 +330,10 @@ static int gw_std_unregister_protocol(proto_gateway_iface_t *gw, const char *nam
             AIRY_FREE(g_gw_impl->protocols[i].adapter_ctx);
             g_gw_impl->protocols[i].adapter_ctx = NULL;
             __builtin_memmove(&g_gw_impl->protocols[i], &g_gw_impl->protocols[i + 1],
-                    (g_gw_impl->protocol_count - i - 1) * sizeof(gw_protocol_entry_t));
+                              (g_gw_impl->protocol_count - i - 1) * sizeof(gw_protocol_entry_t));
             g_gw_impl->protocol_count--;
             AIRY_MEMSET(&g_gw_impl->protocols[g_gw_impl->protocol_count], 0,
-                   sizeof(gw_protocol_entry_t));
+                        sizeof(gw_protocol_entry_t));
             return 0;
         }
     }

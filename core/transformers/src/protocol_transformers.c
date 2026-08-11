@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 SPHARX Ltd.
 // SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
+
 // @owner: team-B
 /**
  * @file protocol_transformers.c
@@ -58,7 +59,8 @@ int transformer_jsonrpc_to_mcp_request(const unified_message_t *source, unified_
 
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx && ctx->trace_id[0]) {
-        AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+        AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
+                          sizeof(target->metadata.trace_id));
     }
 
     char mcp_params[4096] = {0};
@@ -115,9 +117,11 @@ int transformer_mcp_to_jsonrpc_response(const unified_message_t *source, unified
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
+                              sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
+                              sizeof(target->metadata.session_id));
     }
 
     if (source->is_error) {
@@ -180,9 +184,11 @@ int transformer_mcp_tools_list_to_jsonrpc(const unified_message_t *source,
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
+                              sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
+                              sizeof(target->metadata.session_id));
     }
 
     if (source->payload) {
@@ -217,7 +223,8 @@ int transformer_jsonrpc_to_a2a_task(const unified_message_t *source, unified_mes
         AIRY_STRNCPY_TERM(target->sender_id, ctx->agent_id, sizeof(target->sender_id));
     }
     if (ctx && ctx->trace_id[0]) {
-        AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+        AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
+                          sizeof(target->metadata.trace_id));
     }
 
     char a2a_payload[8192] = {0};
@@ -263,9 +270,11 @@ int transformer_a2a_to_jsonrpc_response(const unified_message_t *source, unified
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
+                              sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
+                              sizeof(target->metadata.session_id));
     }
 
     if (source->payload) {
@@ -295,7 +304,8 @@ int transformer_jsonrpc_to_a2a_discover(const unified_message_t *source, unified
         if (ctx->agent_id[0])
             AIRY_STRNCPY_TERM(target->sender_id, ctx->agent_id, sizeof(target->sender_id));
         if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
+                              sizeof(target->metadata.trace_id));
     }
 
     target->payload = AIRY_STRDUP("{}");
@@ -318,9 +328,11 @@ int transformer_a2a_agents_to_jsonrpc(const unified_message_t *source, unified_m
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
+                              sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
+                              sizeof(target->metadata.session_id));
     }
 
     if (source->payload) {
@@ -352,9 +364,11 @@ int transformer_jsonrpc_to_openai_chat(const unified_message_t *source, unified_
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
+                              sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
+                              sizeof(target->metadata.session_id));
     }
 
     char openai_payload[16384] = {0};
@@ -423,9 +437,11 @@ int transformer_openai_chat_to_jsonrpc(const unified_message_t *source, unified_
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
+                              sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
+                              sizeof(target->metadata.session_id));
     }
 
     if (!source->payload) {
@@ -497,9 +513,11 @@ int transformer_openai_stream_chunk_to_jsonrpc(const unified_message_t *source,
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
+                              sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
+                              sizeof(target->metadata.session_id));
     }
 
     if (source->payload) {
@@ -527,9 +545,11 @@ int transformer_jsonrpc_to_openai_embedding(const unified_message_t *source,
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
+                              sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
+                              sizeof(target->metadata.session_id));
     }
 
     const char *text = "";
@@ -591,9 +611,11 @@ int transformer_jsonrpc_to_openjiuwen(const unified_message_t *source, unified_m
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
+                              sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
+                              sizeof(target->metadata.session_id));
     }
 
     openjiuwen_header_t header;
@@ -645,9 +667,11 @@ int transformer_openjiuwen_to_jsonrpc(const unified_message_t *source, unified_m
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
         if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id, sizeof(target->metadata.trace_id));
+            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
+                              sizeof(target->metadata.trace_id));
         if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id, sizeof(target->metadata.session_id));
+            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
+                              sizeof(target->metadata.session_id));
     }
 
     const unsigned char *data = (const unsigned char *)source->payload;
