@@ -4,25 +4,26 @@
 /* @owner: team-B */
 /**
  * @file langchain_adapter.h
- * @brief LangChain Framework Integration Adapter for AgentRT
+ * @brief LangChain framework integration adapter for AgentRT.
  *
- * LangChain 框架适配器，实现AgentRT与LangChain生态的完整集成。
+ * LangChain framework adapter implementing full integration between AgentRT
+ * and the LangChain ecosystem.
  *
- * LangChain核心概念映射:
- * - Chain → AgentRT Task Pipeline
- * - Agent → AgentRT Agent + Protocol Session
- * - Tool → AgentRT MCP/OpenAI tool interface
- * - LLM → AgentRT LLM Daemon via protocol
- * - Memory → AgentRT MemoryRovol (L1-L4)
- * - Retriever → AgentRT memory.search protocol
+ * LangChain core concept mapping:
+ * - Chain -> AgentRT Task Pipeline
+ * - Agent -> AgentRT Agent + Protocol Session
+ * - Tool -> AgentRT MCP/OpenAI tool interface
+ * - LLM -> AgentRT LLM Daemon via protocol
+ * - Memory -> AgentRT MemoryRovol (L1-L4)
+ * - Retriever -> AgentRT memory.search protocol
  *
- * 支持的LangChain组件:
- * 1. LCEL (LangChain Expression Language) 链式执行
- * 2. AgentExecutor 多步推理代理
- * 3. Tool Calling 原生工具调用
- * 4. RAG 检索增强生成
- * 5. ConversationBufferMemory 对话记忆
- * 6. StreamingIterator 流式输出
+ * Supported LangChain components:
+ * 1. LCEL (LangChain Expression Language) chain execution
+ * 2. AgentExecutor multi-step reasoning agents
+ * 3. Tool Calling native tool invocation
+ * 4. RAG retrieval-augmented generation
+ * 5. ConversationBufferMemory chat memory
+ * 6. StreamingIterator streaming output
  *
  * @since 2.1.0
  */

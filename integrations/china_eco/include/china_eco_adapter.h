@@ -4,13 +4,15 @@
 /* @owner: team-B */
 /**
  * @file china_eco_adapter.h
- * @brief China Domestic Ecosystem Protocol Adapter for AgentRT
+ * @brief China domestic ecosystem protocol adapter for AgentRT.
  *
- * 国内生态协议兼容适配器，提供：
- * 1. LLM Provider Bridge — 百炼(Bailian)/文心(Wenxin)/DashScope等国内平台OpenAI兼容层
- * 2. Object Storage Bridge — 阿里云OSS / 腾讯云COS / 百度云BOS的统一对象存储适配
- * 3. SM Crypto Suite — 国产加密算法SM2/SM3/SM4的OpenSSL delegate支持
- * 4. Message Queue Bridge — RocketMQ / Pulsar 消息队列协议映射
+ * Domestic ecosystem protocol compatibility adapter, providing:
+ * 1. LLM Provider Bridge - OpenAI-compatible layer for domestic platforms
+ *    (Bailian/Wenxin/DashScope, etc.)
+ * 2. Object Storage Bridge - unified object-storage adaptation for
+ *    Aliyun OSS / Tencent COS / Baidu BOS
+ * 3. SM Crypto Suite - OpenSSL delegate support for SM2/SM3/SM4
+ * 4. Message Queue Bridge - RocketMQ / Pulsar message-queue protocol mapping
  *
  * @since 0.1.0
  * @see unified_protocol.h

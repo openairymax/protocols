@@ -4,17 +4,19 @@
 /* @owner: team-B */
 /**
  * @file protocol_extension_framework.h
- * @brief Protocol Extension Framework for AgentRT
+ * @brief Protocol Extension Framework for AgentRT.
  *
- * 自定义协议扩展框架，支持第三方开发者创建和注册自定义协议适配器。
- * 提供协议生命周期管理、消息转换管道、能力声明与发现等扩展机制。
+ * A custom protocol extension framework that lets third-party developers
+ * create and register custom protocol adapters. Provides extension lifecycle
+ * management, a message conversion pipeline, capability declaration and
+ * discovery, etc.
  *
- * 核心设计:
- * 1. 插件式协议注册 — 动态加载/卸载协议适配器
- * 2. 消息转换管道 — 可组合的消息处理中间件链
- * 3. 能力声明与发现 — 协议能力自动注册与查询
- * 4. 协议协商 — 客户端-服务端协议版本协商
- * 5. 热加载 — 运行时动态添加协议支持
+ * Core design:
+ * 1. pluggable protocol registration - dynamically load/unload adapters
+ * 2. message conversion pipeline - composable middleware chain
+ * 3. capability declaration and discovery - automatic registration/query
+ * 4. protocol negotiation - client/server version negotiation
+ * 5. hot loading - add protocol support at runtime
  *
  * @since 0.1.0
  * @see unified_protocol.h

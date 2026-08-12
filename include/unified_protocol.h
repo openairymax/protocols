@@ -2,14 +2,14 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0 */
 
 /*
- * AgentRT Unified Protocol - 统一协议接口
+ * AgentRT Unified Protocol - unified protocol interface.
  *
- * 本文件定义AgentRT统一协议系统的核心接口，提供对多种
- * 通信协议（JSON-RPC、MCP、A2A、OpenAI、OpenJiuwen）的
- * 统一抽象层。
+ * Defines the core interfaces of the AgentRT unified protocol system,
+ * providing a unified abstraction over multiple communication protocols
+ * (JSON-RPC, MCP, A2A, OpenAI, OpenJiuwen).
  *
- * 原位置: agentrt/include/agentrt/unified_protocol.h
- * 迁移至: agentrt/protocols/include/ (2026-04-19 include/整合重构)
+ * Moved from agentrt/include/agentrt/unified_protocol.h to
+ * agentrt/protocols/include/ (2026-04-19 include consolidation refactor).
  */
 
 /* @owner: team-B */
@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 /**
- * @brief 支持的协议类型
+  * @brief Supported protocol types
  */
 typedef enum {
     AIRY_PROTOCOL_JSON_RPC = 0,
@@ -41,7 +41,7 @@ typedef enum {
 } airy_protocol_type_t;
 
 /**
- * @brief 协议适配器结构体（所有适配器共享的接口定义）
+  * @brief Protocol adapter structure (shared interface definition)
  */
 typedef struct protocol_adapter_s {
     airy_protocol_type_t type;
@@ -68,7 +68,7 @@ typedef struct protocol_adapter_s {
 typedef protocol_adapter_t proto_adapter_t;
 
 /**
- * @brief 消息结构
+  * @brief Message structure
  */
 typedef struct {
     const void *data;
@@ -100,17 +100,17 @@ typedef enum {
 #define PROTO_A2A AIRY_PROTOCOL_A2A
 #define PROTO_OPENAI AIRY_PROTOCOL_OPENAI
 #define PROTO_OPENJIUWEN AIRY_PROTOCOL_OPENJIUWEN
-/* P0-15 修复: PROTO_* 宏使用 COUNT+N 偏移值（10-13），与枚举值（5-8）不匹配，
- * 导致 find_adapter_node() 按 type 查找时永远找不到这些适配器。
- * 修复方案：改为直接引用枚举值，与 PROTO_JSONRPC/PROTO_MCP 等保持一致。 */
+/* P0-15 fix: PROTO_* macros used COUNT+N offsets (10-13), mismatching enums (5-8),
+  * so find_adapter_node() never found them by type.
+  * Fix: reference the enum values directly, like PROTO_JSONRPC/PROTO_MCP. */
 #define PROTO_OPENCLAW AIRY_PROTOCOL_OPENCLAW
 #define PROTO_CLAUDE AIRY_PROTOCOL_CLAUDE
 #define PROTO_AGNTCY AIRY_PROTOCOL_AGNTCY
 #define PROTO_CHINA_ECO AIRY_PROTOCOL_CHINA_ECO
 
-/* P0-15: 删除旧传输层常量 PROTOCOL_WEBSOCKET/GRPC/MQTT/AMQP/RAW_TCP/RAW_UDP/STDIO/IPC。
- * 这些是项目早期传输层类型的遗留宏，与当前应用层协议枚举体系不兼容。
- * 当前无实际调用点（gateway 模块自行实现 HTTP/WebSocket），保留会导致编译错误。 */
+/* P0-15: removed legacy transport constants PROTOCOL_WEBSOCKET/GRPC/MQTT/AMQP/RAW_TCP/RAW_UDP/STDIO/IPC.
+  * Legacy transport-type macros, incompatible with the current app-layer protocol enums.
+  * Unused (gateway implements HTTP/WebSocket itself); keeping them broke compilation. */
 #define ENCODING_BINARY 1
 
 typedef struct {
@@ -148,22 +148,22 @@ typedef struct {
 } unified_message_t;
 
 /**
- * @brief 创建指定类型的协议适配器
+  * @brief Create a protocol adapter of the given type
  */
 int protocol_adapter_create(airy_protocol_type_t type, protocol_adapter_t *adapter);
 
 /**
- * @brief 销毁协议适配器
+  * @brief Destroy a protocol adapter
  */
 void protocol_adapter_destroy(protocol_adapter_t adapter);
 
 /**
- * @brief 通过适配器发送消息
+  * @brief Send a message through an adapter
  */
 int protocol_adapter_send(protocol_adapter_t adapter, const airy_message_t *msg);
 
 /**
- * @brief 通过适配器接收消息
+  * @brief Receive a message through an adapter
  */
 int protocol_adapter_recv(protocol_adapter_t adapter, airy_message_t *msg, size_t max_len);
 

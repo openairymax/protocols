@@ -4,9 +4,10 @@
 // @owner: team-B
 /**
  * @file unified_protocol.c
- * @brief Unified Protocol Implementation
+ * @brief Unified protocol implementation.
  *
- * 统一协议接口实现，提供协议无关的消息处理和路由功能。
+ * Implements the unified protocol interface, providing protocol-agnostic
+ * message handling and routing.
  */
 
 #include "unified_protocol.h"
@@ -400,16 +401,16 @@ void unified_message_destroy(unified_message_t *message)
     if (!message)
         return;
 
-    // 注意：这里不释放payload，由调用者管理
+    // Note: payload is not freed here; the caller manages it
     AIRY_MEMSET(message, 0, sizeof(unified_message_t));
 }
 
 const char *protocol_type_to_string(protocol_type_t type)
 {
-    /* P0-15 修复: 名称数组对齐 airy_protocol_type_t 枚举（9 个值 0-8）。
-     * 历史 bug：数组只有 8 项旧传输层协议名（HTTP/WebSocket/gRPC/...），
-     * 与当前 9 项应用层枚举完全不匹配。调用 protocol_type_to_string(MCP) 会
-     * 错误返回 "WebSocket"（索引 1 = 旧 WebSocket 位置）。 */
+    /* P0-15 fix: name array aligned with airy_protocol_type_t (9 values 0-8).
+      * Historical bug: the array had only 8 legacy transport names (HTTP/WebSocket/gRPC/...),
+      * mismatching the current 9 app-layer enums. protocol_type_to_string(MCP)
+      * wrongly returned "WebSocket" (index 1 = old WebSocket slot). */
     static const char *names[] = {
         "JSON-RPC", /* 0: AIRY_PROTOCOL_JSON_RPC */
         "MCP", /* 1: AIRY_PROTOCOL_MCP */
@@ -434,9 +435,9 @@ protocol_type_t protocol_type_from_string(const char *str)
     if (!str)
         return PROTOCOL_CUSTOM;
 
-    /* P0-15 修复: 新增全部 9 种应用层协议名的字符串→枚举映射。
-     * 历史 bug：from_string 只识别旧传输层协议名（http/websocket/grpc/...），
-     * 调用 protocol_type_from_string("mcp") 返回 PROTOCOL_CUSTOM 而非 PROTO_MCP。 */
+    /* P0-15 fix: added the full 9-entry string->enum mapping for app-layer protocols.
+      * Historical bug: from_string only knew legacy transport names;
+      * protocol_type_from_string("mcp") returned PROTOCOL_CUSTOM instead of PROTO_MCP. */
     if (strcasecmp(str, "json-rpc") == 0 || strcasecmp(str, "http") == 0)
         return AIRY_PROTOCOL_JSON_RPC;
     if (strcasecmp(str, "mcp") == 0 || strcasecmp(str, "mcp_v1") == 0)

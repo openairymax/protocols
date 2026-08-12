@@ -4,12 +4,13 @@
 /* @owner: team-B */
 /**
  * @file airy_protocol_interface.h
- * @brief AgentRT Protocol System Unified Interface Definition
+ * @brief AgentRT protocol system unified interface definition.
  *
- * 定义 AgentRT 协议系统的公共接口契约，作为所有协议适配器、网关、SDK 的统一抽象层。
+ * Defines the public interface contract of the AgentRT protocol system, the
+ * unified abstraction layer for all protocol adapters, gateways and SDKs.
  *
- * 原位置: agentrt/interfaces/include/
- * 迁移至: agentrt/protocols/include/ (2026-04-19 interfaces删除重构)
+ * Moved from agentrt/interfaces/include/ to agentrt/protocols/include/
+ * (2026-04-19 interfaces removal refactor).
  */
 
 #ifndef AIRY_RT_PROTOCOL_INTERFACE_H
@@ -27,7 +28,7 @@ extern "C" {
 
 /* unified_message_t and protocol_type_t now defined in unified_protocol.h */
 /* ============================================================================
- * I-L1: Protocol Adapter Interface (协议适配器基础接口)
+  * I-L1: Protocol Adapter Interface (basic adapter interface)
  * ============================================================================ */
 
 typedef enum {
@@ -112,7 +113,7 @@ typedef struct proto_adapter_entry_s {
 } proto_adapter_entry_t;
 
 /* ============================================================================
- * I-L2: Protocol Router Interface (协议路由接口)
+  * I-L2: Protocol Router Interface (routing interface)
  * ============================================================================ */
 
 typedef struct {
@@ -143,7 +144,7 @@ proto_router_iface_t *proto_router_standard_create(void);
 void proto_router_standard_destroy(proto_router_iface_t *router);
 
 /* ============================================================================
- * I-L3: Protocol Gateway Interface (网关协议集成接口)
+  * I-L3: Protocol Gateway Interface (gateway integration interface)
  * ============================================================================ */
 
 typedef int (*proto_gateway_request_cb)(const char *protocol_name, const char *method,
@@ -183,7 +184,7 @@ proto_gateway_iface_t *proto_gateway_standard_create(void);
 void proto_gateway_standard_destroy(proto_gateway_iface_t *gw);
 
 /* ============================================================================
- * I-L4: Protocol Extension Interface (协议扩展接口)
+  * I-L4: Protocol Extension Interface (extension interface)
  * ============================================================================ */
 
 typedef struct {
@@ -214,7 +215,7 @@ typedef struct proto_extension_mgr_iface_s {
 } proto_extension_mgr_iface_t;
 
 /* ============================================================================
- * 全局注册与发现 API
+  * Global registration and discovery APIs
  * ============================================================================ */
 
 int proto_interface_register_builtins(void);

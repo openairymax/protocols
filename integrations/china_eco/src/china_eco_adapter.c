@@ -4,13 +4,13 @@
 // @owner: team-B
 /**
  * @file china_eco_adapter.c
- * @brief China Domestic Ecosystem Protocol Adapter Implementation
+ * @brief China domestic ecosystem protocol adapter implementation.
  *
- * 实现国内生态协议兼容适配器的全部核心功能：
- * - LLM Provider Bridge: 百炼/文心/DashScope/智谱/MiniMax/Moonshot/DeepSeek/Qwen
- * - SM3 密码杂凑算法: GB/T 32905-2016 标准实现
- * - SM4 分组密码算法: GB/T 32907-2016 标准实现 (CBC模式)
- * - Object Storage Bridge: OSS/COS/BOS/Huawei OBS统一接口
+ * Implements all core features of the domestic ecosystem protocol adapter:
+ * - LLM Provider Bridge: Bailian/Wenxin/DashScope/Zhipu/MiniMax/Moonshot/DeepSeek/Qwen
+ * - SM3 cryptographic hash: GB/T 32905-2016 standard implementation
+ * - SM4 block cipher: GB/T 32907-2016 standard implementation (CBC mode)
+ * - Object Storage Bridge: unified OSS/COS/BOS/Huawei OBS interface
  */
 
 #include "china_eco_adapter.h"

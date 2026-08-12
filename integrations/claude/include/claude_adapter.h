@@ -4,19 +4,20 @@
 /* @owner: team-B */
 /**
  * @file claude_adapter.h
- * @brief Anthropic Claude API Integration Adapter for AgentRT
+ * @brief Anthropic Claude API integration adapter for AgentRT.
  *
- * Claude API 适配器，实现AgentRT与Anthropic Claude模型的完整集成。
+ * Claude API adapter implementing full integration between AgentRT and
+ * Anthropic Claude models.
  *
- * Claude核心特性（v2026+）:
- * 1. Messages API — 多轮对话、系统提示词
- * 2. Tool Use — 原生工具调用与函数执行
- * 3. Extended Thinking — 深度推理模式
- * 4. Vision — 图像理解能力
- * 5. Streaming — SSE流式响应
- * 6. Token计数与预算控制
- * 7. Prompt Caching — 提示缓存优化
- * 8. 安全过滤 — 内容安全策略
+ * Claude core features (v2026+):
+ * 1. Messages API - multi-turn conversations, system prompts
+ * 2. Tool Use - native tool calling and function execution
+ * 3. Extended Thinking - deep reasoning mode
+ * 4. Vision - image understanding
+ * 5. Streaming - SSE streaming responses
+ * 6. token counting and budget control
+ * 7. Prompt Caching - prompt cache optimization
+ * 8. safety filtering - content safety policy
  *
  * @since 2.1.0
  * @see unified_protocol.h

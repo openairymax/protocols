@@ -4,10 +4,10 @@
 /* @owner: team-B */
 /**
  * @file protocols.h
- * @brief Main header for AgentRT Unified Protocols Framework
+ * @brief Main header for the AgentRT unified protocols framework.
  *
- * 统一协议栈框架主头文件，包含所有公共API和类型定义。
- * 使用此框架可实现协议无关的通信层。
+ * Master header of the unified protocol stack framework, containing all
+ * public APIs and type definitions for protocol-agnostic communication.
  */
 
 #ifndef AIRY_RT_PROTOCOLS_H
@@ -17,16 +17,16 @@
 
 /**
  * @defgroup protocols Unified Protocols Framework
- * @brief 统一协议栈框架
+  * @brief Unified protocol stack framework
  *
- * 提供跨协议的统一抽象层，支持HTTP、WebSocket、gRPC、MQTT等协议的统一处理。
+  * Provides a unified abstraction across HTTP, WebSocket, gRPC, MQTT, etc.
  *
- * 主要特性：
- * 1. 协议无关的API设计
- * 2. 统一的消息模型
- * 3. 高性能的消息路由
- * 4. 可扩展的适配器架构
- * 5. 内置的连接池和负载均衡
+  * Key features:
+  * 1. Protocol-agnostic API design
+  * 2. Unified message model
+  * 3. High-performance message routing
+  * 4. Extensible adapter architecture
+  * 5. Built-in connection pool and load balancing
  *
  * @{
  */
@@ -39,21 +39,21 @@ extern "C" {
 
 /* ============================================================================ */
 /**
- * @brief 初始化协议栈框架
- * @note 必须在调用任何其他协议栈函数之前调用
- * @return 0成功，负数错误码
+  * @brief Initialize the protocol stack framework
+  * @note Must be called before any other protocol stack function
+  * @return 0 on success, negative error codes on failure
  */
 int protocols_framework_init(void);
 
 /**
- * @brief 清理协议栈框架
- * @note 程序退出前调用
+  * @brief Clean up the protocol stack framework
+  * @note Call before program exit
  */
 void protocols_framework_cleanup(void);
 
 /**
- * @brief 获取框架版本信息
- * @return 版本字符串
+  * @brief Get the framework version
+  * @return Version string
  */
 const char *protocols_framework_version(void);
 
@@ -61,45 +61,45 @@ const char *protocols_framework_version(void);
 
 /* ============================================================================ */
 /**
- * @brief 协议栈管理器句柄
+  * @brief Protocol stack manager handle
  */
 typedef struct protocol_manager_s *protocol_manager_handle_t;
 
 /**
- * @brief 创建协议栈管理器
- * @return 管理器句柄，失败返回NULL
+  * @brief Create a protocol stack manager
+  * @return Manager handle, or NULL on failure
  */
 protocol_manager_handle_t protocol_manager_create(void);
 
 /**
- * @brief 销毁协议栈管理器
- * @param manager 管理器句柄
+  * @brief Destroy a protocol stack manager
+  * @param manager Manager handle
  */
 void protocol_manager_destroy(protocol_manager_handle_t manager);
 
 /**
- * @brief 通过管理器创建协议栈
- * @param manager 管理器句柄
- * @param config 协议栈配置
- * @return 协议栈句柄，失败返回NULL
+  * @brief Create a protocol stack via the manager
+  * @param manager Manager handle
+  * @param config Protocol stack configuration
+  * @return Protocol stack handle, or NULL on failure
  */
 protocol_stack_handle_t protocol_manager_create_stack(protocol_manager_handle_t manager,
                                                       const protocol_stack_config_t *config);
 
 /**
- * @brief 通过管理器销毁协议栈
- * @param manager 管理器句柄
- * @param stack 协议栈句柄
+  * @brief Destroy a protocol stack via the manager
+  * @param manager Manager handle
+  * @param stack Protocol stack handle
  */
 void protocol_manager_destroy_stack(protocol_manager_handle_t manager,
                                     protocol_stack_handle_t stack);
 
 /**
- * @brief 获取所有协议栈列表
- * @param manager 管理器句柄
- * @param stacks 协议栈句柄数组（输出）
- * @param max_count 数组最大容量
- * @return 实际协议栈数量
+  * @brief List all protocol stacks
+  * @param manager Manager handle
+  * @param stacks Protocol stack handle array (output)
+  * @param max_count Maximum array capacity
+  * @return Actual protocol stack count
  */
 size_t protocol_manager_get_stacks(protocol_manager_handle_t manager,
                                    protocol_stack_handle_t *stacks, size_t max_count);
@@ -108,20 +108,20 @@ size_t protocol_manager_get_stacks(protocol_manager_handle_t manager,
 
 /* ============================================================================ */
 /**
- * @brief 获取HTTP/JSON-RPC协议适配器
- * @return HTTP（JSON-RPC）协议适配器
+  * @brief Get the HTTP/JSON-RPC protocol adapter
+  * @return HTTP (JSON-RPC) protocol adapter
  */
 const protocol_adapter_t *protocol_adapter_http(void);
 
-/* P0-15: 删除 protocol_adapter_websocket/grpc/mqtt 声明。
- * 这些旧传输层适配器使用已删除的 PROTOCOL_WEBSOCKET/GRPC/MQTT 宏，
- * 与当前应用层协议枚举体系不兼容，且无实际调用点（gateway 模块自行实现）。 */
+/* P0-15: removed protocol_adapter_websocket/grpc/mqtt declarations.
+  * Those legacy transport adapters used the removed PROTOCOL_WEBSOCKET/GRPC/MQTT macros,
+  * incompatible with the app-layer protocol enums and unused (gateway implements its own). */
 
 /* ============================================================================ */
 
 /* ============================================================================ */
 /**
- * @brief 协议栈错误码
+  * @brief Protocol stack error codes
  */
 typedef enum {
     PROTOCOL_SUCCESS = 0,
@@ -138,15 +138,15 @@ typedef enum {
 } protocol_error_t;
 
 /**
- * @brief 获取错误码描述
- * @param error 错误码
- * @return 错误描述字符串
+  * @brief Get the error code description
+  * @param error Error code
+  * @return Error description string
  */
 const char *protocol_error_to_string(protocol_error_t error);
 
 /**
- * @brief 获取最近一次错误信息
- * @return 错误信息字符串
+  * @brief Get the last error message
+  * @return Error message string
  */
 const char *protocol_get_last_error(void);
 
@@ -154,15 +154,15 @@ const char *protocol_get_last_error(void);
 
 /* ============================================================================ */
 /**
- * @brief 创建默认协议栈配置
- * @param name 协议栈名称
- * @return 默认配置
+  * @brief Create a default protocol stack configuration
+  * @param name Protocol stack name
+  * @return Default configuration
  */
 protocol_stack_config_t protocol_stack_config_default(const char *name);
 
 /**
- * @brief 释放协议栈配置资源
- * @param config 配置结构
+  * @brief Free protocol stack configuration resources
+  * @param config Configuration structure
  */
 void protocol_stack_config_destroy(protocol_stack_config_t *config);
 

@@ -4,9 +4,10 @@
 // @owner: team-B
 /**
  * @file protocol_transformers.c
- * @brief Protocol Message Transformers — Complete Implementation
+ * @brief Protocol message transformers - complete implementation.
  *
- * 实现所有协议间的双向消息格式转换，替换 protocol_router.c 中的 TODO 存根。
+ * Implements bidirectional message format conversion between all protocols,
+ * replacing the TODO stubs in protocol_router.c.
  */
 
 #include "protocol_transformers.h"
@@ -42,7 +43,7 @@ void transform_context_destroy(transform_context_t *ctx)
 }
 
 /* ============================================================================
- * JSON-RPC → MCP 转换器
+
  * ============================================================================ */
 
 int transformer_jsonrpc_to_mcp_request(const unified_message_t *source, unified_message_t *target,
@@ -203,7 +204,7 @@ int transformer_mcp_tools_list_to_jsonrpc(const unified_message_t *source,
 }
 
 /* ============================================================================
- * JSON-RPC → A2A 转换器
+
  * ============================================================================ */
 
 int transformer_jsonrpc_to_a2a_task(const unified_message_t *source, unified_message_t *target,
@@ -347,7 +348,7 @@ int transformer_a2a_agents_to_jsonrpc(const unified_message_t *source, unified_m
 }
 
 /* ============================================================================
- * JSON-RPC → OpenAI API 转换器
+
  * ============================================================================ */
 
 int transformer_jsonrpc_to_openai_chat(const unified_message_t *source, unified_message_t *target,
@@ -580,7 +581,7 @@ int transformer_jsonrpc_to_openai_embedding(const unified_message_t *source,
 }
 
 /* ============================================================================
- * JSON-RPC → OpenJiuwen 转换器
+
  * ============================================================================ */
 
 #define OPENJIUWEN_MAGIC 0x4F4A574DUL /* "OJWM" */

@@ -103,9 +103,9 @@ size_t protocol_manager_get_stacks(protocol_manager_handle_t manager,
 static protocol_adapter_t s_http_adapter = {0};
 static bool s_adapters_init = false;
 
-/* P0-15: 删除 s_ws_adapter/s_grpc_adapter/s_mqtt_adapter 及对应工厂函数。
- * 这些旧传输层适配器使用已删除的 PROTOCOL_WEBSOCKET/GRPC/MQTT 宏，
- * 与当前应用层协议枚举体系不兼容，且无实际调用点（gateway 模块自行实现）。 */
+/* P0-15: removed s_ws_adapter/s_grpc_adapter/s_mqtt_adapter and their factories.
+  * Those legacy transport adapters used the removed PROTOCOL_WEBSOCKET/GRPC/MQTT macros,
+  * incompatible with the app-layer protocol enums and unused (gateway implements its own). */
 
 static void init_static_adapters(void)
 {

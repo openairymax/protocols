@@ -4,27 +4,28 @@
 /* @owner: team-B */
 /**
  * @file autogen_adapter.h
- * @brief AutoGen Framework Integration Adapter for AgentRT
+ * @brief AutoGen framework integration adapter for AgentRT.
  *
- * AutoGen 框架适配器，实现AgentRT与Microsoft AutoGen多代理对话框架的集成。
+ * AutoGen framework adapter implementing integration between AgentRT and the
+ * Microsoft AutoGen multi-agent conversation framework.
  *
- * AutoGen核心概念映射:
- * - ConversableAgent → AgentRT Agent + Protocol Session
- * - GroupChat → AgentRT A2A multi-agent coordination
- * - UserProxyAgent → AgentRT human-in-the-loop interface
- * - CodeExecutor → AgentRT tool execution sandbox
- * - AssistantAgent → LLM-backed agent via protocol
- * - ChatCompletionClient → Protocol-based LLM client
+ * AutoGen core concept mapping:
+ * - ConversableAgent -> AgentRT Agent + Protocol Session
+ * - GroupChat -> AgentRT A2A multi-agent coordination
+ * - UserProxyAgent -> AgentRT human-in-the-loop interface
+ * - CodeExecutor -> AgentRT tool execution sandbox
+ * - AssistantAgent -> LLM-backed agent via protocol
+ * - ChatCompletionClient -> Protocol-based LLM client
  *
- * 支持的AutoGen特性:
- * 1. 多代理对话编排
- * 2. 角色定义 (UserProxy/Assistant/Coder/Planner)
- * 3. 群聊管理 (round-robin, speaker selection)
- * 4. 代码执行沙箱
- * 5. 人机协作 (human-in-the-loop)
- * 6. 对话历史持久化
- * 7. 工具调用与函数执行
- * 8. 流式对话输出
+ * Supported AutoGen features:
+ * 1. multi-agent conversation orchestration
+ * 2. role definitions (UserProxy/Assistant/Coder/Planner)
+ * 3. group-chat management (round-robin, speaker selection)
+ * 4. code execution sandbox
+ * 5. human-in-the-loop collaboration
+ * 6. conversation history persistence
+ * 7. tool calling and function execution
+ * 8. streaming conversation output
  *
  * @since 2.1.0
  */

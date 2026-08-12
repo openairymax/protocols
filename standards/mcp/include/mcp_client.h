@@ -4,21 +4,22 @@
 /* @owner: team-B */
 /**
  * @file mcp_client.h
- * @brief MCP v1.0 Client（消费外部 MCP server 的工具）
+ * @brief MCP v1.0 client (consumes tools from external MCP servers).
  *
- * 与 mcp_v1_adapter.h（MCP server 角色）对称的客户端能力，使 AgentRT 网关
- * （gateway_d）能够连接外部 MCP server（如 @modelcontextprotocol/server-filesystem）
- * 并把它暴露的工具注册进本地 MCP 工具表，实现"网关消费外部工具"。
+ * Client capability symmetric to mcp_v1_adapter.h (the MCP server role),
+ * letting the AgentRT gateway (gateway_d) connect to external MCP servers
+ * (e.g. @modelcontextprotocol/server-filesystem) and register the tools they
+ * expose into the local MCP tool table ("gateway consumes external tools").
  *
- * 支持两种传输（P2-4）：
- *   1. stdio：fork+exec 外部 MCP server，stdin/stdout 承载 JSON-RPC 2.0 帧
- *      （LSP 风格 Content-Length 头 + \r\n\r\n + JSON body），帧解析为状态机，
- *      可处理一次 read 多帧/半帧情况。
- *   2. http：MCP Streamable HTTP 基础支持，每次请求建立短连接
- *      （POST <url>，Accept: application/json, text/event-stream）。
+ * Two transports (P2-4):
+ *   1. stdio: fork+exec the external MCP server; stdin/stdout carries JSON-RPC
+ *      2.0 frames (LSP-style Content-Length header + \r\n\r\n + JSON body);
+ *      frame parsing is a state machine handling multiple/partial frames per read.
+ *   2. http: basic MCP Streamable HTTP support, one short connection per request
+ *      (POST <url>, Accept: application/json, text/event-stream).
  *
- * 线程安全：不做要求（gateway_d 事件循环单线程使用）。
- * 超时：默认 60s（MCP_CLIENT_DEFAULT_TIMEOUT_MS）。
+ * Thread safety: not required (used single-threaded by the gateway_d event loop).
+ * Timeout: 60s by default (MCP_CLIENT_DEFAULT_TIMEOUT_MS).
  *
  * @since 0.1.0
  * @see mcp_v1_adapter.h
@@ -45,8 +46,8 @@ typedef enum {
 } mcp_client_transport_t;
 
 
-/* 复用 AIRY_ERR_*（error.h）：AIRY_ERR_TIMEOUT/IO/PARSE_ERROR/OUT_OF_MEMORY/
- * INVALID_PARAM/NOT_FOUND/NOT_SUPPORTED/SYS_SOCKET 等；以下为客户端专属错误 */
+/* Reuses AIRY_ERR_* (error.h): TIMEOUT/IO/PARSE_ERROR/OUT_OF_MEMORY/
+  * INVALID_PARAM/NOT_FOUND/NOT_SUPPORTED/SYS_SOCKET; the rest are client-specific */
 #define MCP_CLIENT_ERR_BASE (-2000)
 #define MCP_CLIENT_ERR_PROCESS_EXIT (MCP_CLIENT_ERR_BASE - 1)
 #define MCP_CLIENT_ERR_RPC_ERROR (MCP_CLIENT_ERR_BASE - 2)
@@ -56,9 +57,9 @@ typedef enum {
 
 
 /**
- * @brief 单个外部工具描述（从 tools/list 结果解析）
- * @note input_schema_json 为 inputSchema 对象的 JSON 文本（cJSON 序列化），
- *       可直接内嵌到本地 MCP server 的 tools/list 响应。
+  * @brief A single external tool description (parsed from tools/list results)
+  * @note input_schema_json is the JSON text of the inputSchema object (cJSON-serialized),
+  *       embeddable directly into a local MCP server's tools/list response.
  */
 typedef struct {
     char *name;
@@ -75,57 +76,57 @@ typedef struct mcp_client_s mcp_client_t;
 
 
 /**
- * @brief 以 stdio 传输连接外部 MCP server
- * @param name    客户端名（用于日志与 gateway 工具前缀）
- * @param command 可执行程序路径/命令名（如 "npx"、"python3"）
- * @param argv    参数数组（argv[0] 应为 command，NULL 结尾；内部深拷贝）
- * @return 客户端句柄；失败返回 NULL（日志已记录原因）
+  * @brief Connect to an external MCP server over stdio
+  * @param name    Client name (for logging and the gateway tool prefix)
+  * @param command Executable path/command (e.g. "npx", "python3")
+  * @param argv    Argument array (argv[0] should be command, NULL-terminated; deep-copied)
+  * @return Client handle, or NULL on failure (reason logged)
  */
 mcp_client_t *mcp_client_connect_stdio(const char *name, const char *command, char *const argv[]);
 
 /**
- * @brief 以 HTTP 传输连接外部 MCP server（Streamable HTTP 基础支持）
- * @param name 客户端名
- * @param url  完整端点 URL，如 http://127.0.0.1:3001/mcp
- * @return 客户端句柄；失败返回 NULL
+  * @brief Connect to an external MCP server over HTTP (basic Streamable HTTP)
+  * @param name Client name
+  * @param url  Full endpoint URL, e.g. http://127.0.0.1:3001/mcp
+ * @return Client handle, or NULL on failure
  */
 mcp_client_t *mcp_client_connect_http(const char *name, const char *url);
 
 /**
- * @brief 断开连接并释放资源（stdio：终止并回收子进程）
- * @return 0 成功；否则 AIRY_ERR_* 错误码
+  * @brief Disconnect and free resources (stdio: terminate and reap the child)
+  * @return 0 on success; otherwise an AIRY_ERR_* code
  */
 int mcp_client_disconnect(mcp_client_t *client);
 
 
 /**
- * @brief 确保 initialize 后调用 tools/list，拉取外部工具列表
- * @param out 输出的工具列表（调用方用 mcp_client_tool_list_free 释放）
- * @return 0 成功；否则 MCP_CLIENT_ERR_* 或 AIRY_ERR_* 错误码
+  * @brief Ensure tools/list is called after initialize to fetch external tools
+  * @param out Output tool list (caller frees via mcp_client_tool_list_free)
+  * @return 0 on success; otherwise an MCP_CLIENT_ERR_* or AIRY_ERR_* code
  */
 int mcp_client_list_tools(mcp_client_t *client, mcp_client_tool_list_t *out);
 
 /**
- * @brief 调用外部工具（tools/call）
- * @param name           外部工具原始名
- * @param arguments_json 参数 JSON 对象文本（如 "{\"path\":\"/tmp\"}"，可为 "{}"）
- * @param result_json    输出的完整 JSON-RPC 响应文本（AIRY_MALLOC，调用方 AIRY_FREE）
- * @return 0 成功（result_json 非 NULL）；否则 MCP_CLIENT_ERR_* 或 AIRY_ERR_* 错误码
+  * @brief Call an external tool (tools/call)
+  * @param name           Raw external tool name
+  * @param arguments_json Arguments JSON object text (e.g. "{\"path\":\"/tmp\"}", may be "{}")
+  * @param result_json    Output full JSON-RPC response text (AIRY_MALLOC; caller AIRY_FREE)
+  * @return 0 on success (result_json non-NULL); otherwise an MCP_CLIENT_ERR_* or AIRY_ERR_* code
  */
 int mcp_client_call_tool(mcp_client_t *client, const char *name, const char *arguments_json,
                          char **result_json);
 
 /**
- * @brief 从 tools/call 响应中提取首个 text content（供 gateway 组装 MCP 响应）
- * @param response_json mcp_client_call_tool 的响应
- * @param text_json     输出的 JSON 字符串（带引号，如 "\"echo:hi\""；AIRY_MALLOC，
- *                      调用方 AIRY_FREE）。顶层 error 时输出其 message。
- * @return 0 成功；否则 AIRY_ERR_* 错误码
+  * @brief Extract the first text content from a tools/call response (for gateway MCP replies)
+  * @param response_json Response from mcp_client_call_tool
+  * @param text_json     Output JSON string (quoted, e.g. "\"echo:hi\""; AIRY_MALLOC,
+  *                      caller AIRY_FREE). On a top-level error, its message is output.
+  * @return 0 on success; otherwise an AIRY_ERR_* code
  */
 int mcp_client_extract_text(const char *response_json, char **text_json);
 
 /**
- * @brief 释放工具列表
+  * @brief Free a tool list
  */
 void mcp_client_tool_list_free(mcp_client_tool_list_t *list);
 

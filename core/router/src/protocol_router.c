@@ -4,9 +4,9 @@
 // @owner: team-B
 /**
  * @file protocol_router.c
- * @brief Protocol Routing and Transformation Engine Implementation
+ * @brief Protocol routing and transformation engine implementation.
  *
- * 协议路由与转换引擎实现，支持MCP/A2A/OpenAI API等协议的自适应路由和转换。
+ * Adaptive routing and transformation for MCP/A2A/OpenAI API and other protocols.
  */
 
 #include "../include/protocol_router.h"
@@ -408,8 +408,8 @@ int protocol_transformer_default(const unified_message_t *source, unified_messag
     if (source->body && source->body_length > 0) {
         void *new_body = AIRY_MALLOC(source->body_length);
         if (!new_body) {
-            /* 深拷贝失败：target->body 仍为 *target=*source 的浅拷贝别名，
-             * 置 NULL 防止调用方释放时与 source 双释放/悬垂 */
+            /* Deep copy failed: target->body aliases *source via the shallow *target=*source;
+              * set it NULL to avoid a double-free/dangling with source on the caller's free */
             target->body = NULL;
             target->body_length = 0;
             airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,

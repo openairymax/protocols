@@ -4,10 +4,11 @@
 /* @owner: team-B */
 /**
  * @file protocol_router.h
- * @brief Protocol Routing and Transformation Engine
+ * @brief Protocol routing and transformation engine.
  *
- * 协议路由与转换引擎，支持MCP/A2A/OpenAI API等协议的自适应路由和转换。
- * 提供智能协议路由、消息转换和协议兼容性处理。
+ * Adaptive routing and transformation for MCP/A2A/OpenAI API and other
+ * protocols. Provides smart protocol routing, message transformation and
+ * protocol compatibility handling.
  */
 
 #ifndef AIRY_RT_PROTOCOL_ROUTER_H
@@ -27,7 +28,7 @@ extern "C" {
 
 /* ============================================================================ */
 /**
- * @brief 协议转换规则
+  * @brief Protocol conversion rule
  */
 typedef struct {
     protocol_type_t source_protocol;
@@ -39,27 +40,27 @@ typedef struct {
 } protocol_rule_t;
 
 /**
- * @brief 消息转换函数类型
- * @param source 源消息
- * @param target 目标消息（输出）
- * @param context 转换器上下文
- * @return 转换结果：0成功，负数错误码
+  * @brief Message conversion function type
+  * @param source Source message
+  * @param target Target message (output)
+  * @param context Transformer context
+  * @return Conversion result: 0 on success, negative error codes
  */
 typedef int (*message_transformer_t)(const unified_message_t *source, unified_message_t *target,
                                      void *context);
 
 /**
- * @brief 路由决策函数类型
- * @param message 输入消息
- * @param rules 规则列表
- * @param rule_count 规则数量
- * @return 选择的规则索引，-1表示无匹配
+  * @brief Route decision function type
+  * @param message Input message
+  * @param rules Rule list
+  * @param rule_count Rule count
+  * @return Selected rule index, -1 if none matched
  */
 typedef int (*route_decision_func_t)(const unified_message_t *message, const protocol_rule_t *rules,
                                      size_t rule_count);
 
 /**
- * @brief 路由引擎句柄
+  * @brief Route engine handle
  */
 typedef struct protocol_router_s *protocol_router_handle_t;
 
@@ -67,78 +68,78 @@ typedef struct protocol_router_s *protocol_router_handle_t;
 
 /* ============================================================================ */
 /**
- * @brief 创建路由引擎实例
- * @param default_protocol 默认协议（当无匹配规则时使用）
- * @return 路由引擎句柄，失败返回NULL
+  * @brief Create a route engine instance
+  * @param default_protocol Default protocol (used when no rule matches)
+  * @return Route engine handle, or NULL on failure
  */
 protocol_router_handle_t protocol_router_create(protocol_type_t default_protocol);
 
 /**
- * @brief 销毁路由引擎实例
- * @param router 路由引擎句柄
+  * @brief Destroy a route engine instance
+  * @param router Route engine handle
  */
 void protocol_router_destroy(protocol_router_handle_t router);
 
 /**
- * @brief 添加协议转换规则
- * @param router 路由引擎句柄
- * @param rule 转换规则
- * @param transformer 消息转换函数（可为NULL，使用默认转换）
- * @return 0成功，负数错误码
+  * @brief Add a protocol conversion rule
+  * @param router Route engine handle
+  * @param rule Conversion rule
+  * @param transformer Message conversion function (may be NULL for the default)
+  * @return 0 on success, negative error codes on failure
  */
 int protocol_router_add_rule(protocol_router_handle_t router, const protocol_rule_t *rule,
                              message_transformer_t transformer);
 
 /**
- * @brief 删除匹配源端点的协议转换规则
+  * @brief Remove conversion rules matching the source endpoint
  *
- * 从路由表中删除所有 source_endpoint 与 source_endpoint_pattern
- * 精确相等的规则（真实删除并释放节点，非桩）。
+  * Removes all rules whose source_endpoint equals the pattern
+  * (real deletion that frees nodes, not a stub).
  *
- * @param router 路由引擎句柄
- * @param source_endpoint_pattern 源端点模式（与 add_rule 时 rule->source_endpoint 一致）
- * @return 0 删除成功；AIRY_ERR_NOT_FOUND 无匹配规则；AIRY_EINVAL 参数无效
+  * @param router Route engine handle
+  * @param source_endpoint_pattern Source endpoint pattern (as passed to add_rule)
+  * @return 0 on success; AIRY_ERR_NOT_FOUND if none match; AIRY_EINVAL on invalid args
  */
 int protocol_router_remove_rule(protocol_router_handle_t router,
                                 const char *source_endpoint_pattern);
 
 /**
- * @brief 路由消息
- * @param router 路由引擎句柄
- * @param message 输入消息
- * @param transformed 转换后的消息（输出）
- * @return 0成功，负数错误码
+  * @brief Route a message
+  * @param router Route engine handle
+  * @param message Input message
+  * @param transformed Transformed message (output)
+  * @return 0 on success, negative error codes on failure
  *
- * @note 如果找不到匹配规则，使用默认协议直接传递消息（不转换）
+  * @note If no rule matches, pass the message through with the default protocol (no conversion)
  */
 int protocol_router_route(protocol_router_handle_t router, const unified_message_t *message,
                           unified_message_t *transformed);
 
 /**
- * @brief 批量路由消息
- * @param router 路由引擎句柄
- * @param messages 输入消息数组
- * @param count 消息数量
- * @param transformed 转换后的消息数组（输出）
- * @return 成功路由的消息数量，负数表示错误
+  * @brief Route a batch of messages
+  * @param router Route engine handle
+  * @param messages Input message array
+  * @param count Message count
+  * @param transformed Transformed message array (output)
+  * @return Messages routed successfully, negative on error
  */
 int protocol_router_route_batch(protocol_router_handle_t router, const unified_message_t *messages,
                                 size_t count, unified_message_t *transformed);
 
 /**
- * @brief 设置路由决策函数
- * @param router 路由引擎句柄
- * @param decision_func 路由决策函数
- * @return 0成功，负数错误码
+  * @brief Set the route decision function
+  * @param router Route engine handle
+  * @param decision_func Route decision function
+  * @return 0 on success, negative error codes on failure
  */
 int protocol_router_set_decision_func(protocol_router_handle_t router,
                                       route_decision_func_t decision_func);
 
 /**
- * @brief 获取路由统计信息
- * @param router 路由引擎句柄
- * @param stats_json 统计信息JSON字符串（输出，需要调用者释放）
- * @return 0成功，负数错误码
+  * @brief Get route statistics
+  * @param router Route engine handle
+  * @param stats_json Statistics JSON string (output; caller frees)
+  * @return 0 on success, negative error codes on failure
  */
 int protocol_router_get_stats(protocol_router_handle_t router, char **stats_json);
 
@@ -146,51 +147,51 @@ int protocol_router_get_stats(protocol_router_handle_t router, char **stats_json
 
 /* ============================================================================ */
 /**
- * @brief JSON-RPC到MCP协议转换器
- * @param source 源消息（JSON-RPC）
- * @param target 目标消息（MCP）
- * @param context 转换器上下文
- * @return 0成功，负数错误码
+  * @brief JSON-RPC to MCP converter
+  * @param source Source message (JSON-RPC)
+  * @param target Target message (MCP)
+  * @param context Transformer context
+  * @return 0 on success, negative error codes on failure
  */
 int protocol_transformer_jsonrpc_to_mcp(const unified_message_t *source, unified_message_t *target,
                                         void *context);
 
 /**
- * @brief MCP到JSON-RPC协议转换器
- * @param source 源消息（MCP）
- * @param target 目标消息（JSON-RPC）
- * @param context 转换器上下文
- * @return 0成功，负数错误码
+  * @brief MCP to JSON-RPC converter
+  * @param source Source message (MCP)
+  * @param target Target message (JSON-RPC)
+  * @param context Transformer context
+  * @return 0 on success, negative error codes on failure
  */
 int protocol_transformer_mcp_to_jsonrpc(const unified_message_t *source, unified_message_t *target,
                                         void *context);
 
 /**
- * @brief OpenAI API到JSON-RPC协议转换器
- * @param source 源消息（OpenAI API）
- * @param target 目标消息（JSON-RPC）
- * @param context 转换器上下文
- * @return 0成功，负数错误码
+  * @brief OpenAI API to JSON-RPC converter
+  * @param source Source message (OpenAI API)
+  * @param target Target message (JSON-RPC)
+  * @param context Transformer context
+  * @return 0 on success, negative error codes on failure
  */
 int protocol_transformer_openai_to_jsonrpc(const unified_message_t *source,
                                            unified_message_t *target, void *context);
 
 /**
- * @brief A2A到JSON-RPC协议转换器
- * @param source 源消息（A2A）
- * @param target 目标消息（JSON-RPC）
- * @param context 转换器上下文
- * @return 0成功，负数错误码
+  * @brief A2A to JSON-RPC converter
+  * @param source Source message (A2A)
+  * @param target Target message (JSON-RPC)
+  * @param context Transformer context
+  * @return 0 on success, negative error codes on failure
  */
 int protocol_transformer_a2a_to_jsonrpc(const unified_message_t *source, unified_message_t *target,
                                         void *context);
 
 /**
- * @brief 默认消息转换器（直接复制，无格式转换）
- * @param source 源消息
- * @param target 目标消息
- * @param context 转换器上下文（忽略）
- * @return 0成功，负数错误码
+  * @brief Default message converter (direct copy, no conversion)
+  * @param source Source message
+ * @param target Target message
+  * @param context Transformer context (ignored)
+  * @return 0 on success, negative error codes on failure
  */
 int protocol_transformer_default(const unified_message_t *source, unified_message_t *target,
                                  void *context);

@@ -116,6 +116,10 @@ set(PROTOCOLS_COMMON_SOURCES
 set(PROTOCOLS_CORE_SOURCES
     core/router/src/protocol_router.c
     core/adapter/src/protocol_extension_framework.c
+    core/adapter/src/protocol_extension_framework_config.c
+    core/adapter/src/protocol_extension_framework_middleware.c
+    core/adapter/src/protocol_extension_framework_registry.c
+    core/adapter/src/protocol_extension_framework_route.c
     core/transformers/src/protocol_transformers.c
     core/registry/src/protocol_registry.c
 )
@@ -125,11 +129,28 @@ set(PROTOCOLS_CORE_SOURCES
 # ============================================================
 set(PROTOCOLS_STANDARDS_SOURCES
     standards/a2a/src/a2a_v03_adapter.c
+    standards/a2a/src/a2a_v03_adapter_agent.c
+    standards/a2a/src/a2a_v03_adapter_auth.c
+    standards/a2a/src/a2a_v03_adapter_cb.c
+    standards/a2a/src/a2a_v03_adapter_msg.c
+    standards/a2a/src/a2a_v03_adapter_task.c
 )
 if(PROTOCOLS_ENABLE_MCP)
     list(APPEND PROTOCOLS_STANDARDS_SOURCES
         standards/mcp/src/mcp_v1_adapter.c
-        standards/mcp/src/mcp_client.c)
+        standards/mcp/src/mcp_v1_adapter_cb.c
+        standards/mcp/src/mcp_v1_adapter_prompt.c
+        standards/mcp/src/mcp_v1_adapter_resource.c
+        standards/mcp/src/mcp_v1_adapter_route.c
+        standards/mcp/src/mcp_v1_adapter_sampling.c
+        standards/mcp/src/mcp_v1_adapter_stream.c
+        standards/mcp/src/mcp_v1_adapter_tool.c
+        standards/mcp/src/mcp_client.c
+        standards/mcp/src/mcp_client_frame.c
+        standards/mcp/src/mcp_client_http.c
+        standards/mcp/src/mcp_client_rpc.c
+        standards/mcp/src/mcp_client_stdio.c
+        standards/mcp/src/mcp_client_tool.c)
     if(PROTOCOLS_ENABLE_MCP_TRANSPORT)
         list(APPEND PROTOCOLS_STANDARDS_SOURCES
             standards/mcp/src/mcp_transport.c)
@@ -146,17 +167,34 @@ endif()
 # ============================================================
 set(PROTOCOLS_INTEGRATIONS_SOURCES
     integrations/openai/src/openai_enterprise_adapter.c
+    integrations/openai/src/openai_enterprise_adapter_cb.c
+    integrations/openai/src/openai_enterprise_adapter_chat.c
+    integrations/openai/src/openai_enterprise_adapter_ctx.c
+    integrations/openai/src/openai_enterprise_adapter_embed.c
+    integrations/openai/src/openai_enterprise_adapter_model.c
+    integrations/openai/src/openai_enterprise_adapter_retry.c
+    integrations/openai/src/openai_enterprise_adapter_utils.c
     integrations/openjiuwen/src/openjiuwen_adapter.c
 )
 
 if(PROTOCOLS_ENABLE_OPENCLAW)
     list(APPEND PROTOCOLS_INTEGRATIONS_SOURCES
-        integrations/openclaw/src/openclaw_adapter.c)
+        integrations/openclaw/src/openclaw_adapter.c
+        integrations/openclaw/src/openclaw_adapter_cb.c
+        integrations/openclaw/src/openclaw_adapter_monitor.c
+        integrations/openclaw/src/openclaw_adapter_registry.c
+        integrations/openclaw/src/openclaw_adapter_session.c
+        integrations/openclaw/src/openclaw_adapter_socket.c
+        integrations/openclaw/src/openclaw_adapter_task.c)
 endif()
 
 if(PROTOCOLS_ENABLE_CLAUDE)
     list(APPEND PROTOCOLS_INTEGRATIONS_SOURCES
-        integrations/claude/src/claude_adapter.c)
+        integrations/claude/src/claude_adapter.c
+        integrations/claude/src/claude_adapter_cleanup.c
+        integrations/claude/src/claude_adapter_http.c
+        integrations/claude/src/claude_adapter_model.c
+        integrations/claude/src/claude_adapter_proto.c)
 endif()
 
 if(PROTOCOLS_ENABLE_CHINA_ECO)
@@ -172,12 +210,20 @@ set(PROTOCOLS_FRAMEWORKS_SOURCES
 
 if(PROTOCOLS_ENABLE_LANGCHAIN)
     list(APPEND PROTOCOLS_FRAMEWORKS_SOURCES
-        frameworks/langchain/src/langchain_adapter.c)
+        frameworks/langchain/src/langchain_adapter.c
+        frameworks/langchain/src/langchain_adapter_agent.c
+        frameworks/langchain/src/langchain_adapter_chain.c
+        frameworks/langchain/src/langchain_adapter_memory.c
+        frameworks/langchain/src/langchain_adapter_proto.c
+        frameworks/langchain/src/langchain_adapter_tool.c)
 endif()
 
 if(PROTOCOLS_ENABLE_AUTOGEN)
     list(APPEND PROTOCOLS_FRAMEWORKS_SOURCES
-        frameworks/autogen/src/autogen_adapter.c)
+        frameworks/autogen/src/autogen_adapter.c
+        frameworks/autogen/src/autogen_adapter_agent.c
+        frameworks/autogen/src/autogen_adapter_msg.c
+        frameworks/autogen/src/autogen_adapter_proto.c)
 endif()
 
 # ============================================================
@@ -472,6 +518,13 @@ if(BUILD_TESTS)
         add_executable(test_openai_adapter
             tests/test_openai_adapter.c
             integrations/openai/src/openai_enterprise_adapter.c
+            integrations/openai/src/openai_enterprise_adapter_cb.c
+            integrations/openai/src/openai_enterprise_adapter_chat.c
+            integrations/openai/src/openai_enterprise_adapter_ctx.c
+            integrations/openai/src/openai_enterprise_adapter_embed.c
+            integrations/openai/src/openai_enterprise_adapter_model.c
+            integrations/openai/src/openai_enterprise_adapter_retry.c
+            integrations/openai/src/openai_enterprise_adapter_utils.c
             common/src/unified_protocol.c
             core/transformers/src/protocol_transformers.c
         )
@@ -504,6 +557,10 @@ if(BUILD_TESTS)
         add_executable(test_claude_adapter
             tests/test_claude_adapter.c
             integrations/claude/src/claude_adapter.c
+            integrations/claude/src/claude_adapter_cleanup.c
+            integrations/claude/src/claude_adapter_http.c
+            integrations/claude/src/claude_adapter_model.c
+            integrations/claude/src/claude_adapter_proto.c
             common/src/unified_protocol.c
             core/transformers/src/protocol_transformers.c
         )
@@ -520,6 +577,11 @@ if(BUILD_TESTS)
         add_executable(test_langchain_adapter
             tests/test_langchain_adapter.c
             frameworks/langchain/src/langchain_adapter.c
+            frameworks/langchain/src/langchain_adapter_agent.c
+            frameworks/langchain/src/langchain_adapter_chain.c
+            frameworks/langchain/src/langchain_adapter_memory.c
+            frameworks/langchain/src/langchain_adapter_proto.c
+            frameworks/langchain/src/langchain_adapter_tool.c
             common/src/unified_protocol.c
             core/transformers/src/protocol_transformers.c
         )
@@ -536,6 +598,9 @@ if(BUILD_TESTS)
         add_executable(test_autogen_adapter
             tests/test_autogen_adapter.c
             frameworks/autogen/src/autogen_adapter.c
+            frameworks/autogen/src/autogen_adapter_agent.c
+            frameworks/autogen/src/autogen_adapter_msg.c
+            frameworks/autogen/src/autogen_adapter_proto.c
             common/src/unified_protocol.c
             core/transformers/src/protocol_transformers.c
         )
