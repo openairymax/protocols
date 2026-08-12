@@ -342,8 +342,8 @@ static void test_stream_event_init(void)
     mcp_stream_event_init(&event, MCP_STREAM_EVENT_CONTENT, "chunk data");
     ASSERT_TRUE(event.type == MCP_STREAM_EVENT_CONTENT, "event type should be content");
     ASSERT_NOT_NULL(event.event_data, "event data should not be NULL");
-    /* P0-02 修复: mcp_stream_event_init() 内部通过 AIRY_STRDUP(data) 分配 event_data，
-     * 调用方负责释放。这里直接 free() 避免引入 airy_memory.h 依赖。 */
+    /* P0-02 fix: mcp_stream_event_init() AIRY_STRDUP's event_data internally;
+      * the caller frees it. Use plain free() here to avoid an airy_memory.h dependency. */
     free(event.event_data);
     event.event_data = NULL;
     PASS();

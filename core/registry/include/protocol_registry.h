@@ -4,23 +4,23 @@
 /* @owner: team-B */
 /**
  * @file protocol_registry.h
- * @brief Protocol Registry Center - Unified Protocol Discovery & Management
+ * @brief Protocol registry center - unified protocol discovery & management.
  *
- * 协议注册中心是AgentRT协议系统的核心组件，提供：
- * 1. 协议适配器注册/注销/发现
- * 2. 协议能力查询与匹配
- * 3. 协议版本管理
- * 4. 协议依赖关系追踪
- * 5. 运行时统计与监控
- * 6. 热加载/卸载支持
+ * The protocol registry is a core component of the AgentRT protocol system:
+ * 1. protocol adapter register/unregister/discovery
+ * 2. protocol capability query and matching
+ * 3. protocol version management
+ * 4. protocol dependency tracking
+ * 5. runtime statistics and monitoring
+ * 6. hot load/unload support
  *
- * 支持的协议（v0.1.0）:
- * - JSON-RPC 2.0 (原生)
+ * Supported protocols (v0.1.0):
+ * - JSON-RPC 2.0 (native)
  * - MCP v1.0 (Model Context Protocol)
  * - A2A v0.3 (Agent-to-Agent)
- * - OpenAI API (兼容)
- * - OpenJiuwen (自定义二进制)
- * - OpenClaw (九问平台)
+ * - OpenAI API (compatible)
+ * - OpenJiuwen (custom binary)
+ * - OpenClaw (Jiuwen platform)
  * - Claude API (Anthropic)
  *
  * @since 2.1.0

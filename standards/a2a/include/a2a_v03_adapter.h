@@ -4,18 +4,19 @@
 /* @owner: team-B */
 /**
  * @file a2a_v03_adapter.h
- * @brief A2A v0.3.0 Protocol Adapter for AgentRT
+ * @brief A2A v0.3.0 protocol adapter for AgentRT.
  *
- * Agent-to-Agent Protocol v0.3.0 深度支持适配器。
- * 实现智能体发现、任务委派、协商与协作的完整A2A协议能力。
+ * Deep-support adapter for the Agent-to-Agent Protocol v0.3.0, implementing
+ * the full A2A protocol capabilities of agent discovery, task delegation,
+ * negotiation and collaboration.
  *
- * A2A v0.3.0 核心能力:
- * 1. Agent Card — 智能体能力描述与发现
- * 2. Task Lifecycle — 任务创建/更新/取消/完成
- * 3. Message Exchange — 智能体间结构化消息传递
- * 4. Negotiation — 任务协商与条件匹配
- * 5. Streaming — 流式任务执行与进度推送
- * 6. Push Notifications — 事件驱动的通知机制
+ * A2A v0.3.0 core capabilities:
+ * 1. Agent Card - agent capability description and discovery
+ * 2. Task Lifecycle - task create/update/cancel/complete
+ * 3. Message Exchange - structured inter-agent messaging
+ * 4. Negotiation - task negotiation and condition matching
+ * 5. Streaming - streaming task execution and progress push
+ * 6. Push Notifications - event-driven notification mechanism
  *
  * @since 0.1.0
  * @see unified_protocol.h

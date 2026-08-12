@@ -4,20 +4,21 @@
 /* @owner: team-B */
 /**
  * @file openai_enterprise_adapter.h
- * @brief OpenAI API Enterprise Adapter for AgentRT
+ * @brief OpenAI API enterprise adapter for AgentRT.
  *
- * OpenAI API 企业级特性适配器，实现完整的Chat Completions、
- * Embeddings、Function Calling、Streaming、Rate Limiting等企业级能力。
+ * OpenAI API enterprise-feature adapter implementing full Chat Completions,
+ * Embeddings, Function Calling, Streaming, Rate Limiting and other
+ * enterprise-grade capabilities.
  *
- * 企业级特性:
- * 1. Chat Completions (含Function Calling/Tool Use)
+ * Enterprise features:
+ * 1. Chat Completions (incl. Function Calling/Tool Use)
  * 2. Embeddings API
- * 3. Streaming SSE响应
- * 4. 速率限制与配额管理
- * 5. 多模型路由与回退
- * 6. Token预算控制
- * 7. 请求重试与超时管理
- * 8. 审计日志与合规
+ * 3. Streaming SSE responses
+ * 4. rate limiting and quota management
+ * 5. multi-model routing and fallback
+ * 6. token budget control
+ * 7. request retry and timeout management
+ * 8. audit logging and compliance
  *
  * @since 0.1.0
  * @see unified_protocol.h

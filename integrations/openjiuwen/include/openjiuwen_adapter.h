@@ -4,9 +4,10 @@
 /* @owner: team-B */
 /**
  * @file openjiuwen_adapter.h
- * @brief OpenJiuwen Protocol Adapter Interface
+ * @brief OpenJiuwen protocol adapter interface.
  *
- * 提供与OpenJiuwen平台的协议兼容层，支持消息格式转换和互操作。
+ * Provides a protocol compatibility layer with the OpenJiuwen platform,
+ * supporting message format conversion and interoperability.
  */
 
 #ifndef OPENJIUWEN_ADAPTER_H
@@ -20,7 +21,7 @@ extern "C" {
 #endif
 
 /* ============================================================================
- * 配置常量
+
  * ============================================================================ */
 
 #define OPENJIUWEN_PROTOCOL_VERSION "1.0.0"
@@ -42,11 +43,11 @@ typedef enum {
 } openjiuwen_conn_state_t;
 
 /* ============================================================================
- * 数据类型定义
+
  * ============================================================================ */
 
 /**
- * @brief OpenJiuwen配置结构体
+  * @brief OpenJiuwen configuration structure
  */
 typedef struct openjiuwen_config_s {
     char endpoint[256];
@@ -58,7 +59,7 @@ typedef struct openjiuwen_config_s {
 } openjiuwen_config_t;
 
 /**
- * @brief OpenJiuwen消息头部
+  * @brief OpenJiuwen message header
  */
 typedef struct openjiuwen_header_s {
     uint32_t message_id;
@@ -71,7 +72,7 @@ typedef struct openjiuwen_header_s {
 } openjiuwen_header_t;
 
 /**
- * @brief OpenJiuwen消息类型枚举
+  * @brief OpenJiuwen message type enumeration
  */
 typedef enum openjiuwen_message_type_e {
     OPENJIUWEN_MSG_TYPE_REQUEST = 0x0001,
@@ -82,7 +83,7 @@ typedef enum openjiuwen_message_type_e {
 } openjiuwen_message_type_t;
 
 /**
- * @brief OpenJiuwen适配器实例（继承自openjiuwen_base_adapter_t）
+  * @brief OpenJiuwen adapter instance (extends openjiuwen_base_adapter_t)
  */
 typedef struct openjiuwen_adapter_s {
     protocol_adapter_t base;
@@ -100,76 +101,76 @@ typedef struct openjiuwen_adapter_s {
 } openjiuwen_adapter_t;
 
 /* ============================================================================
- * 公共接口函数
+
  * ============================================================================ */
 
 /**
- * @brief 创建OpenJiuwen适配器实例
+  * @brief Create an OpenJiuwen adapter instance
  *
- * @param config OpenJiuwen配置（可为NULL使用默认配置）
- * @return 新创建的适配器实例，失败返回NULL
+  * @param config OpenJiuwen configuration (NULL for defaults)
+  * @return New adapter instance, or NULL on failure
  */
 const protocol_adapter_t *openjiuwen_adapter_create(const openjiuwen_config_t *config);
 
 /**
- * @brief 初始化默认配置
+  * @brief Initialize the default configuration
  *
- * @param config 输出的配置结构体指针
+  * @param config Output configuration struct pointer
  */
 void openjiuwen_get_default_config(openjiuwen_config_t *config);
 
 /**
- * @brief 验证OpenJiuwen连接
+  * @brief Validate the OpenJiuwen connection
  *
- * @param adapter 适配器实例
- * @return 0成功，非0错误码
+  * @param adapter Adapter instance
+  * @return 0 on success, non-zero error codes
  */
 int openjiuwen_verify_connection(const protocol_adapter_t *adapter);
 
 /**
- * @brief 获取OpenJiuwen支持的协议能力
+  * @brief Get the protocol capabilities supported by OpenJiuwen
  *
- * @param adapter 适配器实例
- * @param capabilities 输出的能力描述字符串
- * @param max_len 字符串缓冲区最大长度
- * @return 0成功，非0错误码
+  * @param adapter Adapter instance
+  * @param capabilities Output capability description string
+  * @param max_len Maximum string buffer length
+  * @return 0 on success, non-zero error codes
  */
 int openjiuwen_get_capabilities(const protocol_adapter_t *adapter, char *capabilities,
                                 size_t max_len);
 
 /* ============================================================================
- * 协议转换函数（内部使用）
+
  * ============================================================================ */
 
 /**
- * @brief 将unified_message转换为OpenJiuwen格式
+  * @brief Convert a unified_message to OpenJiuwen format
  *
- * @param msg 统一消息格式
- * @param out_buffer 输出缓冲区
- * @param buffer_size 缓冲区大小
- * @return 实际写入的字节数，错误返回负值
+  * @param msg Unified message format
+  * @param out_buffer Output buffer
+  * @param buffer_size Buffer size
+  * @return Bytes written, negative on error
  */
 int openjiuwen_unified_to_native(const unified_message_t *msg, void *out_buffer,
                                  size_t buffer_size);
 
 /**
- * @brief 将OpenJiuwen格式转换为unified_message
+  * @brief Convert OpenJiuwen format to unified_message
  *
- * @param in_buffer 输入缓冲区
- * @param buffer_size 输入数据大小
- * @param msg 输出的统一消息格式
- * @return 0成功，非0错误码
+  * @param in_buffer Input buffer
+  * @param buffer_size Input data size
+  * @param msg Output unified message format
+  * @return 0 on success, non-zero error codes
  */
 int openjiuwen_native_to_unified(const void *in_buffer, size_t buffer_size, unified_message_t *msg);
 
 /* ============================================================================
- * 全局接口实例（供外部注册使用）
+
  * ============================================================================ */
 
 /**
- * @brief OpenJiuwen适配器的标准接口定义
+  * @brief Standard interface definition of the OpenJiuwen adapter
  *
- * 此全局变量可直接传递给unified_protocol_register_adapter()进行注册
+  * This global can be passed directly to unified_protocol_register_adapter()
  */
 extern const protocol_adapter_t openjiuwen_adapter_interface;
 

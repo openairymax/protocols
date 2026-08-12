@@ -4,22 +4,23 @@
 /* @owner: team-B */
 /**
  * @file openclaw_adapter.h
- * @brief OpenClaw Platform Integration Adapter for AgentRT
+ * @brief OpenClaw platform integration adapter for AgentRT.
  *
- * OpenClaw (九问) 是开源AI Agent平台，专注于政务和企业应用。
- * 本适配器实现AgentRT与OpenClaw平台的完整集成。
+ * OpenClaw (Jiuwen) is an open-source AI agent platform focused on
+ * government and enterprise applications. This adapter implements full
+ * integration between AgentRT and the OpenClaw platform.
  *
- * OpenClaw核心特性（v2026.4.11+）:
- * 1. 离线私有化部署 — 完全本地运行，数据不出域
- * 2. 安全管控 — 多级权限控制、审计追踪
- * 3. 多模态能力 — 文本/图像/音频/视频统一处理
- * 4. 生态兼容 — 支持MCP/A2A/OpenAI等主流协议
- * 5. 多智能体原生 — 内置多Agent编排引擎
+ * OpenClaw core features (v2026.4.11+):
+ * 1. offline private deployment - fully local, data never leaves the domain
+ * 2. security control - multi-level permissions, audit trails
+ * 3. multimodal capability - unified text/image/audio/video handling
+ * 4. ecosystem compatibility - MCP/A2A/OpenAI and other mainstream protocols
+ * 5. native multi-agent - built-in multi-agent orchestration engine
  *
- * 集成模式:
- * - 双向桥接: AgentRT ↔ OpenClaw 消息互通
- * - 工具共享: AgentRT工具注册到OpenClaw工具链
- * - 能力映射: OpenClaw能力 → AgentRT协议转换
+ * Integration modes:
+ * - bidirectional bridge: AgentRT <-> OpenClaw message exchange
+ * - tool sharing: AgentRT tools registered into the OpenClaw tool chain
+ * - capability mapping: OpenClaw capabilities -> AgentRT protocol conversion
  *
  * @since 2.1.0
  * @see unified_protocol.h

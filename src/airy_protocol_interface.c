@@ -4,10 +4,10 @@
 // @owner: team-B
 /**
  * @file airy_protocol_interface.c
- * @brief AgentRT Protocol System Unified Interface Implementation
+ * @brief AgentRT protocol system unified interface implementation.
  *
- * 原位置: agentrt/interfaces/src/
- * 迁移至: agentrt/protocols/src/ (2026-04-19 interfaces删除重构)
+ * Moved from agentrt/interfaces/src/ to agentrt/protocols/src/
+ * (2026-04-19 interfaces removal refactor).
  */
 
 #include "airy_protocol_interface.h"
@@ -653,8 +653,8 @@ int proto_interface_list_all(char **json_output)
 
 const char *proto_interface_type_name(protocol_type_t type)
 {
-    /* P0-15 修复: 委托给已对齐枚举的 protocol_type_name()，
-     * 历史 bug：使用旧传输层常量 PROTOCOL_HTTP/PROTOCOL_WEBSOCKET/... 现已删除。 */
+    /* P0-15 fix: delegate to protocol_type_name() on the aligned enum,
+      * Historical bug: used the removed legacy constants PROTOCOL_HTTP/WEBSOCKET/... */
     return protocol_type_name(type);
 }
 
@@ -663,8 +663,8 @@ protocol_type_t proto_interface_parse_type(const char *name)
     if (!name)
         return PROTOCOL_CUSTOM;
 
-    /* P0-15 修复: 委托给已对齐枚举的 protocol_type_from_string()，
-     * 历史 bug：所有应用层协议（mcp/a2a/openai/...）都返回 PROTOCOL_CUSTOM，
-     * 且使用已删除的旧传输层常量 PROTOCOL_WEBSOCKET/STDIO/IPC。 */
+    /* P0-15 fix: delegate to protocol_type_from_string() on the aligned enum,
+      * Historical bug: every app-layer protocol (mcp/a2a/openai/...) returned PROTOCOL_CUSTOM,
+      * and it used the removed legacy constants PROTOCOL_WEBSOCKET/STDIO/IPC. */
     return protocol_type_from_string(name);
 }

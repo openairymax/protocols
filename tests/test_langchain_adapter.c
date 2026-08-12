@@ -257,11 +257,11 @@ static void test_tool_lifecycle(void)
 
     langchain_adapter_destroy(ctx);
 
-    /* P0-11 修复: langchain_list_tools() 返回堆分配的 tools 数组副本，每个字段的
-     * id/name/description/function_schema_json 都是 STRDUP 拷贝，调用方负责释放。
-     * 历史 bug：测试调用 list_tools 但不释放，导致 ASAN 检测到 40B(数组本身)
-     * + 4×STRDUP(id/name/description/function_schema_json) 共 194B 中 56B 泄漏。
-     * 使用 langchain_tool_def_destroy() helper 释放每个 tool 的字符串字段，再释放数组本身。 */
+    /* P0-11 fix: langchain_list_tools() returns a heap copy of the tools array;
+      * id/name/description/function_schema_json are STRDUP'd; callers own them.
+      * Historical bug: the test leaked list_tools' result; ASAN found 40B(array)
+      * + 56B of 194B from 4x STRDUP leaks.
+      * Free each tool's string fields via langchain_tool_def_destroy(), then the array. */
     for (size_t i = 0; i < count; i++)
         langchain_tool_def_destroy(&tools[i]);
     free(tools);
@@ -287,11 +287,11 @@ static void test_chain_lifecycle(void)
 
     langchain_adapter_destroy(ctx);
 
-    /* P0-12 修复: langchain_create_chain() 返回的 instance.id/input_schema_json/
-     * output_schema_json 都是 STRDUP 拷贝，调用方负责释放。
-     * 历史 bug：测试调用 create_chain 但不释放 instance，导致 ASAN 检测到
+    /* P0-12 fix: instance.id/input_schema_json/output_schema_json from
+      * langchain_create_chain() are STRDUP'd; callers own them.
+      * Historical bug: the test leaked the instance; ASAN found
      * 18B(id "lc-chain-...") + 3B(input_schema_json "{}") + 3B(output_schema_json "{}")
-     * = 24B 泄漏。使用 langchain_chain_instance_destroy() helper 释放。 */
+      * a 24B leak. Free via langchain_chain_instance_destroy(). */
     langchain_chain_instance_destroy(&instance);
     PASS();
 }
@@ -342,13 +342,13 @@ static void test_memory_lifecycle(void)
 
     langchain_adapter_destroy(ctx);
 
-    /* P0-13 修复: langchain_create_memory() 返回的 mem.id 是 STRDUP 拷贝；
-     * langchain_memory_get() 返回的 snapshot 含 id/messages 数组/messages[] 字符串副本
-     * 都是 STRDUP 拷贝，调用方负责释放。
-     * 历史 bug：测试调用 create_memory + memory_get 但不释放，导致 ASAN 检测到
-     * 16B(mem.id) + 16B(snapshot.id) + 8B(snapshot.messages 数组) + 34B(snapshot.messages[0]
-     * "{\"role\":\"user\",\"content\":\"Hello\"}") = 74B 泄漏。
-     * 使用 langchain_memory_destroy() helper 释放。 */
+    /* P0-13 fix: mem.id from langchain_create_memory() is STRDUP'd;
+      * the snapshot from langchain_memory_get() holds id/messages-array/string copies;
+      * 都是 STRDUP 拷贝，调用方负责释放。
+      * Historical bug: the test leaked them; ASAN found
+      * 16B(mem.id) + 16B(snapshot.id) + 8B(messages array) + 34B(messages[0]
+      * JSON) = 74B leaks.
+      * Free via langchain_memory_destroy(). */
     langchain_memory_destroy(&mem);
     langchain_memory_destroy(&snapshot);
     PASS();

@@ -4,14 +4,14 @@
 /* @owner: team-B */
 /**
  * @file agntcy_acp_adapter.h
- * @brief AGNTCY Agent Communication Protocol Adapter for AgentRT
+ * @brief AGNTCY Agent Communication Protocol adapter for AgentRT.
  *
- * AGNTCY ACP 是面向智能体间通信的开放标准协议，定义：
- * 1. agent/discover — 智能体注册与发现（capability card）
- * 2. channel/open — 智能体间安全通道建立（mutual TLS + token）
- * 3. message/exchange — 结构化消息交换（同步/异步/广播）
- * 4. task/orchestrate — 跨智能体任务编排（工作流定义）
- * 5. ack/agreement — 服务等级确认与资源承诺
+ * AGNTCY ACP is an open standard for inter-agent communication, defining:
+ * 1. agent/discover - agent registration and discovery (capability card)
+ * 2. channel/open - secure inter-agent channel setup (mutual TLS + token)
+ * 3. message/exchange - structured message exchange (sync/async/broadcast)
+ * 4. task/orchestrate - cross-agent task orchestration (workflow definition)
+ * 5. ack/agreement - service-level acknowledgment and resource commitment
  *
  * @since 0.1.0
  * @see unified_protocol.h

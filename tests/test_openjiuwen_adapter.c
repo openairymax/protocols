@@ -73,9 +73,9 @@ static void test_adapter_create(void)
     ASSERT_NOT_NULL(adapter, "adapter_create should return non-NULL");
     ASSERT_NOT_NULL(adapter->name, "adapter name should not be NULL");
     ASSERT_NOT_NULL(adapter->version, "adapter version should not be NULL");
-    /* P0-08 修复: openjiuwen_adapter_create() 通过 AIRY_CALLOC 分配 adapter，
-     * openjiuwen_destroy() 只清理资源不释放 adapter 本身（因为 g_default_instance
-     * 是静态的），调用方负责 free。 */
+    /* P0-08 fix: openjiuwen_adapter_create() AIRY_CALLOCs the adapter;
+      * openjiuwen_destroy() frees resources but not the adapter (g_default_instance
+      * is static); the caller frees it. */
     if (adapter->destroy)
         adapter->destroy(adapter->context);
     free(adapter->context);

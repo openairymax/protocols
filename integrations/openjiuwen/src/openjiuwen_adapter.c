@@ -4,9 +4,10 @@
 // @owner: team-B
 /**
  * @file openjiuwen_adapter.c
- * @brief OpenJiuwen Protocol Adapter Implementation
+ * @brief OpenJiuwen protocol adapter implementation.
  *
- * 实现与OpenJiuwen平台的协议兼容层，支持消息格式转换和互操作。
+ * Implements a protocol compatibility layer with the OpenJiuwen platform,
+ * supporting message format conversion and interoperability.
  */
 
 #include "openjiuwen_adapter.h"
@@ -27,7 +28,7 @@
 #include <time.h>
 
 /* ============================================================================
- * 内部辅助函数
+
  * ============================================================================ */
 
 static uint32_t generate_message_id(void)
@@ -128,7 +129,7 @@ static int openjiuwen_send_with_retry(openjiuwen_adapter_t *adapter, const char 
 }
 
 /* ============================================================================
- * 协议适配器接口实现
+
  * ============================================================================ */
 
 static int openjiuwen_adapter_init(void *context)
@@ -354,7 +355,7 @@ static int openjiuwen_send_message(void *context, const void *data, size_t size)
 }
 
 /**
- * @brief 从OpenJiuwen平台接收消息
+  * @brief Receive a message from the OpenJiuwen platform
  */
 static int openjiuwen_receive_message(void *context, void **data, size_t *size, uint32_t timeout_ms)
 {
@@ -396,7 +397,7 @@ static int openjiuwen_receive_message(void *context, void **data, size_t *size, 
 }
 
 /**
- * @brief 销毁适配器实例
+  * @brief Destroy an adapter instance
  */
 static int openjiuwen_destroy(void *context)
 {
@@ -421,7 +422,7 @@ static int openjiuwen_destroy(void *context)
 }
 
 /* ============================================================================
- * 协议转换实现
+
  * ============================================================================ */
 
 int openjiuwen_unified_to_native(const unified_message_t *msg, void *out_buffer, size_t buffer_size)
@@ -501,7 +502,7 @@ int openjiuwen_native_to_unified(const void *in_buffer, size_t buffer_size, unif
 }
 
 /* ============================================================================
- * 公共接口函数
+
  * ============================================================================ */
 
 void openjiuwen_get_default_config(openjiuwen_config_t *config)
@@ -622,14 +623,14 @@ int openjiuwen_get_capabilities(const protocol_adapter_t *adapter, char *capabil
 }
 
 /* ============================================================================
- * 全局接口实例定义
+
  * ============================================================================ */
 
 /*
- * 注意：此全局实例在首次使用前需要调用openjiuwen_adapter_create()进行初始化。
- * 此处仅提供接口声明，实际实例应在运行时动态创建。
+  * Note: this global must be initialized via openjiuwen_adapter_create() before first use.
+  * Only the declaration is provided; the instance is created at runtime.
  *
- * 使用示例：
+  * Usage example:
  *   const protocol_adapter_t* adapter = openjiuwen_adapter_create(NULL);
  *   unified_protocol_register_adapter(stack, adapter);
  */

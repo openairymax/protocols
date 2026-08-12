@@ -246,9 +246,9 @@ static void test_agent_lifecycle(void)
     ASSERT_TRUE(rc == 0, "list agents should succeed");
     ASSERT_TRUE(count >= 1, "agent count should be at least 1");
 
-    /* P0-04 修复: autogen_list_agents() 返回堆分配的 agents 数组副本（每个 agent_id/name
-     * 都是 STRDUP 拷贝），调用方负责释放。原测试漏释放，导致 ASAN 检测到
-     * 48B(数组) + 18B(agent_id "agent-...") + 10B(name "Assistant") 泄漏。 */
+    /* P0-04 fix: autogen_list_agents() returns a heap copy (each agent_id/name
+      * is STRDUP'd); callers own it. The old test leaked it; ASAN found
+      * 48B(array) + 18B(agent_id) + 10B(name) leaks. */
     for (size_t i = 0; i < count; i++)
         autogen_agent_instance_destroy(&agents[i]);
     free(agents);

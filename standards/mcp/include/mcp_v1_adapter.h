@@ -4,19 +4,20 @@
 /* @owner: team-B */
 /**
  * @file mcp_v1_adapter.h
- * @brief MCP v1.0 Protocol Adapter for AgentRT
+ * @brief MCP v1.0 protocol adapter for AgentRT.
  *
- * Model Context Protocol v1.0 完整协议适配器。
- * 实现MCP规范定义的工具发现、调用、资源访问、采样等核心能力。
+ * Complete Model Context Protocol v1.0 adapter implementing the core
+ * capabilities defined by the MCP spec: tool discovery, invocation, resource
+ * access, sampling, etc.
  *
- * MCP v1.0 核心能力:
- * 1. tools/list + tools/call — 工具发现与调用
- * 2. resources/list + resources/read + resources/templates — 资源管理
- * 3. prompts/list + prompts/get — 提示模板管理
- * 4. completion/complete — 自动补全
- * 5. sampling/createMessage — LLM采样请求
- * 6. logging/setLogLevel — 日志级别控制
- * 7. notifications — 进度/取消/消息通知
+ * MCP v1.0 core capabilities:
+ * 1. tools/list + tools/call - tool discovery and invocation
+ * 2. resources/list + resources/read + resources/templates - resource management
+ * 3. prompts/list + prompts/get - prompt template management
+ * 4. completion/complete - autocompletion
+ * 5. sampling/createMessage - LLM sampling requests
+ * 6. logging/setLogLevel - log level control
+ * 7. notifications - progress/cancel/message notifications
  *
  * @since 0.1.0
  * @see unified_protocol.h
