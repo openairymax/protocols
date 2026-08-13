@@ -9,6 +9,8 @@
 #ifndef OPENAI_ENTERPRISE_ADAPTER_INTERNAL_H
 #define OPENAI_ENTERPRISE_ADAPTER_INTERNAL_H
 
+#include <time.h>
+
 #include "openai_enterprise_adapter.h"
 
 typedef void *openai_handle_t;
@@ -154,7 +156,6 @@ int openai_create_embedding(openai_handle_t handle, const openai_embedding_reque
                             openai_embedding_response_t *out_response);
 int openai_get_stats(void *handle, openai_rate_limit_t *out_stats);
 void openai_free_model_list(void *list);
-void openai_free_chat_response(openai_chat_response_t *response);
 void openai_free_embedding_response(openai_embedding_response_t *response);
 int openai_set_rate_limits(void *handle, uint32_t rpm, uint32_t tpm);
 int openai_get_rate_status(void *handle, uint32_t *out_remaining_rpm, uint32_t *out_remaining_tpm,

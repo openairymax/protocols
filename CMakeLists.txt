@@ -485,6 +485,11 @@ if(BUILD_TESTS)
         add_executable(test_a2a_adapter
             tests/test_a2a_adapter.c
             standards/a2a/src/a2a_v03_adapter.c
+            standards/a2a/src/a2a_v03_adapter_agent.c
+            standards/a2a/src/a2a_v03_adapter_auth.c
+            standards/a2a/src/a2a_v03_adapter_cb.c
+            standards/a2a/src/a2a_v03_adapter_msg.c
+            standards/a2a/src/a2a_v03_adapter_task.c
             common/src/unified_protocol.c
             core/transformers/src/protocol_transformers.c
         )
@@ -501,6 +506,13 @@ if(BUILD_TESTS)
         add_executable(test_mcp_adapter
             tests/test_mcp_adapter.c
             standards/mcp/src/mcp_v1_adapter.c
+            standards/mcp/src/mcp_v1_adapter_cb.c
+            standards/mcp/src/mcp_v1_adapter_prompt.c
+            standards/mcp/src/mcp_v1_adapter_resource.c
+            standards/mcp/src/mcp_v1_adapter_route.c
+            standards/mcp/src/mcp_v1_adapter_sampling.c
+            standards/mcp/src/mcp_v1_adapter_stream.c
+            standards/mcp/src/mcp_v1_adapter_tool.c
             standards/mcp/src/mcp_transport.c
             common/src/unified_protocol.c
             core/transformers/src/protocol_transformers.c
