@@ -321,7 +321,7 @@ int openai_enterprise_route_request(openai_enterprise_context_t *ctx, const char
                          "failed\",\"type\":\"api_error\",\"code\":null}}");
             *response_json = err_json;
         }
-        openai_free_chat_response(&resp);
+        openai_chat_response_destroy(&resp);
         AIRY_FREE(msg.content);
         return rc;
     }
