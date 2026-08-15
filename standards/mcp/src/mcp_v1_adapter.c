@@ -114,7 +114,7 @@ mcp_v1_context_t *mcp_v1_context_create(const mcp_v1_config_t *config)
 
     mcp_v1_context_t *ctx = AIRY_CALLOC(1, sizeof(mcp_v1_context_t));
     if (!ctx) {
-        LOG_ERROR("context allocation failed, size=%zu", sizeof(mcp_v1_context_t));
+        AIRY_LOG_ERROR("context allocation failed, size=%zu", sizeof(mcp_v1_context_t));
         return NULL;
     }
 
@@ -125,7 +125,7 @@ mcp_v1_context_t *mcp_v1_context_create(const mcp_v1_config_t *config)
     ctx->tool_capacity = 32;
     ctx->tools = AIRY_CALLOC(ctx->tool_capacity, sizeof(mcp_tool_entry_t));
     if (!ctx->tools) {
-        LOG_ERROR("tools array allocation failed, capacity=%zu", ctx->tool_capacity);
+        AIRY_LOG_ERROR("tools array allocation failed, capacity=%zu", ctx->tool_capacity);
         AIRY_FREE(ctx);
         return NULL;
     }
@@ -133,7 +133,7 @@ mcp_v1_context_t *mcp_v1_context_create(const mcp_v1_config_t *config)
     ctx->resource_capacity = 16;
     ctx->resources = AIRY_CALLOC(ctx->resource_capacity, sizeof(mcp_resource_entry_t));
     if (!ctx->resources) {
-        LOG_ERROR("resources array allocation failed, capacity=%zu", ctx->resource_capacity);
+        AIRY_LOG_ERROR("resources array allocation failed, capacity=%zu", ctx->resource_capacity);
         AIRY_FREE(ctx->tools);
         AIRY_FREE(ctx);
         return NULL;
@@ -142,7 +142,7 @@ mcp_v1_context_t *mcp_v1_context_create(const mcp_v1_config_t *config)
     ctx->template_capacity = 16;
     ctx->resource_templates = AIRY_CALLOC(ctx->template_capacity, sizeof(mcp_resource_template_t));
     if (!ctx->resource_templates) {
-        LOG_ERROR("resource_templates allocation failed, capacity=%zu", ctx->template_capacity);
+        AIRY_LOG_ERROR("resource_templates allocation failed, capacity=%zu", ctx->template_capacity);
         AIRY_FREE(ctx->resources);
         AIRY_FREE(ctx->tools);
         AIRY_FREE(ctx);
@@ -152,7 +152,7 @@ mcp_v1_context_t *mcp_v1_context_create(const mcp_v1_config_t *config)
     ctx->prompt_capacity = 16;
     ctx->prompts = AIRY_CALLOC(ctx->prompt_capacity, sizeof(mcp_prompt_entry_t));
     if (!ctx->prompts) {
-        LOG_ERROR("prompts array allocation failed, capacity=%zu", ctx->prompt_capacity);
+        AIRY_LOG_ERROR("prompts array allocation failed, capacity=%zu", ctx->prompt_capacity);
         AIRY_FREE(ctx->resource_templates);
         AIRY_FREE(ctx->resources);
         AIRY_FREE(ctx->tools);

@@ -72,7 +72,7 @@ int a2a_adapter_connect_cb(void *c, const char *e)
     }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)c;
     adapter->connected = true;
-    LOG_DEBUG("a2a_adapter_connect_cb: connected to %s", e ? e : "(unknown)");
+    AIRY_LOG_DEBUG("a2a_adapter_connect_cb: connected to %s", e ? e : "(unknown)");
     (void)e;
     return 0;
 }
@@ -85,7 +85,7 @@ int a2a_adapter_disconnect_cb(void *c)
     }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)c;
     adapter->connected = false;
-    LOG_DEBUG("a2a_adapter_disconnect_cb: disconnected");
+    AIRY_LOG_DEBUG("a2a_adapter_disconnect_cb: disconnected");
     return 0;
 }
 int a2a_adapter_is_connected_cb(void *c)
@@ -110,7 +110,7 @@ int a2a_adapter_send_cb(void *c, const void *d, size_t s)
     }
 
     if (!adapter->connected || !adapter->transport_write) {
-        LOG_WARN("send failed: not connected or no transport, connected=%d, transport_write=%p",
+        AIRY_LOG_WARN("send failed: not connected or no transport, connected=%d, transport_write=%p",
                  adapter->connected, (void *)(uintptr_t)adapter->transport_write);
 
         airy_err_push_ex(AIRY_ENOTCONN, __FILE__, __LINE__, __func__,
@@ -136,7 +136,7 @@ int a2a_adapter_send_cb(void *c, const void *d, size_t s)
         return AIRY_ERR_OVERFLOW;
     }
 
-    LOG_DEBUG("a2a_adapter_send_cb: sending %zu bytes (frame hdr=%d)", s, hdr_len);
+    AIRY_LOG_DEBUG("a2a_adapter_send_cb: sending %zu bytes (frame hdr=%d)", s, hdr_len);
 
     /* Send header */
     int rc = adapter->transport_write(adapter->transport_ctx, header, (size_t)hdr_len);
@@ -157,7 +157,7 @@ int a2a_adapter_send_cb(void *c, const void *d, size_t s)
     adapter->bytes_sent += (uint64_t)s + (uint64_t)hdr_len;
     adapter->messages_sent++;
 
-    LOG_DEBUG("a2a_adapter_send_cb: sent message #%llu (%zu bytes payload)",
+    AIRY_LOG_DEBUG("a2a_adapter_send_cb: sent message #%llu (%zu bytes payload)",
               (unsigned long long)adapter->messages_sent, s);
 
     return AIRY_OK;

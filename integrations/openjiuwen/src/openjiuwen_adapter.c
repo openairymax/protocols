@@ -63,7 +63,7 @@ static int openjiuwen_reconnect(openjiuwen_adapter_t *adapter)
         if (delay > OPENJIUWEN_RECONNECT_MAX_DELAY_MS)
             delay = OPENJIUWEN_RECONNECT_MAX_DELAY_MS;
 
-        LOG_WARN("OpenJiuwen: reconnect attempt %u/%u, waiting %ums", attempt + 1, max_attempts,
+        AIRY_LOG_WARN("OpenJiuwen: reconnect attempt %u/%u, waiting %ums", attempt + 1, max_attempts,
                  delay);
 
 #ifdef _WIN32
@@ -78,7 +78,7 @@ static int openjiuwen_reconnect(openjiuwen_adapter_t *adapter)
             adapter->conn_state = OPENJIUWEN_CONN_CONNECTED;
             adapter->consecutive_errors = 0;
             adapter->last_heartbeat_sec = get_timestamp();
-            LOG_INFO("OpenJiuwen: reconnected successfully on attempt %u", attempt + 1);
+            AIRY_LOG_INFO("OpenJiuwen: reconnected successfully on attempt %u", attempt + 1);
             return 0;
         }
 
@@ -86,7 +86,7 @@ static int openjiuwen_reconnect(openjiuwen_adapter_t *adapter)
     }
 
     adapter->conn_state = OPENJIUWEN_CONN_ERROR;
-    LOG_ERROR("OpenJiuwen: reconnection failed after %u attempts", max_attempts);
+    AIRY_LOG_ERROR("OpenJiuwen: reconnection failed after %u attempts", max_attempts);
     return AIRY_ERR_IO;
 }
 
@@ -111,7 +111,7 @@ static int openjiuwen_send_with_retry(openjiuwen_adapter_t *adapter, const char 
         adapter->last_activity_ms = get_timestamp_ms();
 
         if (adapter->consecutive_errors >= OPENJIUWEN_MAX_CONSECUTIVE_ERRORS) {
-            LOG_ERROR("OpenJiuwen: too many consecutive errors (%u), forcing reconnect",
+            AIRY_LOG_ERROR("OpenJiuwen: too many consecutive errors (%u), forcing reconnect",
                       adapter->consecutive_errors);
             adapter->conn_state = OPENJIUWEN_CONN_ERROR;
             if (openjiuwen_reconnect(adapter) != 0)
@@ -147,7 +147,7 @@ static int openjiuwen_adapter_init(void *context)
     adapter->last_error_code = 0;
     adapter->last_activity_ms = 0;
     adapter->initialized = true;
-    LOG_INFO("OpenJiuwen adapter initialized");
+    AIRY_LOG_INFO("OpenJiuwen adapter initialized");
     return 0;
 }
 
@@ -205,12 +205,12 @@ static int openjiuwen_adapter_connect(void *context, const char *endpoint)
     if (verify == 0) {
         adapter->conn_state = OPENJIUWEN_CONN_CONNECTED;
         adapter->last_heartbeat_sec = get_timestamp();
-        LOG_INFO("OpenJiuwen: connected to %s", endpoint);
+        AIRY_LOG_INFO("OpenJiuwen: connected to %s", endpoint);
         return 0;
     }
 
     adapter->conn_state = OPENJIUWEN_CONN_DISCONNECTED;
-    LOG_WARN("OpenJiuwen: connection to %s failed (verify=%d)", endpoint, verify);
+    AIRY_LOG_WARN("OpenJiuwen: connection to %s failed (verify=%d)", endpoint, verify);
     return AIRY_ERR_NULL_POINTER;
 }
 
@@ -222,7 +222,7 @@ static int openjiuwen_adapter_disconnect(void *context)
 
     adapter->conn_state = OPENJIUWEN_CONN_DISCONNECTED;
     adapter->last_heartbeat_sec = 0;
-    LOG_INFO("OpenJiuwen: disconnected");
+    AIRY_LOG_INFO("OpenJiuwen: disconnected");
     return 0;
 }
 
@@ -235,7 +235,7 @@ __attribute__((unused)) static int openjiuwen_adapter_deinit(void *context)
     adapter->conn_state = OPENJIUWEN_CONN_DISCONNECTED;
     adapter->connection_handle = NULL;
     adapter->consecutive_errors = 0;
-    LOG_INFO("OpenJiuwen: disconnected");
+    AIRY_LOG_INFO("OpenJiuwen: disconnected");
     return 0;
 }
 
@@ -320,7 +320,7 @@ static int openjiuwen_send_message(void *context, const void *data, size_t size)
     }
 
     if (!adapter->initialized) {
-        LOG_ERROR("OpenJiuwen adapter not initialized");
+        AIRY_LOG_ERROR("OpenJiuwen adapter not initialized");
         return AIRY_ERR_SYS_NOT_INIT;
     }
 
@@ -329,7 +329,7 @@ static int openjiuwen_send_message(void *context, const void *data, size_t size)
     char buffer[OPENJIUWEN_MAX_MESSAGE_SIZE];
     int result = openjiuwen_unified_to_native(message, buffer, sizeof(buffer));
     if (result < 0) {
-        LOG_ERROR("Failed to convert message to OpenJiuwen format");
+        AIRY_LOG_ERROR("Failed to convert message to OpenJiuwen format");
         adapter->consecutive_errors++;
         adapter->last_error_code = (uint32_t)(-result);
         return AIRY_ERR_NULL_POINTER;
@@ -339,7 +339,7 @@ static int openjiuwen_send_message(void *context, const void *data, size_t size)
     if (send_result != 0) {
         adapter->consecutive_errors++;
         adapter->last_error_code = (uint32_t)(-send_result);
-        LOG_ERROR("OpenJiuwen: send failed after retries (errors=%u)", adapter->consecutive_errors);
+        AIRY_LOG_ERROR("OpenJiuwen: send failed after retries (errors=%u)", adapter->consecutive_errors);
         return AIRY_ERR_OUT_OF_MEMORY;
     }
 
@@ -348,7 +348,7 @@ static int openjiuwen_send_message(void *context, const void *data, size_t size)
         adapter->last_heartbeat_sec = now;
     }
 
-    LOG_DEBUG("Message sent to OpenJiuwen (id=%u, size=%d bytes)", adapter->message_counter,
+    AIRY_LOG_DEBUG("Message sent to OpenJiuwen (id=%u, size=%d bytes)", adapter->message_counter,
               result);
 
     return (int)size;
@@ -366,12 +366,12 @@ static int openjiuwen_receive_message(void *context, void **data, size_t *size, 
     }
 
     if (!adapter->initialized) {
-        LOG_ERROR("OpenJiuwen adapter not initialized");
+        AIRY_LOG_ERROR("OpenJiuwen adapter not initialized");
         return AIRY_ERR_SYS_NOT_INIT;
     }
 
     if (adapter->conn_state != OPENJIUWEN_CONN_CONNECTED) {
-        LOG_WARN("OpenJiuwen: cannot receive - not connected (state=%d)", adapter->conn_state);
+        AIRY_LOG_WARN("OpenJiuwen: cannot receive - not connected (state=%d)", adapter->conn_state);
         return AIRY_ERR_NULL_POINTER;
     }
 
@@ -416,7 +416,7 @@ static int openjiuwen_destroy(void *context)
     adapter->consecutive_errors = 0;
     adapter->message_counter = 0;
 
-    LOG_INFO("OpenJiuwen adapter destroyed (reconnects=%u, last_error=%u)",
+    AIRY_LOG_INFO("OpenJiuwen adapter destroyed (reconnects=%u, last_error=%u)",
              adapter->total_reconnects, adapter->last_error_code);
     return 0;
 }
@@ -450,7 +450,7 @@ int openjiuwen_unified_to_native(const unified_message_t *msg, void *out_buffer,
 
     size_t total_size = sizeof(openjiuwen_header_t) + payload_length;
     if (total_size > buffer_size) {
-        LOG_ERROR("Buffer too small for OpenJiuwen message");
+        AIRY_LOG_ERROR("Buffer too small for OpenJiuwen message");
         return AIRY_ERR_IO;
     }
 
@@ -473,7 +473,7 @@ int openjiuwen_native_to_unified(const void *in_buffer, size_t buffer_size, unif
     const openjiuwen_header_t *header = (const openjiuwen_header_t *)in_buffer;
 
     if (buffer_size < sizeof(openjiuwen_header_t) + header->payload_length) {
-        LOG_ERROR("Invalid OpenJiuwen message: incomplete data");
+        AIRY_LOG_ERROR("Invalid OpenJiuwen message: incomplete data");
         return AIRY_ERR_INVALID_PARAM;
     }
 
@@ -525,7 +525,7 @@ const protocol_adapter_t *openjiuwen_adapter_create(const openjiuwen_config_t *c
     openjiuwen_adapter_t *adapter =
         (openjiuwen_adapter_t *)AIRY_CALLOC(1, sizeof(openjiuwen_adapter_t));
     if (!adapter) {
-        LOG_ERROR("Failed to allocate OpenJiuwen adapter");
+        AIRY_LOG_ERROR("Failed to allocate OpenJiuwen adapter");
         return NULL;
     }
 
@@ -555,7 +555,7 @@ const protocol_adapter_t *openjiuwen_adapter_create(const openjiuwen_config_t *c
     adapter->last_error_code = 0;
     adapter->last_activity_ms = 0;
 
-    LOG_INFO("OpenJiuwen adapter created successfully (endpoint=%s)", adapter->config.endpoint);
+    AIRY_LOG_INFO("OpenJiuwen adapter created successfully (endpoint=%s)", adapter->config.endpoint);
 
     return &adapter->base;
 }
@@ -573,7 +573,7 @@ int openjiuwen_verify_connection(const protocol_adapter_t *adapter)
 
     if (impl->consecutive_errors >= OPENJIUWEN_MAX_CONSECUTIVE_ERRORS) {
         impl->conn_state = OPENJIUWEN_CONN_ERROR;
-        LOG_WARN("OpenJiuwen: connection verification failed - too many errors (%u)",
+        AIRY_LOG_WARN("OpenJiuwen: connection verification failed - too many errors (%u)",
                  impl->consecutive_errors);
         return AIRY_ERR_NULL_POINTER;
     }
@@ -582,13 +582,13 @@ int openjiuwen_verify_connection(const protocol_adapter_t *adapter)
     uint32_t idle_seconds = now - impl->last_heartbeat_sec;
     if (idle_seconds > OPENJIUWEN_HEARTBEAT_INTERVAL_SEC * 3) {
         impl->conn_state = OPENJIUWEN_CONN_RECONNECTING;
-        LOG_WARN("OpenJiuwen: connection stale (idle=%us), needs reconnect", idle_seconds);
+        AIRY_LOG_WARN("OpenJiuwen: connection stale (idle=%us), needs reconnect", idle_seconds);
         return AIRY_ERR_OUT_OF_MEMORY;
     }
 
     impl->conn_state = OPENJIUWEN_CONN_CONNECTED;
     impl->last_heartbeat_sec = now;
-    LOG_INFO("OpenJiuwen connection verification successful");
+    AIRY_LOG_INFO("OpenJiuwen connection verification successful");
 
     return 0;
 }

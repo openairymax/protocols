@@ -97,7 +97,7 @@ int client_rpc_exchange(mcp_client_t *c, const char *method, const char *params_
         for (;;) {
             int64_t remain = deadline - now_ms();
             if (remain <= 0) {
-                LOG_WARN("mcp client '%s': rpc %s timeout", c->name, method);
+                AIRY_LOG_WARN("mcp client '%s': rpc %s timeout", c->name, method);
                 return AIRY_ERR_TIMEOUT;
             }
             char *frame = NULL;
@@ -142,7 +142,7 @@ static int parse_initialize_response(mcp_client_t *c, const char *resp)
     cJSON *err = cJSON_GetObjectItem(root, "error");
     if (cJSON_IsObject(err)) {
         cJSON *msg = cJSON_GetObjectItem(err, "message");
-        LOG_WARN("mcp client '%s': initialize rejected: %s", c->name,
+        AIRY_LOG_WARN("mcp client '%s': initialize rejected: %s", c->name,
                  msg && cJSON_IsString(msg) && msg->valuestring ? msg->valuestring :
                                                                   "unknown error");
         return MCP_CLIENT_ERR_RPC_ERROR;
@@ -155,10 +155,10 @@ static int parse_initialize_response(mcp_client_t *c, const char *resp)
         cJSON *sn = cJSON_GetObjectItem(si, "name");
         if (cJSON_IsString(sn) && sn->valuestring) {
             c->server_name = AIRY_STRDUP(sn->valuestring);
-            LOG_INFO("mcp client '%s': initialized, remote server=%s", c->name, sn->valuestring);
+            AIRY_LOG_INFO("mcp client '%s': initialized, remote server=%s", c->name, sn->valuestring);
         }
     } else {
-        LOG_INFO("mcp client '%s': initialized", c->name);
+        AIRY_LOG_INFO("mcp client '%s': initialized", c->name);
     }
     return 0;
 }
@@ -185,6 +185,6 @@ int client_ensure_initialized(mcp_client_t *c)
 
     rc = client_rpc_exchange(c, "notifications/initialized", "{}", false, NULL);
     if (rc != 0)
-        LOG_WARN("mcp client '%s': failed to send initialized notification (rc=%d)", c->name, rc);
+        AIRY_LOG_WARN("mcp client '%s': failed to send initialized notification (rc=%d)", c->name, rc);
     return 0;
 }

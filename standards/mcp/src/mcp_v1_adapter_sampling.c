@@ -33,13 +33,13 @@ int mcp_v1_handle_sampling(mcp_v1_context_t *ctx, const mcp_sampling_params_t *p
         return AIRY_ERR_UNKNOWN;
     }
     if (!ctx->sampling_handler) {
-        LOG_WARN("sampling handler not registered, cannot handle sampling request");
+        AIRY_LOG_WARN("sampling handler not registered, cannot handle sampling request");
         airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
                          "mcp_v1_adapter: invalid parameter");
         return AIRY_ERR_INVALID_PARAM;
     }
     if (!(ctx->config.capabilities & MCP_CAP_SAMPLING)) {
-        LOG_WARN("sampling capability not enabled, caps=0x%x", ctx->config.capabilities);
+        AIRY_LOG_WARN("sampling capability not enabled, caps=0x%x", ctx->config.capabilities);
         airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__,
                          "mcp_v1_adapter: null pointer");
         return AIRY_ERR_NULL_POINTER;
@@ -104,13 +104,13 @@ int mcp_v1_handle_sampling_streaming(mcp_v1_context_t *ctx, const mcp_sampling_p
         return AIRY_ERR_UNKNOWN;
     }
     if (!ctx->sampling_handler) {
-        LOG_WARN("sampling handler not registered for streaming request");
+        AIRY_LOG_WARN("sampling handler not registered for streaming request");
         airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
                          "mcp_v1_adapter: invalid parameter");
         return AIRY_ERR_INVALID_PARAM;
     }
     if (!(ctx->config.capabilities & MCP_CAP_SAMPLING)) {
-        LOG_WARN("sampling capability not enabled for streaming, caps=0x%x",
+        AIRY_LOG_WARN("sampling capability not enabled for streaming, caps=0x%x",
                  ctx->config.capabilities);
         return AIRY_ERR_NULL_POINTER;
     }

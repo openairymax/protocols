@@ -80,7 +80,7 @@ int mcp_v1_handle_prompts_get(mcp_v1_context_t *ctx, const char *name, const cha
     }
 
     if (!found || !found->handler) {
-        LOG_WARN("prompt not found or no handler: name=%s, prompt_count=%zu", name,
+        AIRY_LOG_WARN("prompt not found or no handler: name=%s, prompt_count=%zu", name,
                  ctx->prompt_count);
         *response_json = AIRY_STRDUP("{\"description\":\"Prompt not found\",\"messages\":[]}");
         airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,

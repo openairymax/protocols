@@ -80,7 +80,7 @@ int mcp_v1_handle_tools_call(mcp_v1_context_t *ctx, const char *name, const char
     }
 
     if (!found) {
-        LOG_WARN("tool not found: name=%s, tool_count=%zu", name, ctx->tool_count);
+        AIRY_LOG_WARN("tool not found: name=%s, tool_count=%zu", name, ctx->tool_count);
         char *name_esc = json_string_escape(name);
         const char *safe_name = name_esc ? name_esc : name;
         size_t len = snprintf(

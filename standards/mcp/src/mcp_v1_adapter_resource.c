@@ -81,7 +81,7 @@ int mcp_v1_handle_resources_read(mcp_v1_context_t *ctx, const char *uri, char **
     }
 
     if (!found || !found->handler) {
-        LOG_WARN("resource not found or no handler: uri=%s, resource_count=%zu", uri,
+        AIRY_LOG_WARN("resource not found or no handler: uri=%s, resource_count=%zu", uri,
                  ctx->resource_count);
         char *uri_esc = json_string_escape(uri);
         size_t len =
