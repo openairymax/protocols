@@ -301,6 +301,6 @@ int main(void)
     RUN_TEST(task_orchestrate);
     RUN_TEST(ack_negotiate);
 
-    LOG_INFO("\nAGNTCY ACP tests: %d failures", failures);
+    AIRY_LOG_INFO("\nAGNTCY ACP tests: %d failures", failures);
     return failures;
 }

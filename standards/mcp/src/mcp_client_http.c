@@ -103,7 +103,7 @@ static int http_connect_fd(mcp_client_t *c)
     snprintf(port_str, sizeof(port_str), "%u", (unsigned)c->http_port);
     int grc = getaddrinfo(c->http_host, port_str, &hints, &res);
     if (grc != 0) {
-        LOG_WARN("mcp client '%s': getaddrinfo failed for %s (%s)", c->name, c->http_host,
+        AIRY_LOG_WARN("mcp client '%s': getaddrinfo failed for %s (%s)", c->name, c->http_host,
                  gai_strerror(grc));
         return -1;
     }
@@ -119,7 +119,7 @@ static int http_connect_fd(mcp_client_t *c)
     }
     freeaddrinfo(res);
     if (fd < 0)
-        LOG_WARN("mcp client '%s': connect to %s:%u failed", c->name, c->http_host,
+        AIRY_LOG_WARN("mcp client '%s': connect to %s:%u failed", c->name, c->http_host,
                  (unsigned)c->http_port);
     return fd;
 }
@@ -193,7 +193,7 @@ static int http_read_response(mcp_client_t *c, int fd, char **out_body)
             int pr = poll(&pfd, 1, MCP_CLIENT_DEFAULT_TIMEOUT_MS);
             if (pr == 0) {
                 frame_parser_destroy(&p);
-                LOG_WARN("mcp client '%s': http read timeout", c->name);
+                AIRY_LOG_WARN("mcp client '%s': http read timeout", c->name);
                 return AIRY_ERR_TIMEOUT;
             }
             if (pr < 0) {
@@ -227,7 +227,7 @@ static int http_read_response(mcp_client_t *c, int fd, char **out_body)
             is_sse = true;
     }
     if (status >= 400)
-        LOG_WARN("mcp client '%s': http status %d", c->name, status);
+        AIRY_LOG_WARN("mcp client '%s': http status %d", c->name, status);
 
     if (is_sse && *out_body) {
 

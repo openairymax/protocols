@@ -247,7 +247,7 @@ static proto_gateway_impl_t *g_gw_impl = NULL;
 static void airy_proto_gw_log(const proto_gateway_iface_t *gw, const char *operation)
 {
     if (gw) {
-        LOG_DEBUG("[proto_gw:%p] %s", (const void *)gw, operation ? operation : "unknown");
+        AIRY_LOG_DEBUG("[proto_gw:%p] %s", (const void *)gw, operation ? operation : "unknown");
     }
 }
 

@@ -113,7 +113,7 @@ int frame_parser_append(mcp_frame_parser_t *p, const char *data, size_t n)
     if (n == 0)
         return 0;
     if (p->len + n > MCP_CLIENT_MAX_MESSAGE_SIZE + MCP_CLIENT_HEADER_MAX) {
-        LOG_WARN("mcp client: frame buffer overflow (len=%zu, n=%zu)", p->len, n);
+        AIRY_LOG_WARN("mcp client: frame buffer overflow (len=%zu, n=%zu)", p->len, n);
         return AIRY_ERR_OVERFLOW;
     }
     if (p->len + n > p->cap) {
@@ -145,11 +145,11 @@ int frame_parser_take_frame(mcp_frame_parser_t *p, char **out)
             return 1;
         size_t clen = 0;
         if (parse_content_length(p->buf, hdr_end, &clen) != 0) {
-            LOG_WARN("mcp client: frame header missing Content-Length");
+            AIRY_LOG_WARN("mcp client: frame header missing Content-Length");
             return MCP_CLIENT_ERR_FRAME;
         }
         if (clen == 0 || clen > MCP_CLIENT_MAX_MESSAGE_SIZE) {
-            LOG_WARN("mcp client: invalid Content-Length %zu", clen);
+            AIRY_LOG_WARN("mcp client: invalid Content-Length %zu", clen);
             return MCP_CLIENT_ERR_FRAME;
         }
 

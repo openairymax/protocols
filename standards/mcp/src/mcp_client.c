@@ -51,7 +51,7 @@ mcp_client_t *mcp_client_connect_stdio(const char *name, const char *command, ch
     (void)name;
     (void)command;
     (void)argv;
-    LOG_WARN("mcp client: stdio transport not supported on Windows");
+    AIRY_LOG_WARN("mcp client: stdio transport not supported on Windows");
     return NULL;
 #else
     if (!name || !name[0] || !command || !argv || !argv[0])
@@ -64,7 +64,7 @@ mcp_client_t *mcp_client_connect_stdio(const char *name, const char *command, ch
     int to_child[2] = {-1, -1};
     int from_child[2] = {-1, -1};
     if (pipe(to_child) != 0 || pipe(from_child) != 0) {
-        LOG_WARN("mcp client '%s': pipe() failed (errno=%d)", name, errno);
+        AIRY_LOG_WARN("mcp client '%s': pipe() failed (errno=%d)", name, errno);
         if (to_child[0] >= 0) {
             close(to_child[0]);
             close(to_child[1]);
@@ -79,7 +79,7 @@ mcp_client_t *mcp_client_connect_stdio(const char *name, const char *command, ch
 
     pid_t pid = fork();
     if (pid < 0) {
-        LOG_WARN("mcp client '%s': fork() failed (errno=%d)", name, errno);
+        AIRY_LOG_WARN("mcp client '%s': fork() failed (errno=%d)", name, errno);
         close(to_child[0]);
         close(to_child[1]);
         close(from_child[0]);
@@ -120,7 +120,7 @@ mcp_client_t *mcp_client_connect_stdio(const char *name, const char *command, ch
     c->request_id = 0;
     c->initialized = false;
     frame_parser_init(&c->parser);
-    LOG_INFO("mcp client '%s': stdio connected (pid=%d, command=%s)", name, (int)pid, command);
+    AIRY_LOG_INFO("mcp client '%s': stdio connected (pid=%d, command=%s)", name, (int)pid, command);
     return c;
 #endif
 }
@@ -133,7 +133,7 @@ mcp_client_t *mcp_client_connect_http(const char *name, const char *url)
     char *path = NULL;
     uint16_t port = 0;
     if (parse_http_url(url, &host, &port, &path) != 0) {
-        LOG_WARN("mcp client '%s': invalid http url: %s", name, url);
+        AIRY_LOG_WARN("mcp client '%s': invalid http url: %s", name, url);
         return NULL;
     }
     mcp_client_t *c = AIRY_CALLOC(1, sizeof(mcp_client_t));
@@ -150,7 +150,7 @@ mcp_client_t *mcp_client_connect_http(const char *name, const char *url)
     c->request_id = 0;
     c->initialized = false;
     frame_parser_init(&c->parser);
-    LOG_INFO("mcp client '%s': http endpoint http://%s:%u%s", name, host, (unsigned)port, path);
+    AIRY_LOG_INFO("mcp client '%s': http endpoint http://%s:%u%s", name, host, (unsigned)port, path);
     return c;
 }
 

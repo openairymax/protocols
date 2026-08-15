@@ -139,7 +139,7 @@ int mcp_v1_route_request(mcp_v1_context_t *ctx, const char *method, const char *
     }
 
     *response_json = AIRY_STRDUP("{\"error\":{\"code\":-32601,\"message\":\"Method not found\"}}");
-    LOG_WARN("method not found in route_request: method=%s, request_counter=%llu", method,
+    AIRY_LOG_WARN("method not found in route_request: method=%s, request_counter=%llu", method,
              (unsigned long long)ctx->request_counter);
     airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
                      "mcp_v1_adapter: invalid parameter");

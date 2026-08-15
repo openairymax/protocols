@@ -106,10 +106,10 @@ static int read_line(int fd, char *buf, size_t buf_size, uint32_t timeout_ms)
         int ret = select(fd + 1, &fds, NULL, NULL, &tv);
         if (ret <= 0) {
             if (ret == 0) {
-                LOG_WARN("read_line timeout after %u ms, fd=%d", timeout_ms, fd);
+                AIRY_LOG_WARN("read_line timeout after %u ms, fd=%d", timeout_ms, fd);
                 return AIRY_ERR_INVALID_PARAM;
             }
-            LOG_ERROR("read_line select failed, fd=%d", fd);
+            AIRY_LOG_ERROR("read_line select failed, fd=%d", fd);
             return AIRY_EINVAL;
         }
 
@@ -147,11 +147,11 @@ static int write_all(int fd, const char *buf, size_t len, uint32_t timeout_ms)
         int ret = select(fd + 1, NULL, &fds, NULL, &tv);
         if (ret <= 0) {
             if (ret == 0) {
-                LOG_WARN("write_all timeout after %u ms, fd=%d, written=%zu/%zu", timeout_ms, fd,
+                AIRY_LOG_WARN("write_all timeout after %u ms, fd=%d, written=%zu/%zu", timeout_ms, fd,
                          written, len);
                 return AIRY_ERR_INVALID_PARAM;
             }
-            LOG_ERROR("write_all select failed, fd=%d", fd);
+            AIRY_LOG_ERROR("write_all select failed, fd=%d", fd);
             return AIRY_EINVAL;
         }
 
@@ -197,13 +197,13 @@ mcp_transport_config_t mcp_transport_config_http_default(const char *base_url)
 mcp_transport_t *mcp_transport_create(const mcp_transport_config_t *config)
 {
     if (!config) {
-        LOG_ERROR("transport_create called with NULL config");
+        AIRY_LOG_ERROR("transport_create called with NULL config");
         return NULL;
     }
 
     mcp_transport_t *t = (mcp_transport_t *)AIRY_CALLOC(1, sizeof(mcp_transport_t));
     if (!t) {
-        LOG_ERROR("transport allocation failed, size=%zu", sizeof(mcp_transport_t));
+        AIRY_LOG_ERROR("transport allocation failed, size=%zu", sizeof(mcp_transport_t));
         return NULL;
     }
 
@@ -222,7 +222,7 @@ mcp_transport_t *mcp_transport_create(const mcp_transport_config_t *config)
     t->recv_buffer_capacity = 65536;
     t->recv_buffer = (char *)AIRY_MALLOC(t->recv_buffer_capacity);
     if (!t->recv_buffer) {
-        LOG_ERROR("recv_buffer allocation failed, capacity=%zu", t->recv_buffer_capacity);
+        AIRY_LOG_ERROR("recv_buffer allocation failed, capacity=%zu", t->recv_buffer_capacity);
         AIRY_FREE(t);
         return NULL;
     }
@@ -319,7 +319,7 @@ int mcp_transport_start(mcp_transport_t *transport)
     if (transport->type == MCP_TRANSPORT_HTTP_SSE ||
         transport->type == MCP_TRANSPORT_STREAMABLE_HTTP) {
         if (!transport->base_url) {
-            LOG_ERROR("HTTP transport requires base_url, type=%d", transport->type);
+            AIRY_LOG_ERROR("HTTP transport requires base_url, type=%d", transport->type);
             notify_error(transport, -1, "HTTP transport requires base_url");
             set_state(transport, MCP_TRANSPORT_ERROR);
             return AIRY_EINVAL;
@@ -329,7 +329,7 @@ int mcp_transport_start(mcp_transport_t *transport)
         int port = 80;
         char *url_copy = AIRY_STRDUP(transport->base_url);
         if (!url_copy) {
-            LOG_ERROR("url_copy allocation failed for base_url=%s", transport->base_url);
+            AIRY_LOG_ERROR("url_copy allocation failed for base_url=%s", transport->base_url);
             set_state(transport, MCP_TRANSPORT_ERROR);
             return AIRY_EINVAL;
         }
@@ -365,7 +365,7 @@ int mcp_transport_start(mcp_transport_t *transport)
 
         int gai_err = getaddrinfo(host, port_str, &hints, &result);
         if (gai_err != 0) {
-            LOG_ERROR("DNS resolution failed: host=%s, port=%s, error=%s", host, port_str,
+            AIRY_LOG_ERROR("DNS resolution failed: host=%s, port=%s, error=%s", host, port_str,
                       gai_strerror(gai_err));
             char err_msg[256];
             snprintf(err_msg, sizeof(err_msg), "DNS resolution failed: %s", gai_strerror(gai_err));
@@ -376,7 +376,7 @@ int mcp_transport_start(mcp_transport_t *transport)
 
         int sock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
         if (sock < 0) {
-            LOG_ERROR("socket creation failed: host=%s, port=%d, errno=%d", host, port, errno);
+            AIRY_LOG_ERROR("socket creation failed: host=%s, port=%d, errno=%d", host, port, errno);
             notify_error(transport, -3, "Socket creation failed");
             freeaddrinfo(result);
             set_state(transport, MCP_TRANSPORT_ERROR);
@@ -390,7 +390,7 @@ int mcp_transport_start(mcp_transport_t *transport)
         setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 
         if (connect(sock, result->ai_addr, result->ai_addrlen) < 0) {
-            LOG_ERROR("connection failed: host=%s, port=%d, errno=%d", host, port, errno);
+            AIRY_LOG_ERROR("connection failed: host=%s, port=%d, errno=%d", host, port, errno);
             char err_msg[256];
             snprintf(err_msg, sizeof(err_msg), "Connection failed: %s", strerror(errno));
             notify_error(transport, -4, err_msg);
@@ -438,7 +438,7 @@ int mcp_transport_send(mcp_transport_t *transport, const char *message, size_t l
         return AIRY_ERR_UNKNOWN;
     }
     if (transport->state != MCP_TRANSPORT_CONNECTED) {
-        LOG_WARN("send attempted on non-connected transport, state=%d", transport->state);
+        AIRY_LOG_WARN("send attempted on non-connected transport, state=%d", transport->state);
         return AIRY_ERR_NOT_FOUND;
     }
 
@@ -507,7 +507,7 @@ __attribute__((unused)) int mcp_transport_receive(mcp_transport_t *transport, ch
         return AIRY_ERR_TIMEOUT;
     }
     if (transport->state != MCP_TRANSPORT_CONNECTED) {
-        LOG_WARN("send attempted on non-connected transport, state=%d", transport->state);
+        AIRY_LOG_WARN("send attempted on non-connected transport, state=%d", transport->state);
         return AIRY_ERR_NOT_FOUND;
     }
 
@@ -535,7 +535,7 @@ __attribute__((unused)) int mcp_transport_receive(mcp_transport_t *transport, ch
         read_line(transport->input_fd, empty_line, sizeof(empty_line), timeout_ms);
 
         if (content_length == 0 || content_length > transport->max_message_size) {
-            LOG_WARN("invalid content_length=%zu, max=%zu", content_length,
+            AIRY_LOG_WARN("invalid content_length=%zu, max=%zu", content_length,
                      transport->max_message_size);
             notify_error(transport, -21, "Invalid content length");
             return AIRY_EINVAL;

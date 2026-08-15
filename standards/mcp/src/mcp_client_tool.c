@@ -112,7 +112,7 @@ int mcp_client_list_tools(mcp_client_t *c, mcp_client_tool_list_t *out)
     cJSON *err = cJSON_GetObjectItem(root, "error");
     if (cJSON_IsObject(err)) {
         cJSON *msg = cJSON_GetObjectItem(err, "message");
-        LOG_WARN("mcp client '%s': tools/list failed: %s", c->name,
+        AIRY_LOG_WARN("mcp client '%s': tools/list failed: %s", c->name,
                  msg && cJSON_IsString(msg) && msg->valuestring ? msg->valuestring :
                                                                   "unknown error");
         AIRY_FREE(resp);

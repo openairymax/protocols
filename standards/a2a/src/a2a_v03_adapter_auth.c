@@ -310,7 +310,7 @@ int a2a_v03_authenticate(a2a_v03_context_t *ctx, const char *agent_id, const cha
     uint64_t now = a2a_timestamp_ms() / 1000;
 
     if (g_a2a_auth.lockout_until > 0 && now < g_a2a_auth.lockout_until) {
-        LOG_ERROR("authentication locked out: agent_id=%s, lockout_until=%llu, now=%llu", agent_id,
+        AIRY_LOG_ERROR("authentication locked out: agent_id=%s, lockout_until=%llu, now=%llu", agent_id,
                   (unsigned long long)g_a2a_auth.lockout_until, (unsigned long long)now);
 
         airy_err_push_ex(
@@ -352,7 +352,7 @@ int a2a_v03_authenticate(a2a_v03_context_t *ctx, const char *agent_id, const cha
     }
 
     if (!cred_valid) {
-        LOG_ERROR("authentication failed: agent_id=%s, method=%d, failed_attempts=%d", agent_id,
+        AIRY_LOG_ERROR("authentication failed: agent_id=%s, method=%d, failed_attempts=%d", agent_id,
                   g_a2a_auth.config.method, g_a2a_auth.failed_attempts + 1);
         g_a2a_auth.failed_attempts++;
         if (g_a2a_auth.failed_attempts >= g_a2a_auth.config.max_failed_attempts) {
@@ -410,7 +410,7 @@ int a2a_v03_verify_token(a2a_v03_context_t *ctx, const char *token_str,
             continue;
 
         if (now >= tok->expires_at) {
-            LOG_WARN("token expired: agent_id=%s, expires_at=%llu, now=%llu", tok->agent_id,
+            AIRY_LOG_WARN("token expired: agent_id=%s, expires_at=%llu, now=%llu", tok->agent_id,
                      (unsigned long long)tok->expires_at, (unsigned long long)now);
             tok->valid = false;
             airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "operation failed");
@@ -423,7 +423,7 @@ int a2a_v03_verify_token(a2a_v03_context_t *ctx, const char *token_str,
     }
 
     airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "operation failed");
-    LOG_WARN("token not found or invalid: token_count=%zu", g_a2a_auth.token_count);
+    AIRY_LOG_WARN("token not found or invalid: token_count=%zu", g_a2a_auth.token_count);
     return AIRY_ERR_UNKNOWN;
 }
 
@@ -504,7 +504,7 @@ int a2a_v03_verify_signature(a2a_v03_context_t *ctx, const char *method, const c
     if (strlen(signature) >= 64 &&
         a2a_const_time_eq((const uint8_t *)expected, (const uint8_t *)signature, 64) == 1)
         return 0;
-    LOG_ERROR("signature verification failed: method=%s, expected vs actual mismatch", method);
+    AIRY_LOG_ERROR("signature verification failed: method=%s, expected vs actual mismatch", method);
     airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "operation failed");
     return AIRY_ERR_UNKNOWN;
 }
@@ -577,7 +577,7 @@ int a2a_v03_validate_session(a2a_v03_context_t *ctx, const char *session_id,
         uint64_t age_sec = (now - sess->created_at) / 1000;
 
         if (age_sec > (uint64_t)g_a2a_auth.config.token_ttl_sec * 2) {
-            LOG_WARN("session expired: session_id=%s, age_sec=%llu, ttl=%d", sess->session_id,
+            AIRY_LOG_WARN("session expired: session_id=%s, age_sec=%llu, ttl=%d", sess->session_id,
                      (unsigned long long)age_sec, g_a2a_auth.config.token_ttl_sec * 2);
             AIRY_MEMSET(sess, 0, sizeof(*sess));
 

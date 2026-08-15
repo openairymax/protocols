@@ -542,7 +542,7 @@ int a2a_v03_route_request(a2a_v03_context_t *ctx, const char *method, const char
     }
 
     *response_json = AIRY_STRDUP("{\"error\":\"unknown method\"}");
-    LOG_WARN("unknown method in route_request: method=%s", method);
+    AIRY_LOG_WARN("unknown method in route_request: method=%s", method);
     airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
                      "AIRY_STRDUP: error AIRY_ERR_OUT_OF_MEMORY");
     return AIRY_ERR_OUT_OF_MEMORY;

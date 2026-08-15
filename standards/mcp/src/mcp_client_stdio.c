@@ -105,7 +105,7 @@ int stdio_read_message(mcp_client_t *c, char **out, int timeout_ms)
         pfd.revents = 0;
         int pr = poll(&pfd, 1, timeout_ms);
         if (pr == 0) {
-            LOG_WARN("mcp client '%s': read timeout (%d ms)", c->name, timeout_ms);
+            AIRY_LOG_WARN("mcp client '%s': read timeout (%d ms)", c->name, timeout_ms);
             return AIRY_ERR_TIMEOUT;
         }
         if (pr < 0) {
@@ -122,7 +122,7 @@ int stdio_read_message(mcp_client_t *c, char **out, int timeout_ms)
         } while (n < 0 && errno == EINTR);
         if (n == 0) {
 
-            LOG_WARN("mcp client '%s': stdio EOF, child process exited", c->name);
+            AIRY_LOG_WARN("mcp client '%s': stdio EOF, child process exited", c->name);
             return MCP_CLIENT_ERR_PROCESS_EXIT;
         }
         if (n < 0) {

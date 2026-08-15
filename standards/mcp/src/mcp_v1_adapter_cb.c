@@ -105,7 +105,7 @@ static int mcp_adapter_encode(void *context, const void *msg, void **encoded, si
     int result =
         mcp_v1_route_request(ctx, umsg->endpoint, (const char *)umsg->payload, &response_json);
     if (result != 0 || !response_json) {
-        LOG_ERROR("route_request failed in encode: endpoint=%s, result=%d", umsg->endpoint, result);
+        AIRY_LOG_ERROR("route_request failed in encode: endpoint=%s, result=%d", umsg->endpoint, result);
         *encoded = NULL;
         *size = 0;
         return result;
@@ -124,7 +124,7 @@ static int mcp_adapter_decode(void *context, const void *data, size_t data_size,
         return AIRY_ERR_UNKNOWN;
     }
     if (data_size == 0) {
-        LOG_WARN("decode called with zero data_size");
+        AIRY_LOG_WARN("decode called with zero data_size");
         airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
                          "mcp_v1_adapter: invalid parameter");
         return AIRY_ERR_INVALID_PARAM;
@@ -245,7 +245,7 @@ static int mcp_adapter_send(void *context, const void *data, size_t size)
     }
     mcp_v1_context_t *ctx = (mcp_v1_context_t *)context;
     if (!ctx->transport) {
-        LOG_WARN("send called but no transport configured");
+        AIRY_LOG_WARN("send called but no transport configured");
         airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
                          "mcp_v1_adapter: invalid parameter");
         return AIRY_ERR_INVALID_PARAM;
@@ -262,7 +262,7 @@ static int mcp_adapter_receive(void *context, void **data, size_t *size)
     }
     mcp_v1_context_t *ctx = (mcp_v1_context_t *)context;
     if (!ctx->transport) {
-        LOG_WARN("receive called but no transport configured");
+        AIRY_LOG_WARN("receive called but no transport configured");
         return AIRY_ERR_INVALID_PARAM;
     }
     char *msg = NULL;

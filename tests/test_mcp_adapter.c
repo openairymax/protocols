@@ -20,16 +20,16 @@ static int tests_failed = 0;
 
 #define TEST(name)                         \
     do {                                   \
-        LOG_INFO("  TEST: %s ... ", name); \
+        AIRY_LOG_INFO("  TEST: %s ... ", name); \
     } while (0)
 #define PASS()            \
     do {                  \
-        LOG_INFO("PASS"); \
+        AIRY_LOG_INFO("PASS"); \
         tests_passed++;   \
     } while (0)
 #define FAIL(msg)                   \
     do {                            \
-        LOG_ERROR("FAIL: %s", msg); \
+        AIRY_LOG_ERROR("FAIL: %s", msg); \
         tests_failed++;             \
     } while (0)
 #define ASSERT_TRUE(cond, msg) \
@@ -410,7 +410,7 @@ static void test_handle_sampling_streaming_null(void)
 
 int main(void)
 {
-    LOG_INFO("=== MCP v1.0 Adapter Unit Tests ===\n\n");
+    AIRY_LOG_INFO("=== MCP v1.0 Adapter Unit Tests ===\n\n");
 
     test_config_default();
     test_context_create_destroy();
@@ -445,6 +445,6 @@ int main(void)
     test_handle_tools_call_streaming_null();
     test_handle_sampling_streaming_null();
 
-    LOG_INFO("\n=== Results: %d passed, %d failed ===\n", tests_passed, tests_failed);
+    AIRY_LOG_INFO("\n=== Results: %d passed, %d failed ===\n", tests_passed, tests_failed);
     return tests_failed > 0 ? 1 : 0;
 }
