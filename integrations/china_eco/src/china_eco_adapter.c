@@ -26,6 +26,13 @@
 #include <string.h>
 #include <time.h>
 
+#ifdef AIRY_HAS_CJSON
+#include <cjson/cJSON.h>
+#endif
+#ifdef AIRY_HAS_CURL
+#include <curl/curl.h>
+#endif
+
 static struct {
     china_eco_handle_t handle;
     bool proto_initialized;
@@ -123,11 +130,167 @@ int china_eco_remove_llm_provider(china_eco_handle_t *h, china_eco_provider_type
     return AIRY_ERR_NOT_FOUND;
 }
 
+#ifdef AIRY_HAS_CURL
+typedef struct {
+    char *data;
+    size_t size;
+} china_eco_curl_buf_t;
+
+static size_t china_eco_curl_write_cb(void *ptr, size_t size, size_t nmemb, void *userdata)
+{
+    size_t total = size * nmemb;
+    china_eco_curl_buf_t *buf = (china_eco_curl_buf_t *)userdata;
+    char *new_data = (char *)AIRY_REALLOC(buf->data, buf->size + total + 1);
+    if (!new_data)
+        return 0;
+    __builtin_memcpy(new_data + buf->size, ptr, total);
+    buf->data = new_data;
+    buf->size += total;
+    buf->data[buf->size] = '\0';
+    return total;
+}
+#endif
+
+/* Real OpenAI-compatible chat completion call over HTTP(S).
+ * Returns the length of the extracted assistant content (>= 0) on success,
+ * or a negative airy error code on failure. */
+static int china_eco_llm_chat_http(const china_eco_llm_provider_t *provider,
+                                   const char *api_base_url, const char *model_id,
+                                   const char *messages_json, char *response, size_t resp_size,
+                                   uint64_t *prompt_tokens, uint64_t *completion_tokens)
+{
+#if defined(AIRY_HAS_CURL) && defined(AIRY_HAS_CJSON)
+    cJSON *msgs = cJSON_Parse(messages_json);
+    if (!msgs || !cJSON_IsArray(msgs)) {
+        if (msgs)
+            cJSON_Delete(msgs);
+        airy_err_push_ex(AIRY_ERR_PARSE_ERROR, __FILE__, __LINE__, __func__,
+                         "china_eco_llm_chat_http: messages_json is not a JSON array");
+        return AIRY_ERR_PARSE_ERROR;
+    }
+
+    cJSON *req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "model", model_id);
+    cJSON_AddItemToObject(req, "messages", msgs);
+    char *req_str = cJSON_PrintUnformatted(req);
+    cJSON_Delete(req);
+    if (!req_str) {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "china_eco_llm_chat_http: request serialization failed");
+        return AIRY_ERR_OUT_OF_MEMORY;
+    }
+
+    char url[1024];
+    snprintf(url, sizeof(url), "%s/chat/completions",
+             api_base_url && api_base_url[0] ? api_base_url : "https://api.openai.com/v1");
+
+    CURL *curl = curl_easy_init();
+    if (!curl) {
+        AIRY_FREE(req_str);
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "china_eco_llm_chat_http: curl init failed");
+        return AIRY_ERR_OUT_OF_MEMORY;
+    }
+
+    china_eco_curl_buf_t response_buf = {0};
+    struct curl_slist *headers = NULL;
+    char auth_header[512];
+    snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", provider->api_key);
+    headers = curl_slist_append(headers, auth_header);
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_POST, 1L);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, req_str);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, china_eco_curl_write_cb);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_buf);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 60L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+
+    CURLcode res = curl_easy_perform(curl);
+    long http_code = 0;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl);
+    AIRY_FREE(req_str);
+
+    if (res != CURLE_OK) {
+        AIRY_FREE(response_buf.data);
+        airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__,
+                         "china_eco_llm_chat_http: curl transfer failed (code %d)", (int)res);
+        return AIRY_ERR_IO;
+    }
+    if (http_code != 200 || !response_buf.data) {
+        AIRY_FREE(response_buf.data);
+        airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__,
+                         "china_eco_llm_chat_http: provider returned HTTP %ld", http_code);
+        return AIRY_ERR_IO;
+    }
+
+    cJSON *root = cJSON_Parse(response_buf.data);
+    AIRY_FREE(response_buf.data);
+    if (!root) {
+        airy_err_push_ex(AIRY_ERR_PARSE_ERROR, __FILE__, __LINE__, __func__,
+                         "china_eco_llm_chat_http: invalid response JSON");
+        return AIRY_ERR_PARSE_ERROR;
+    }
+
+    const char *content = NULL;
+    cJSON *choices = cJSON_GetObjectItem(root, "choices");
+    if (choices && cJSON_IsArray(choices) && cJSON_GetArraySize(choices) > 0) {
+        cJSON *message = cJSON_GetObjectItem(cJSON_GetArrayItem(choices, 0), "message");
+        if (message) {
+            cJSON *content_item = cJSON_GetObjectItem(message, "content");
+            if (content_item && content_item->valuestring)
+                content = content_item->valuestring;
+        }
+    }
+
+    int rc = AIRY_ERR_IO;
+    if (content && content[0]) {
+        size_t clen = strlen(content);
+        if (clen >= resp_size)
+            clen = resp_size - 1;
+        __builtin_memcpy(response, content, clen);
+        response[clen] = '\0';
+        rc = (int)clen;
+    }
+
+    if (prompt_tokens || completion_tokens) {
+        cJSON *usage = cJSON_GetObjectItem(root, "usage");
+        if (usage) {
+            cJSON *pt = cJSON_GetObjectItem(usage, "prompt_tokens");
+            cJSON *ct = cJSON_GetObjectItem(usage, "completion_tokens");
+            if (prompt_tokens)
+                *prompt_tokens = pt && pt->valueint > 0 ? (uint64_t)pt->valueint : 0;
+            if (completion_tokens)
+                *completion_tokens = ct && ct->valueint > 0 ? (uint64_t)ct->valueint : 0;
+        }
+    }
+
+    cJSON_Delete(root);
+    return rc;
+#else
+    (void)provider;
+    (void)api_base_url;
+    (void)model_id;
+    (void)messages_json;
+    (void)response;
+    (void)resp_size;
+    (void)prompt_tokens;
+    (void)completion_tokens;
+    airy_err_push_ex(AIRY_ERR_NOT_SUPPORTED, __FILE__, __LINE__, __func__,
+                     "china_eco_llm_chat_http: build without curl/cJSON");
+    return AIRY_ERR_NOT_SUPPORTED;
+#endif
+}
+
 int china_eco_llm_chat(china_eco_handle_t *h, china_eco_provider_type_t provider,
                        const char *messages_json, const char *model_id, char *response,
                        size_t *resp_size)
 {
-    if (!h || !messages_json || !response || !resp_size)
+    if (!h || !messages_json || !response || !resp_size || *resp_size == 0)
         return AIRY_ERR_NULL_POINTER;
 
     china_eco_llm_provider_t *p = NULL;
@@ -137,35 +300,43 @@ int china_eco_llm_chat(china_eco_handle_t *h, china_eco_provider_type_t provider
             break;
         }
     }
+    if (!p) {
+        airy_err_push_ex(AIRY_ERR_NOT_FOUND, __FILE__, __LINE__, __func__,
+                         "china_eco_llm_chat: provider type %d not configured", (int)provider);
+        return AIRY_ERR_NOT_FOUND;
+    }
+    if (!p->enabled) {
+        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__,
+                         "china_eco_llm_chat: provider disabled");
+        return AIRY_ERR_STATE_ERROR;
+    }
+    if (p->api_key[0] == '\0') {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "china_eco_llm_chat: provider has no api key");
+        return AIRY_ERR_INVALID_PARAM;
+    }
 
     const char *effective_model = model_id;
-    if (!effective_model && p && p->model_id[0] != '\0')
-        effective_model = p->model_id;
-    if (!effective_model)
-        effective_model = "default";
+    if (!effective_model || effective_model[0] == '\0')
+        effective_model = p->model_id[0] != '\0' ? p->model_id : NULL;
+    if (!effective_model) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "china_eco_llm_chat: no model id");
+        return AIRY_ERR_INVALID_PARAM;
+    }
 
     const char *api_url =
-        p && p->api_base_url[0] != '\0' ? p->api_base_url : g_provider_api_urls[provider];
+        p->api_base_url[0] != '\0' ? p->api_base_url : g_provider_api_urls[provider];
+
+    uint64_t prompt_tokens = 0, completion_tokens = 0;
+    int rc = china_eco_llm_chat_http(p, api_url, effective_model, messages_json, response,
+                                     *resp_size, &prompt_tokens, &completion_tokens);
+    if (rc < 0)
+        return rc;
 
     h->request_counter++;
-
-    int written =
-        snprintf(response, *resp_size,
-                 "{"
-                 "\"id\":\"china-eco-%llu\","
-                 "\"object\":\"chat.completion\","
-                 "\"provider\":\"%s\","
-                 "\"api_endpoint\":\"%s\","
-                 "\"model\":\"%s\","
-                 "\"provider_type\":%d,"
-                 "\"total_requests\":%llu"
-                 "}",
-                 (unsigned long long)h->request_counter, g_provider_names[provider], api_url,
-                 effective_model, (int)provider, (unsigned long long)h->request_counter);
-
-    if (written > 0)
-        *resp_size = (size_t)written;
-    h->token_total += 100;
+    h->token_total += prompt_tokens + completion_tokens;
+    *resp_size = (size_t)rc;
     return 0;
 }
 
@@ -589,6 +760,7 @@ int china_eco_sm4_decrypt(china_eco_sm4_context_t *ctx, const void *ciphertext, 
     uint8_t prev_block[CHINA_ECO_SM4_BLOCK_SIZE];
     uint8_t decrypted[CHINA_ECO_SM4_BLOCK_SIZE];
     uint8_t pad_len = 0;
+    bool pad_valid = false;
 
     __builtin_memcpy(prev_block, ctx->iv, CHINA_ECO_SM4_BLOCK_SIZE);
 
@@ -601,8 +773,22 @@ int china_eco_sm4_decrypt(china_eco_sm4_context_t *ctx, const void *ciphertext, 
         size_t copy_size = CHINA_ECO_SM4_BLOCK_SIZE;
         if (offset + CHINA_ECO_SM4_BLOCK_SIZE >= ct_size) {
             pad_len = decrypted[CHINA_ECO_SM4_BLOCK_SIZE - 1];
-            if (pad_len > 0 && pad_len <= CHINA_ECO_SM4_BLOCK_SIZE) {
-                copy_size = CHINA_ECO_SM4_BLOCK_SIZE - pad_len;
+            /* PKCS#7: pad_len must be 1..16 and all trailing pad bytes must match.
+             * Garbage (e.g. corrupted ciphertext) must not be trusted, otherwise
+             * `ct_size - pad_len` underflows for pad_len > ct_size. */
+            if (pad_len >= 1 && pad_len <= CHINA_ECO_SM4_BLOCK_SIZE) {
+                bool ok = true;
+                for (size_t j = CHINA_ECO_SM4_BLOCK_SIZE - pad_len;
+                     j < CHINA_ECO_SM4_BLOCK_SIZE; j++) {
+                    if (decrypted[j] != pad_len) {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (ok) {
+                    copy_size = CHINA_ECO_SM4_BLOCK_SIZE - pad_len;
+                    pad_valid = true;
+                }
             }
         }
 
@@ -610,7 +796,7 @@ int china_eco_sm4_decrypt(china_eco_sm4_context_t *ctx, const void *ciphertext, 
         __builtin_memcpy(prev_block, ct + offset, CHINA_ECO_SM4_BLOCK_SIZE);
     }
 
-    *pt_size = ct_size - pad_len;
+    *pt_size = ct_size - (pad_valid ? pad_len : 0);
     return 0;
 }
 

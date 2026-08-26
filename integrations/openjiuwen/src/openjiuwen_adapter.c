@@ -15,6 +15,7 @@
 #include "error.h"
 #include "logging.h"
 #include "safe_string_utils.h"
+#include "network_common.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -47,6 +48,149 @@ static uint64_t get_timestamp_ms(void)
     return airy_time_ms();
 }
 
+/* ============ Real TCP transport over commons network_common ============ */
+
+/* Parse "http://host:port/path" or "host:port" into scheme/host/port.
+ * Returns 0 on success, negative on failure. Caller frees scheme/host. */
+static int openjiuwen_parse_endpoint(const char *endpoint, char **out_scheme, char **out_host,
+                                     uint16_t *out_port, char **out_path)
+{
+    if (!endpoint || !endpoint[0])
+        return AIRY_ERR_INVALID_PARAM;
+
+    const char *scheme = "tcp";
+    const char *rest = endpoint;
+    const char *colon_slash = strstr(endpoint, "://");
+    if (colon_slash) {
+        scheme = endpoint;
+        rest = colon_slash + 3;
+    }
+
+    const char *host_start = rest;
+    const char *host_end = host_start;
+    while (*host_end && *host_end != ':' && *host_end != '/')
+        host_end++;
+
+    const char *port_start = NULL;
+    const char *port_end = NULL;
+    if (*host_end == ':') {
+        port_start = host_end + 1;
+        port_end = port_start;
+        while (*port_end && *port_end != '/')
+            port_end++;
+    }
+
+    const char *path_start = *host_end == '/' ? host_end : NULL;
+
+    uint16_t port = 0;
+    if (port_start && port_end > port_start) {
+        long p = strtol(port_start, NULL, 10);
+        if (p <= 0 || p > 65535)
+            return AIRY_ERR_INVALID_PARAM;
+        port = (uint16_t)p;
+    } else {
+        port = strcmp(scheme, "https") == 0 ? 443 : 80;
+    }
+
+    char *host_buf = AIRY_MALLOC((size_t)(host_end - host_start) + 1);
+    if (!host_buf)
+        return AIRY_ERR_OUT_OF_MEMORY;
+    __builtin_memcpy(host_buf, host_start, (size_t)(host_end - host_start));
+    host_buf[host_end - host_start] = '\0';
+    if (host_buf[0] == '\0') {
+        AIRY_FREE(host_buf);
+        return AIRY_ERR_INVALID_PARAM;
+    }
+
+    char *scheme_buf = AIRY_STRDUP(scheme);
+    if (!scheme_buf) {
+        AIRY_FREE(host_buf);
+        return AIRY_ERR_OUT_OF_MEMORY;
+    }
+
+    char *path_buf = NULL;
+    if (path_start && path_start[0]) {
+        path_buf = AIRY_STRDUP(path_start);
+        if (!path_buf) {
+            AIRY_FREE(host_buf);
+            AIRY_FREE(scheme_buf);
+            return AIRY_ERR_OUT_OF_MEMORY;
+        }
+    } else {
+        path_buf = AIRY_STRDUP("/");
+        if (!path_buf) {
+            AIRY_FREE(host_buf);
+            AIRY_FREE(scheme_buf);
+            return AIRY_ERR_OUT_OF_MEMORY;
+        }
+    }
+
+    *out_scheme = scheme_buf;
+    *out_host = host_buf;
+    *out_port = port;
+    *out_path = path_buf;
+    return 0;
+}
+
+static int openjiuwen_net_connect(openjiuwen_adapter_t *adapter)
+{
+    char *scheme = NULL, *host = NULL, *path = NULL;
+    uint16_t port = 0;
+    int rc = openjiuwen_parse_endpoint(adapter->config.endpoint, &scheme, &host, &port, &path);
+    if (rc != 0) {
+        AIRY_LOG_ERROR("OpenJiuwen: invalid endpoint '%s'", adapter->config.endpoint);
+        return rc;
+    }
+
+    network_config_t cfg = network_create_default_config();
+    cfg.host = host;
+    cfg.port = (int)port;
+    cfg.timeout_ms = adapter->config.timeout_ms > 0 ? adapter->config.timeout_ms :
+                                                       OPENJIUWEN_TIMEOUT_MS;
+    cfg.read_timeout_ms = cfg.timeout_ms;
+    cfg.write_timeout_ms = cfg.timeout_ms;
+    cfg.sock_type = NETWORK_SOCK_STREAM;
+    cfg.af = NETWORK_AF_UNSPEC;
+    cfg.keepalive = true;
+    cfg.nonblocking = false;
+    cfg.ssl_enable = strcmp(scheme, "https") == 0;
+    if (cfg.ssl_enable)
+        cfg.ssl_verify = NETWORK_SSL_VERIFY_PEER;
+
+    network_connection_t *conn = network_connection_create(&cfg);
+    AIRY_FREE(scheme);
+    AIRY_FREE(host);
+    AIRY_FREE(path);
+    if (!conn) {
+        AIRY_LOG_ERROR("OpenJiuwen: connection allocation failed");
+        return AIRY_ERR_OUT_OF_MEMORY;
+    }
+
+    airy_err_t err = network_connect(conn);
+    if (err != AIRY_SUCCESS) {
+        AIRY_LOG_WARN("OpenJiuwen: connect to %s:%u failed (err=%d)", cfg.host, port, (int)err);
+        network_connection_destroy(conn);
+        return err;
+    }
+
+    adapter->connection_handle = conn;
+    adapter->conn_state = OPENJIUWEN_CONN_CONNECTED;
+    adapter->last_heartbeat_sec = get_timestamp();
+    AIRY_LOG_INFO("OpenJiuwen: connected to %s:%u", cfg.host, port);
+    return 0;
+}
+
+static void openjiuwen_net_disconnect(openjiuwen_adapter_t *adapter)
+{
+    if (adapter->connection_handle) {
+        network_connection_t *conn = (network_connection_t *)adapter->connection_handle;
+        network_disconnect(conn);
+        network_connection_destroy(conn);
+        adapter->connection_handle = NULL;
+    }
+    adapter->conn_state = OPENJIUWEN_CONN_DISCONNECTED;
+}
+
 static int openjiuwen_reconnect(openjiuwen_adapter_t *adapter)
 {
     if (!adapter)
@@ -55,10 +199,9 @@ static int openjiuwen_reconnect(openjiuwen_adapter_t *adapter)
     adapter->conn_state = OPENJIUWEN_CONN_RECONNECTING;
     adapter->total_reconnects++;
 
-    uint32_t attempt = 0;
     uint32_t max_attempts = adapter->config.max_retries > 0 ? adapter->config.max_retries : 3;
 
-    while (attempt < max_attempts) {
+    for (uint32_t attempt = 0; attempt < max_attempts; attempt++) {
         uint32_t delay = OPENJIUWEN_RECONNECT_BASE_DELAY_MS << attempt;
         if (delay > OPENJIUWEN_RECONNECT_MAX_DELAY_MS)
             delay = OPENJIUWEN_RECONNECT_MAX_DELAY_MS;
@@ -73,16 +216,13 @@ static int openjiuwen_reconnect(openjiuwen_adapter_t *adapter)
         nanosleep(&ts, NULL);
 #endif
 
-        int verify = openjiuwen_verify_connection(&adapter->base);
-        if (verify == 0) {
-            adapter->conn_state = OPENJIUWEN_CONN_CONNECTED;
+        openjiuwen_net_disconnect(adapter);
+        int rc = openjiuwen_net_connect(adapter);
+        if (rc == 0) {
             adapter->consecutive_errors = 0;
-            adapter->last_heartbeat_sec = get_timestamp();
             AIRY_LOG_INFO("OpenJiuwen: reconnected successfully on attempt %u", attempt + 1);
             return 0;
         }
-
-        attempt++;
     }
 
     adapter->conn_state = OPENJIUWEN_CONN_ERROR;
@@ -90,39 +230,43 @@ static int openjiuwen_reconnect(openjiuwen_adapter_t *adapter)
     return AIRY_ERR_IO;
 }
 
+/* Real send with retry over the TCP connection. Returns bytes sent or a
+ * negative airy error code. Never reports success without a real write. */
 static int openjiuwen_send_with_retry(openjiuwen_adapter_t *adapter, const char *buffer,
                                       int buffer_len)
 {
-    if (!adapter || !buffer)
+    if (!adapter || !buffer || buffer_len <= 0)
         return AIRY_ERR_NULL_POINTER;
 
-    uint32_t attempt = 0;
     uint32_t max_attempts = adapter->config.max_retries > 0 ? adapter->config.max_retries + 1 : 1;
 
-    while (attempt < max_attempts) {
-        if (adapter->conn_state == OPENJIUWEN_CONN_ERROR ||
-            adapter->conn_state == OPENJIUWEN_CONN_DISCONNECTED) {
+    for (uint32_t attempt = 0; attempt < max_attempts; attempt++) {
+        if (adapter->conn_state != OPENJIUWEN_CONN_CONNECTED || !adapter->connection_handle) {
             int rc = openjiuwen_reconnect(adapter);
             if (rc != 0)
                 return rc;
         }
 
-        adapter->message_counter++;
-        adapter->last_activity_ms = get_timestamp_ms();
-
-        if (adapter->consecutive_errors >= OPENJIUWEN_MAX_CONSECUTIVE_ERRORS) {
-            AIRY_LOG_ERROR("OpenJiuwen: too many consecutive errors (%u), forcing reconnect",
-                      adapter->consecutive_errors);
-            adapter->conn_state = OPENJIUWEN_CONN_ERROR;
-            if (openjiuwen_reconnect(adapter) != 0)
-                return AIRY_ERR_IO;
+        network_connection_t *conn = (network_connection_t *)adapter->connection_handle;
+        airy_err_t err = network_send_all(conn, buffer, (size_t)buffer_len);
+        if (err != AIRY_SUCCESS) {
+            adapter->consecutive_errors++;
+            adapter->last_error_code = (uint32_t)(-err);
+            AIRY_LOG_WARN("OpenJiuwen: send attempt %u/%u failed (err=%d)", attempt + 1, max_attempts,
+                     (int)err);
+            openjiuwen_net_disconnect(adapter);
+            if (attempt + 1 >= max_attempts)
+                return err;
+            int rc = openjiuwen_reconnect(adapter);
+            if (rc != 0)
+                return rc;
             continue;
         }
 
         adapter->consecutive_errors = 0;
-        return 0;
-
-        attempt++;
+        adapter->message_counter++;
+        adapter->last_activity_ms = get_timestamp_ms();
+        return buffer_len;
     }
 
     return AIRY_ERR_IO;
@@ -195,23 +339,18 @@ static int openjiuwen_adapter_connect(void *context, const char *endpoint)
     openjiuwen_adapter_t *adapter = (openjiuwen_adapter_t *)context;
     if (!adapter)
         return AIRY_ERR_NULL_POINTER;
-    if (!endpoint)
-        return AIRY_ERR_INVALID_PARAM;
+    if (endpoint && endpoint[0])
+        safe_strcpy(adapter->config.endpoint, endpoint, sizeof(adapter->config.endpoint));
 
-    safe_strcpy(adapter->config.endpoint, endpoint, sizeof(adapter->config.endpoint));
     adapter->conn_state = OPENJIUWEN_CONN_CONNECTING;
 
-    int verify = openjiuwen_verify_connection(&adapter->base);
-    if (verify == 0) {
-        adapter->conn_state = OPENJIUWEN_CONN_CONNECTED;
-        adapter->last_heartbeat_sec = get_timestamp();
-        AIRY_LOG_INFO("OpenJiuwen: connected to %s", endpoint);
+    int rc = openjiuwen_net_connect(adapter);
+    if (rc == 0)
         return 0;
-    }
 
     adapter->conn_state = OPENJIUWEN_CONN_DISCONNECTED;
-    AIRY_LOG_WARN("OpenJiuwen: connection to %s failed (verify=%d)", endpoint, verify);
-    return AIRY_ERR_NULL_POINTER;
+    AIRY_LOG_WARN("OpenJiuwen: connection to %s failed (rc=%d)", adapter->config.endpoint, rc);
+    return rc;
 }
 
 static int openjiuwen_adapter_disconnect(void *context)
@@ -220,7 +359,7 @@ static int openjiuwen_adapter_disconnect(void *context)
     if (!adapter)
         return AIRY_EINVAL;
 
-    adapter->conn_state = OPENJIUWEN_CONN_DISCONNECTED;
+    openjiuwen_net_disconnect(adapter);
     adapter->last_heartbeat_sec = 0;
     AIRY_LOG_INFO("OpenJiuwen: disconnected");
     return 0;
@@ -232,10 +371,9 @@ __attribute__((unused)) static int openjiuwen_adapter_deinit(void *context)
     if (!adapter)
         return AIRY_ERR_NULL_POINTER;
 
-    adapter->conn_state = OPENJIUWEN_CONN_DISCONNECTED;
-    adapter->connection_handle = NULL;
+    openjiuwen_net_disconnect(adapter);
     adapter->consecutive_errors = 0;
-    AIRY_LOG_INFO("OpenJiuwen: disconnected");
+    AIRY_LOG_INFO("OpenJiuwen: deinitialized");
     return 0;
 }
 
@@ -370,25 +508,80 @@ static int openjiuwen_receive_message(void *context, void **data, size_t *size, 
         return AIRY_ERR_SYS_NOT_INIT;
     }
 
-    if (adapter->conn_state != OPENJIUWEN_CONN_CONNECTED) {
+    if (adapter->conn_state != OPENJIUWEN_CONN_CONNECTED || !adapter->connection_handle) {
         AIRY_LOG_WARN("OpenJiuwen: cannot receive - not connected (state=%d)", adapter->conn_state);
-        return AIRY_ERR_NULL_POINTER;
+        return AIRY_ENOTCONN;
+    }
+
+    network_connection_t *conn = (network_connection_t *)adapter->connection_handle;
+    network_set_timeout(conn, (int)(timeout_ms > 0 ? timeout_ms : OPENJIUWEN_TIMEOUT_MS));
+
+    /* Read the fixed frame header first. */
+    openjiuwen_header_t header;
+    AIRY_MEMSET(&header, 0, sizeof(header));
+    size_t received = 0;
+    airy_err_t err = network_receive(conn, &header, sizeof(header), &received);
+    if (err != AIRY_SUCCESS || received < sizeof(header)) {
+        if (err == AIRY_ERR_TIMEOUT || err == AIRY_ERR_WOULD_BLOCK)
+            return err;
+        adapter->consecutive_errors++;
+        adapter->last_error_code = (uint32_t)(-err);
+        openjiuwen_net_disconnect(adapter);
+        return err != AIRY_SUCCESS ? err : AIRY_ERR_IO;
+    }
+
+    /* Validate header fields before trusting payload_length. */
+    if (header.message_id == 0 || header.payload_length > OPENJIUWEN_MAX_MESSAGE_SIZE) {
+        AIRY_LOG_WARN("OpenJiuwen: invalid frame header (id=%u len=%u)", header.message_id,
+                 header.payload_length);
+        return AIRY_ERR_PARSE_ERROR;
+    }
+
+    uint8_t *frame = (uint8_t *)AIRY_MALLOC(sizeof(header) + header.payload_length);
+    if (!frame)
+        return AIRY_ERR_OUT_OF_MEMORY;
+    __builtin_memcpy(frame, &header, sizeof(header));
+
+    size_t payload_read = 0;
+    if (header.payload_length > 0) {
+        err = network_receive(conn, frame + sizeof(header), header.payload_length, &payload_read);
+        if (err != AIRY_SUCCESS || payload_read != header.payload_length) {
+            AIRY_FREE(frame);
+            adapter->consecutive_errors++;
+            openjiuwen_net_disconnect(adapter);
+            return err != AIRY_SUCCESS ? err : AIRY_ERR_IO;
+        }
     }
 
     unified_message_t *msg = (unified_message_t *)AIRY_CALLOC(1, sizeof(unified_message_t));
-    if (!msg)
+    if (!msg) {
+        AIRY_FREE(frame);
         return AIRY_ERR_OUT_OF_MEMORY;
-
+    }
     msg->protocol = AIRY_PROTOCOL_OPENJIUWEN;
-    msg->message_id = generate_message_id();
-    msg->timestamp = get_timestamp();
+    msg->message_id = header.message_id;
+    msg->timestamp = header.timestamp;
+    safe_strcpy(msg->source_agent, header.source_agent, sizeof(msg->source_agent));
+    safe_strcpy(msg->target_agent, header.target_agent, sizeof(msg->target_agent));
+    if (header.payload_length > 0) {
+        msg->payload = AIRY_MALLOC(header.payload_length);
+        if (msg->payload) {
+            __builtin_memcpy(msg->payload, frame + sizeof(header), header.payload_length);
+            msg->payload_size = header.payload_length;
+        } else {
+            AIRY_FREE(frame);
+            AIRY_FREE(msg);
+            return AIRY_ERR_OUT_OF_MEMORY;
+        }
+    }
+    AIRY_FREE(frame);
 
+    adapter->consecutive_errors = 0;
     adapter->last_activity_ms = get_timestamp_ms();
 
     uint32_t now = get_timestamp();
-    if (now - adapter->last_heartbeat_sec >= OPENJIUWEN_HEARTBEAT_INTERVAL_SEC) {
+    if (now - adapter->last_heartbeat_sec >= OPENJIUWEN_HEARTBEAT_INTERVAL_SEC)
         adapter->last_heartbeat_sec = now;
-    }
 
     *data = msg;
     if (size)
@@ -408,8 +601,7 @@ static int openjiuwen_destroy(void *context)
     }
 
     if (adapter->connection_handle) {
-        adapter->conn_state = OPENJIUWEN_CONN_DISCONNECTED;
-        adapter->connection_handle = NULL;
+        openjiuwen_net_disconnect(adapter);
     }
 
     adapter->initialized = false;
@@ -575,21 +767,25 @@ int openjiuwen_verify_connection(const protocol_adapter_t *adapter)
         impl->conn_state = OPENJIUWEN_CONN_ERROR;
         AIRY_LOG_WARN("OpenJiuwen: connection verification failed - too many errors (%u)",
                  impl->consecutive_errors);
-        return AIRY_ERR_NULL_POINTER;
+        return AIRY_ERR_IO;
     }
 
+    /* A live connection that has been idle too long must be re-established. */
     uint32_t now = get_timestamp();
-    uint32_t idle_seconds = now - impl->last_heartbeat_sec;
-    if (idle_seconds > OPENJIUWEN_HEARTBEAT_INTERVAL_SEC * 3) {
-        impl->conn_state = OPENJIUWEN_CONN_RECONNECTING;
-        AIRY_LOG_WARN("OpenJiuwen: connection stale (idle=%us), needs reconnect", idle_seconds);
-        return AIRY_ERR_OUT_OF_MEMORY;
+    if (impl->conn_state == OPENJIUWEN_CONN_CONNECTED && impl->connection_handle &&
+        now - impl->last_heartbeat_sec > OPENJIUWEN_HEARTBEAT_INTERVAL_SEC * 3) {
+        AIRY_LOG_WARN("OpenJiuwen: connection stale (idle=%us), reconnecting", now - impl->last_heartbeat_sec);
+        openjiuwen_net_disconnect(impl);
+    }
+
+    if (!impl->connection_handle) {
+        int rc = openjiuwen_net_connect(impl);
+        if (rc != 0)
+            return rc;
     }
 
     impl->conn_state = OPENJIUWEN_CONN_CONNECTED;
     impl->last_heartbeat_sec = now;
-    AIRY_LOG_INFO("OpenJiuwen connection verification successful");
-
     return 0;
 }
 

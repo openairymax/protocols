@@ -350,6 +350,13 @@ int a2a_v03_set_streaming_handler(a2a_v03_context_t *ctx, a2a_streaming_handler_
 int a2a_v03_set_transport(a2a_v03_context_t *ctx, int (*write_fn)(void *, const void *, size_t),
                           void *transport_ctx);
 
+/* Set the read transport for receiving inbound messages.
+ * read_fn must fill *data (heap-allocated) and *size, honoring timeout_ms,
+ * returning 0 on success or AIRY_ERR_TIMEOUT when no message arrives. */
+int a2a_v03_set_transport_read(a2a_v03_context_t *ctx,
+                               int (*read_fn)(void *, void **, size_t *, uint32_t),
+                               void *transport_ctx);
+
 int a2a_v03_route_request(a2a_v03_context_t *ctx, const char *method, const char *params_json,
                           char **response_json);
 

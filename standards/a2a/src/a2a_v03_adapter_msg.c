@@ -220,3 +220,18 @@ int a2a_v03_set_transport(a2a_v03_context_t *ctx, int (*write_fn)(void *, const 
     adapter->transport_ctx = transport_ctx;
     return 0;
 }
+
+int a2a_v03_set_transport_read(a2a_v03_context_t *ctx,
+                               int (*read_fn)(void *, void **, size_t *, uint32_t),
+                               void *transport_ctx)
+{
+    if (!ctx || !read_fn) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "a2a_v03_set_transport_read: invalid parameter");
+        return AIRY_ERR_INVALID_PARAM;
+    }
+    struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
+    adapter->transport_read = read_fn;
+    adapter->transport_ctx = transport_ctx;
+    return 0;
+}
