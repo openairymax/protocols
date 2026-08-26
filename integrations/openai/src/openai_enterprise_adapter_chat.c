@@ -60,9 +60,9 @@ int openai_chat_completion(openai_handle_t handle, const openai_chat_request_t *
         if (out_response->finish_reasons)
             out_response->finish_reasons[0] = OPENAI_FINISH_RATE_LIMITED;
         openai_on_429(adapter);
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
-                         "openai: out of memory");
-        return AIRY_ERR_OUT_OF_MEMORY;
+        airy_err_push_ex(AIRY_EAGAIN, __FILE__, __LINE__, __func__,
+                         "openai: rate limited (429)");
+        return AIRY_EAGAIN;
     }
 
     AIRY_MEMSET(out_response, 0, sizeof(*out_response));

@@ -169,10 +169,26 @@ int a2a_adapter_receive_cb(void *c, void **d, size_t *s, uint32_t t)
                          "a2a_adapter_receive_cb: failed");
         return AIRY_ERR_UNKNOWN;
     }
-    (void)t;
     *d = NULL;
     *s = 0;
-    return AIRY_EINVAL;
+    struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)c;
+    if (!adapter->initialized) {
+        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+        return AIRY_ERR_STATE_ERROR;
+    }
+    if (!adapter->transport_read) {
+        airy_err_push_ex(AIRY_ERR_NOT_SUPPORTED, __FILE__, __LINE__, __func__,
+                         "no read transport configured");
+        return AIRY_ERR_NOT_SUPPORTED;
+    }
+    int rc = adapter->transport_read(adapter->transport_ctx, d, s, t);
+    if (rc != AIRY_OK)
+        return rc;
+    if (*d && *s > 0) {
+        adapter->bytes_received += (uint64_t)*s;
+        adapter->messages_received++;
+    }
+    return AIRY_OK;
 }
 int a2a_adapter_handle_request_cb(void *c, const void *r, void **rp)
 {

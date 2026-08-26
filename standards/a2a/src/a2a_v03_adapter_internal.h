@@ -30,6 +30,11 @@ typedef struct {
 /* Transport write callback type for sending data through the transport layer */
 typedef int (*a2a_transport_write_fn)(void *transport_ctx, const void *data, size_t size);
 
+/* Transport read callback type: reads one message from the transport.
+ * On success returns 0 and sets *data (heap-allocated, caller frees) and *size. */
+typedef int (*a2a_transport_read_fn)(void *transport_ctx, void **data, size_t *size,
+                                     uint32_t timeout_ms);
+
 /* Use header-declared types; define local adapter state */
 struct a2a_v03_adapter_s {
     a2a_internal_card_t agents[A2A_V03_MAX_AGENTS];
@@ -56,10 +61,14 @@ struct a2a_v03_adapter_s {
     void *streaming_handler_user_data;
     /* Transport layer for sending data */
     a2a_transport_write_fn transport_write;
+    /* Optional transport layer for receiving data (may be NULL) */
+    a2a_transport_read_fn transport_read;
     void *transport_ctx;
     bool connected;
     uint64_t bytes_sent;
     uint64_t messages_sent;
+    uint64_t bytes_received;
+    uint64_t messages_received;
 };
 
 /* Helpers shared across files (was static; now external linkage) **/
