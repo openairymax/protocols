@@ -75,7 +75,14 @@ protocols/
 │   ├── langchain/                          # LangChain framework adapter
 │   └── autogen/                            # AutoGen multi-agent framework adapter
 └── tests/                                  # Test suite
+    ├── test_mcp_adapter.c
+    ├── test_a2a_adapter.c
+    ├── test_openai_adapter.c
+    ├── test_claude_adapter.c
+    ├── test_langchain_adapter.c
+    ├── test_autogen_adapter.c
     ├── test_openclaw_adapter.c
+    ├── test_openjiuwen_adapter.c
     ├── test_agntcy_acp.c
     └── test_china_eco_crypto.c
 ```
@@ -193,7 +200,7 @@ The header carries a structured addressing block (64-byte source + 64-byte targe
 | Consumer | What they use |
 |----------|---------------|
 | **gateway** | Gateway uses the protocol router / gateway interfaces to translate HTTP / WS / Stdio into JSON-RPC 2.0 over AgentsIPC, and to bridge A2A / MCP at the protocol boundary |
-| **daemons** | All 12 daemons communicate with each other via JSON-RPC 2.0 carried over the AgentsIPC L2 envelope; `tool_d` / `plugin_d` expose MCP tool surfaces (Agent-to-Tool) |
+| **daemons** | All 18 daemons communicate with each other via JSON-RPC 2.0 carried over the AgentsIPC L2 envelope; `tool_d` / `plugin_d` expose MCP tool surfaces (Agent-to-Tool) |
 | Toolkit / SDK | The SDK ships protocol client libraries built on top of this stack |
 | OpenLab applications | All OpenLab modules talk to the core runtime over JSON-RPC 2.0 |
 
