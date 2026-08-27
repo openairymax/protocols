@@ -174,7 +174,11 @@ set(PROTOCOLS_INTEGRATIONS_SOURCES
     integrations/openai/src/openai_enterprise_adapter_model.c
     integrations/openai/src/openai_enterprise_adapter_retry.c
     integrations/openai/src/openai_enterprise_adapter_utils.c
-    integrations/openjiuwen/src/openjiuwen_adapter.c
+    # OpenJiuwen 适配器按功能域拆分：门面/生命周期、网络传输、连接收发 ops、消息转换
+    integrations/openjiuwen/src/openjiuwen_adapter.c        # 门面/生命周期/能力域（原主文件）
+    integrations/openjiuwen/src/openjiuwen_adapter_net.c    # 网络传输域（endpoint 解析/连接/重连/发送原语）
+    integrations/openjiuwen/src/openjiuwen_adapter_io.c     # 连接/收发 ops 域（connect/disconnect/send/receive）
+    integrations/openjiuwen/src/openjiuwen_adapter_msg.c    # 消息转换域（unified<->native 互转/encode/decode）
 )
 
 if(PROTOCOLS_ENABLE_OPENCLAW)
@@ -557,6 +561,9 @@ if(BUILD_TESTS)
         add_executable(test_openjiuwen_adapter
             tests/test_openjiuwen_adapter.c
             integrations/openjiuwen/src/openjiuwen_adapter.c
+            integrations/openjiuwen/src/openjiuwen_adapter_net.c
+            integrations/openjiuwen/src/openjiuwen_adapter_io.c
+            integrations/openjiuwen/src/openjiuwen_adapter_msg.c
             common/src/unified_protocol.c
             core/transformers/src/protocol_transformers.c
         )
