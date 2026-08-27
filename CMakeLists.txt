@@ -199,7 +199,9 @@ endif()
 
 if(PROTOCOLS_ENABLE_CHINA_ECO)
     list(APPEND PROTOCOLS_INTEGRATIONS_SOURCES
-        integrations/china_eco/src/china_eco_adapter.c)
+        integrations/china_eco/src/china_eco_adapter.c
+        integrations/china_eco/src/china_eco_llm.c
+        integrations/china_eco/src/china_eco_crypto.c)
 endif()
 
 # ============================================================
@@ -468,6 +470,8 @@ if(BUILD_TESTS)
         add_executable(test_china_eco_crypto
             tests/test_china_eco_crypto.c
             integrations/china_eco/src/china_eco_adapter.c
+            integrations/china_eco/src/china_eco_llm.c
+            integrations/china_eco/src/china_eco_crypto.c
             common/src/unified_protocol.c
             core/transformers/src/protocol_transformers.c
         )

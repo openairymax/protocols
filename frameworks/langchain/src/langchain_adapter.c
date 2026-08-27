@@ -33,7 +33,7 @@
 langchain_config_t langchain_config_default(void)
 {
     langchain_config_t cfg = {0};
-    cfg.base_url = "http://127.0.0.1:18789";
+    cfg.base_url = "http://127.0.0.1:8080";
     cfg.api_key = NULL;
     cfg.timeout_ms = LANGCHAIN_DEFAULT_TIMEOUT_MS;
     cfg.enable_streaming = true;
