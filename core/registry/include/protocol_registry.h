@@ -141,7 +141,7 @@ int proto_registry_set_state(protocol_registry_t *registry, const char *name, pr
 int proto_registry_add_dependency(protocol_registry_t *registry, const char *name,
                                   const char *dep_name);
 
-bool proto_registry_check_dependencies(const proto_registry_entry_t *entry);
+bool proto_reg_check_deps(const proto_registry_entry_t *entry);
 
 int proto_registry_activate(protocol_registry_t *registry, const char *name);
 

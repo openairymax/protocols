@@ -316,7 +316,7 @@ int proto_registry_add_dependency(protocol_registry_t *registry, const char *nam
     return 0;
 }
 
-bool proto_registry_check_dependencies(const proto_registry_entry_t *entry)
+bool proto_reg_check_deps(const proto_registry_entry_t *entry)
 {
     if (!entry)
         return false;
@@ -341,7 +341,7 @@ int proto_registry_activate(protocol_registry_t *registry, const char *name)
     if (!entry)
         return AIRY_ERR_OUT_OF_MEMORY;
 
-    if (!proto_registry_check_dependencies(entry)) {
+    if (!proto_reg_check_deps(entry)) {
         proto_registry_set_state(registry, name, PROTO_STATE_ERROR);
         return AIRY_ERR_IO;
     }
