@@ -231,7 +231,7 @@ static int mcp_adapter_is_connected(void *context)
         return 0;
     mcp_v1_context_t *ctx = (mcp_v1_context_t *)context;
     if (ctx->transport) {
-        return mcp_transport_get_state(ctx->transport) == MCP_TRANSPORT_CONNECTED ? 1 : 0;
+        return mcp_trans_state(ctx->transport) == MCP_TRANSPORT_CONNECTED ? 1 : 0;
     }
     return (ctx->tool_count > 0 || ctx->resource_count > 0) ? 1 : 0;
 }
