@@ -620,7 +620,7 @@ __attribute__((unused)) int mcp_transport_receive(mcp_transport_t *transport, ch
 }
 
 __attribute__((unused)) mcp_transport_state_t
-mcp_transport_get_state(const mcp_transport_t *transport)
+mcp_trans_state(const mcp_transport_t *transport)
 {
     if (!transport)
         return MCP_TRANSPORT_DISCONNECTED;
@@ -629,7 +629,7 @@ mcp_transport_get_state(const mcp_transport_t *transport)
 
 // clang-format off
 __attribute__((unused)) mcp_transport_type_t
-mcp_transport_get_type(const mcp_transport_t *transport)
+mcp_trans_type(const mcp_transport_t *transport)
 // clang-format on
 {
     if (!transport)

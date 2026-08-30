@@ -84,9 +84,9 @@ int mcp_transport_send(mcp_transport_t *transport, const char *message, size_t l
 int mcp_transport_receive(mcp_transport_t *transport, char **out_message, size_t *out_length,
                           uint32_t timeout_ms);
 
-mcp_transport_state_t mcp_transport_get_state(const mcp_transport_t *transport);
+mcp_transport_state_t mcp_trans_state(const mcp_transport_t *transport);
 
-mcp_transport_type_t mcp_transport_get_type(const mcp_transport_t *transport);
+mcp_transport_type_t mcp_trans_type(const mcp_transport_t *transport);
 
 const char *mcp_transport_state_string(mcp_transport_state_t state);
 
