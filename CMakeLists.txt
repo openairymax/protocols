@@ -60,10 +60,10 @@ set(PROTOCOLS_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/../commons/platform/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils
     ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/compat/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/logging/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/error/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/string/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/compat
+    ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/logging
+    ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/error
+    ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/string
     # R-09-124: migrated from root global include_directories
     ${CMAKE_CURRENT_SOURCE_DIR}/../atoms/corekern/include
 )
@@ -429,12 +429,12 @@ if(BUILD_TESTS)
         ${CMAKE_CURRENT_SOURCE_DIR}/frameworks/langchain/include
         ${CMAKE_CURRENT_SOURCE_DIR}/frameworks/autogen/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../commons/platform/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/types/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/error/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/memory/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/sync/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/compat/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/observability/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/types
+        ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/error
+        ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/memory
+        ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/sync
+        ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/compat
+        ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/observability
         ${CMAKE_CURRENT_SOURCE_DIR}/../atoms/corekern/include
     )
 

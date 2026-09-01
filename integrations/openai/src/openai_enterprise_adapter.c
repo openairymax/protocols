@@ -39,7 +39,7 @@
 
 #include "airy_memory.h"
 #include "types.h"
-#include "../../../../commons/utils/error/include/error.h"
+#include "../../../../commons/utils/error/error.h"
 #include "error.h"
 
 struct openai_enterprise_adapter_s *g_openai_instance = NULL;

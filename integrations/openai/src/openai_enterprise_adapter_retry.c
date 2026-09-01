@@ -10,7 +10,7 @@
 
 #include "airy_memory.h"
 #include "types.h"
-#include "../../../../commons/utils/error/include/error.h"
+#include "../../../../commons/utils/error/error.h"
 #include "error.h"
 
 #include <time.h>
