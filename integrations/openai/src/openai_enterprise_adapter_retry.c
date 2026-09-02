@@ -15,7 +15,7 @@
 
 #include <time.h>
 
-static void openai_rate_window_rotate(struct openai_enterprise_adapter_s *adapter)
+static void oai_window_rotate(struct openai_enterprise_adapter_s *adapter)
 {
     time_t now = time(NULL);
     if (now - adapter->rate_window_start >= OPENAI_RATE_LIMIT_WINDOW_SEC) {
@@ -29,10 +29,10 @@ static void openai_rate_window_rotate(struct openai_enterprise_adapter_s *adapte
     }
 }
 
-openai_rate_result_t openai_check_rate_limit(struct openai_enterprise_adapter_s *adapter,
+openai_rate_result_t oai_check_rate_limit(struct openai_enterprise_adapter_s *adapter,
                                              uint32_t estimated_tokens)
 {
-    openai_rate_window_rotate(adapter);
+    oai_window_rotate(adapter);
     time_t now = time(NULL);
 
     if (adapter->rate_backoff_until > 0 && now < adapter->rate_backoff_until) {
@@ -78,7 +78,7 @@ void openai_on_429(struct openai_enterprise_adapter_s *adapter)
     adapter->rate_backoff_until = now + delay_sec;
 }
 
-static int __attribute__((unused)) openai_compute_retry_delay_ms(
+static int __attribute__((unused)) openai_retry_delay_ms(
     struct openai_enterprise_adapter_s *adapter, int attempt)
 {
     uint32_t base_delay = (uint32_t)(OPENAI_RETRY_BASE_DELAY_MS * adapter->rate_backoff_multiplier);
@@ -118,11 +118,11 @@ int openai_get_stats(void *handle, openai_rate_limit_t *out_stats)
     return 0;
 }
 
-int openai_set_rate_limits(void *handle, uint32_t rpm, uint32_t tpm)
+int oai_set_rate_limits(void *handle, uint32_t rpm, uint32_t tpm)
 {
     if (!handle) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "openai_set_rate_limits: failed");
+                         "oai_set_rate_limits: failed");
         return AIRY_ERR_UNKNOWN;
     }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)handle;
@@ -133,16 +133,16 @@ int openai_set_rate_limits(void *handle, uint32_t rpm, uint32_t tpm)
     return 0;
 }
 
-int openai_get_rate_status(void *handle, uint32_t *out_remaining_rpm, uint32_t *out_remaining_tpm,
+int oai_get_rate_status(void *handle, uint32_t *out_remaining_rpm, uint32_t *out_remaining_tpm,
                            uint32_t *out_429_count, double *out_backoff)
 {
     if (!handle) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "openai_get_rate_status: failed");
+                         "oai_get_rate_status: failed");
         return AIRY_ERR_UNKNOWN;
     }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)handle;
-    openai_rate_window_rotate(adapter);
+    oai_window_rotate(adapter);
 
     if (out_remaining_rpm) {
         *out_remaining_rpm = (adapter->rate_limit_rpm > adapter->rate_window_requests) ?

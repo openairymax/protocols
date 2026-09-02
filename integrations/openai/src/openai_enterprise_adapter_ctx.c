@@ -135,7 +135,7 @@ int openai_enterprise_chat_completion(openai_enterprise_context_t *ctx, const ch
     req.max_tokens = max_tokens > 0 ? max_tokens : 4096;
     req.tools = tools;
     req.tool_count = tool_count;
-    return openai_chat_completion(ctx->handle, &req, response);
+    return oai_chat_completion(ctx->handle, &req, response);
 }
 
 int openai_enterprise_chat_streaming(openai_enterprise_context_t *ctx, const char *model,
@@ -157,7 +157,7 @@ int openai_enterprise_chat_streaming(openai_enterprise_context_t *ctx, const cha
     }
     openai_chat_response_t final_resp;
     AIRY_MEMSET(&final_resp, 0, sizeof(final_resp));
-    return openai_chat_completion_streaming(ctx->handle, &req, handler, user_data, &final_resp);
+    return oai_stream_chat(ctx->handle, &req, handler, user_data, &final_resp);
 }
 
 int openai_enterprise_embeddings(openai_enterprise_context_t *ctx, const char *model,
@@ -175,7 +175,7 @@ int openai_enterprise_embeddings(openai_enterprise_context_t *ctx, const char *m
         (inputs && input_count > 0 && inputs[0]) ? AIRY_STRDUP(inputs[0]) : AIRY_STRDUP("");
     req.embedding_dim = 1536;
     req.model = model ? AIRY_STRDUP(model) : AIRY_STRDUP("text-embedding-3-small");
-    int result = openai_create_embedding(ctx->handle, &req, response);
+    int result = oai_create_embedding(ctx->handle, &req, response);
     AIRY_FREE(req.input_text);
     req.input_text = NULL;
     AIRY_FREE(req.model);
@@ -231,7 +231,7 @@ bool openai_enterprise_check_rate_limit(openai_enterprise_context_t *ctx, int es
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)ctx->handle;
     if (!adapter->initialized)
         return false;
-    openai_rate_result_t result = openai_check_rate_limit(adapter, (uint32_t)estimated_tokens);
+    openai_rate_result_t result = oai_check_rate_limit(adapter, (uint32_t)estimated_tokens);
     return result == OPENAI_RATE_OK;
 }
 
@@ -321,7 +321,7 @@ int openai_enterprise_route_request(openai_enterprise_context_t *ctx, const char
                          "failed\",\"type\":\"api_error\",\"code\":null}}");
             *response_json = err_json;
         }
-        openai_chat_response_destroy(&resp);
+        oai_chat_resp_destroy(&resp);
         AIRY_FREE(msg.content);
         return rc;
     }
@@ -332,7 +332,7 @@ int openai_enterprise_route_request(openai_enterprise_context_t *ctx, const char
         int rc = openai_enterprise_embeddings(ctx, "text-embedding-ada-002", inputs, 1, &emb_resp);
         if (rc != 0) {
             *response_json = NULL;
-            openai_embedding_response_destroy(&emb_resp);
+            oai_emb_resp_destroy(&emb_resp);
             return rc;
         }
         size_t json_sz = 512 + (emb_resp.embedding_dim > 0 ? emb_resp.embedding_dim * 16 : 0);
@@ -342,7 +342,7 @@ int openai_enterprise_route_request(openai_enterprise_context_t *ctx, const char
         json_sz += strlen(escaped_model);
         char *json = (char *)AIRY_MALLOC(json_sz);
         if (!json) {
-            openai_embedding_response_destroy(&emb_resp);
+            oai_emb_resp_destroy(&emb_resp);
             airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
                              "json_escape_string: allocation failed");
             return AIRY_ERR_OUT_OF_MEMORY;
@@ -367,7 +367,7 @@ int openai_enterprise_route_request(openai_enterprise_context_t *ctx, const char
                         "]}],\"usage\":{\"prompt_tokens\":%zu,\"total_tokens\":%zu}}",
                         (size_t)emb_resp.usage.prompt_tokens, (size_t)emb_resp.usage.total_tokens);
         *response_json = json;
-        openai_embedding_response_destroy(&emb_resp);
+        oai_emb_resp_destroy(&emb_resp);
         return 0;
     }
     if (strcmp(path, "/v1/models") == 0) {

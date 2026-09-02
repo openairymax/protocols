@@ -232,9 +232,9 @@ static void test_rate_limit(void)
 static void test_destroy_handlers_null(void)
 {
     TEST("destroy handlers with NULL do not crash");
-    openai_chat_response_destroy(NULL);
-    openai_embedding_response_destroy(NULL);
-    openai_message_destroy(NULL);
+    oai_chat_resp_destroy(NULL);
+    oai_emb_resp_destroy(NULL);
+    oai_message_destroy(NULL);
     openai_model_destroy(NULL);
     PASS();
 }

@@ -19,7 +19,7 @@
  * Model Management
  * ============================================================================ */
 
-void openai_register_builtin_models(struct openai_enterprise_adapter_s *a)
+void oai_register_builtin(struct openai_enterprise_adapter_s *a)
 {
     static const char *builtin[][4] = {
         {"gpt-4o", "GPT-4o", "Multimodal flagship model",
@@ -87,7 +87,7 @@ int openai_list_models(openai_handle_t handle, const char *search_query, void *o
     return count;
 }
 
-void openai_free_model_list(void *list)
+void oai_free_model_list(void *list)
 {
     if (!list)
         return;

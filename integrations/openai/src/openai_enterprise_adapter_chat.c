@@ -27,12 +27,12 @@
 #include <cjson_helpers.h>
 #endif
 
-int openai_chat_completion(openai_handle_t handle, const openai_chat_request_t *request,
+int oai_chat_completion(openai_handle_t handle, const openai_chat_request_t *request,
                            openai_chat_response_t *out_response)
 {
     if (!handle || !request || !out_response) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "openai_chat_completion: failed");
+                         "oai_chat_completion: failed");
         return AIRY_ERR_UNKNOWN;
     }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)handle;
@@ -50,7 +50,7 @@ int openai_chat_completion(openai_handle_t handle, const openai_chat_request_t *
         }
     }
 
-    openai_rate_result_t rate_status = openai_check_rate_limit(adapter, est_tokens);
+    openai_rate_result_t rate_status = oai_check_rate_limit(adapter, est_tokens);
     if (rate_status != OPENAI_RATE_OK) {
         AIRY_MEMSET(out_response, 0, sizeof(*out_response));
         out_response->created = (uint64_t)time(NULL);
@@ -169,7 +169,7 @@ int openai_chat_completion(openai_handle_t handle, const openai_chat_request_t *
         AIRY_MEMSET(content_buf, 0, sizeof(content_buf));
         openai_usage_t api_usage = {0};
         int parse_result =
-            openai_parse_chat_response(api_response, content_buf, sizeof(content_buf), &api_usage);
+            oai_parse_chat_resp(api_response, content_buf, sizeof(content_buf), &api_usage);
         if (parse_result == 0 && content_buf[0] != '\0') {
             out_response->choices = AIRY_CALLOC(1, sizeof(openai_message_t));
             if (out_response->choices) {
@@ -194,7 +194,7 @@ int openai_chat_completion(openai_handle_t handle, const openai_chat_request_t *
     adapter->stats_chat_completions++;
     adapter->stats_total_input_tokens += out_response->usage.prompt_tokens;
     adapter->stats_total_output_tokens += out_response->usage.completion_tokens;
-    openai_record_latency(adapter, latency_ms);
+    oai_record_latency(adapter, latency_ms);
     openai_record_request(adapter, out_response->usage.prompt_tokens,
                           out_response->usage.completion_tokens);
 #endif
@@ -202,13 +202,13 @@ int openai_chat_completion(openai_handle_t handle, const openai_chat_request_t *
     return 0;
 }
 
-int openai_chat_completion_streaming(openai_handle_t handle, const openai_chat_request_t *request,
+int oai_stream_chat(openai_handle_t handle, const openai_chat_request_t *request,
                                      openai_streaming_handler_t on_chunk, void *user_data,
                                      openai_chat_response_t *final_summary)
 {
     if (!handle || !request || !on_chunk || !final_summary) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "openai_chat_completion_streaming: failed");
+                         "oai_stream_chat: failed");
         return AIRY_ERR_UNKNOWN;
     }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)handle;
@@ -289,7 +289,7 @@ int openai_chat_completion_streaming(openai_handle_t handle, const openai_chat_r
     AIRY_MEMSET(full_response, 0, sizeof(full_response));
     openai_usage_t api_usage = {0};
     int parse_result =
-        openai_parse_chat_response(api_response, full_response, sizeof(full_response), &api_usage);
+        oai_parse_chat_resp(api_response, full_response, sizeof(full_response), &api_usage);
     if (parse_result != 0) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "openai: unknown error");
         return AIRY_ERR_UNKNOWN;
@@ -340,7 +340,7 @@ int openai_chat_completion_streaming(openai_handle_t handle, const openai_chat_r
     adapter->stats_streaming_sessions++;
     adapter->stats_total_input_tokens += final_summary->usage.prompt_tokens;
     adapter->stats_total_output_tokens += final_summary->usage.completion_tokens;
-    openai_record_latency(adapter, latency_ms);
+    oai_record_latency(adapter, latency_ms);
 #endif
 
     return 0;
