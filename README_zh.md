@@ -193,7 +193,7 @@ typedef struct {
 | 消费者 | 用途 |
 |--------|------|
 | **gateway** | 网关使用协议路由器/网关接口将 HTTP/WS/Stdio 翻译为基于 AgentsIPC 的 JSON-RPC 2.0，并在协议边界桥接 A2A/MCP |
-| **daemons** | 全部 18 个守护进程通过搭载于 AgentsIPC L2 信封的 JSON-RPC 2.0 相互通信；`tool_d`/`plugin_d` 暴露 MCP 工具接口（Agent-to-Tool） |
+| **daemons** | 全部 15 个守护进程（M4 整编稳态）通过搭载于 AgentsIPC L2 信封的 JSON-RPC 2.0 相互通信；`tool_d` 对内建与插件工具暴露 MCP 工具接口（Agent-to-Tool） |
 | Toolkit / SDK | SDK 附带基于此栈构建的协议客户端库 |
 | OpenLab 应用 | 所有 OpenLab 模块通过 JSON-RPC 2.0 与核心运行时通信 |
 
