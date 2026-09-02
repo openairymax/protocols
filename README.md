@@ -200,7 +200,7 @@ The header carries a structured addressing block (64-byte source + 64-byte targe
 | Consumer | What they use |
 |----------|---------------|
 | **gateway** | Gateway uses the protocol router / gateway interfaces to translate HTTP / WS / Stdio into JSON-RPC 2.0 over AgentsIPC, and to bridge A2A / MCP at the protocol boundary |
-| **daemons** | All 18 daemons communicate with each other via JSON-RPC 2.0 carried over the AgentsIPC L2 envelope; `tool_d` / `plugin_d` expose MCP tool surfaces (Agent-to-Tool) |
+| **daemons** | All 15 daemons (M4 steady state) communicate with each other via JSON-RPC 2.0 carried over the AgentsIPC L2 envelope; `tool_d` exposes MCP tool surfaces for built-in and plugin tools (Agent-to-Tool) |
 | Toolkit / SDK | The SDK ships protocol client libraries built on top of this stack |
 | OpenLab applications | All OpenLab modules talk to the core runtime over JSON-RPC 2.0 |
 
