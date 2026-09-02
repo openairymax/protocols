@@ -87,7 +87,7 @@ int openai_create(openai_enterprise_config_t config, openai_handle_t *out_handle
     adapter->rate_backoff_multiplier = 1.0;
     adapter->rate_backoff_until = 0;
 
-    openai_register_builtin_models(adapter);
+    oai_register_builtin(adapter);
 
     g_openai_instance = adapter;
     *out_handle = (openai_handle_t)adapter;
@@ -114,7 +114,7 @@ void openai_destroy(openai_handle_t handle)
     AIRY_FREE(adapter);
 }
 
-bool openai_is_initialized(openai_handle_t handle)
+bool oai_is_initialized(openai_handle_t handle)
 {
     if (!handle)
         return false;
@@ -137,25 +137,25 @@ const protocol_adapter_t *openai_enterprise_get_adapter(void)
         s_adapter.version = OPENAI_ADAPTER_VERSION;
         s_adapter.description = "OpenAI Enterprise API Adapter";
         s_adapter.context = NULL;
-        s_adapter.init = openai_adapter_init_cb;
-        s_adapter.destroy = openai_adapter_destroy_cb;
-        s_adapter.encode = openai_adapter_encode_cb;
-        s_adapter.decode = openai_adapter_decode_cb;
-        s_adapter.connect = openai_adapter_connect_cb;
-        s_adapter.disconnect = openai_adapter_disconnect_cb;
-        s_adapter.is_connected = openai_adapter_is_connected_cb;
-        s_adapter.send = openai_adapter_send_cb;
-        s_adapter.receive = openai_adapter_receive_cb;
-        s_adapter.handle_request = openai_adapter_handle_request_cb;
-        s_adapter.get_version = openai_adapter_get_version_cb;
-        s_adapter.capabilities = openai_adapter_capabilities_cb;
-        s_adapter.get_stats = openai_adapter_get_stats_cb;
+        s_adapter.init = oai_init_cb;
+        s_adapter.destroy = oai_destroy_cb;
+        s_adapter.encode = oai_encode_cb;
+        s_adapter.decode = oai_decode_cb;
+        s_adapter.connect = oai_connect_cb;
+        s_adapter.disconnect = oai_disconnect_cb;
+        s_adapter.is_connected = oai_is_connected_cb;
+        s_adapter.send = oai_send_cb;
+        s_adapter.receive = oai_receive_cb;
+        s_adapter.handle_request = oai_handle_request_cb;
+        s_adapter.get_version = oai_get_version_cb;
+        s_adapter.capabilities = oai_capabilities_cb;
+        s_adapter.get_stats = oai_get_stats_cb;
         s_init = true;
     }
     return &s_adapter;
 }
 
-void openai_chat_response_destroy(openai_chat_response_t *resp)
+void oai_chat_resp_destroy(openai_chat_response_t *resp)
 {
     if (!resp)
         return;
@@ -185,7 +185,7 @@ void openai_chat_response_destroy(openai_chat_response_t *resp)
     AIRY_MEMSET(resp, 0, sizeof(*resp));
 }
 
-void openai_embedding_response_destroy(openai_embedding_response_t *resp)
+void oai_emb_resp_destroy(openai_embedding_response_t *resp)
 {
     if (!resp)
         return;
@@ -196,7 +196,7 @@ void openai_embedding_response_destroy(openai_embedding_response_t *resp)
     AIRY_MEMSET(resp, 0, sizeof(*resp));
 }
 
-void openai_message_destroy(openai_message_t *msg)
+void oai_message_destroy(openai_message_t *msg)
 {
     if (!msg)
         return;

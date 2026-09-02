@@ -128,16 +128,16 @@ struct openai_enterprise_context_s {
 extern struct openai_enterprise_adapter_s *g_openai_instance;
 
 /* Helpers shared across files (was static; now external linkage) **/
-void openai_register_builtin_models(struct openai_enterprise_adapter_s *a);
+void oai_register_builtin(struct openai_enterprise_adapter_s *a);
 uint64_t openai_fnv1a_hash(const char *str);
 void json_escape_string(const char *src, char *dst, size_t dst_size);
-int openai_estimate_tokens(const char *text);
-void openai_record_latency(struct openai_enterprise_adapter_s *adapter, double latency_ms);
+int oai_estimate_tokens(const char *text);
+void oai_record_latency(struct openai_enterprise_adapter_s *adapter, double latency_ms);
 int openai_api_call(const char *api_key, const char *base_url, const char *endpoint,
                     const char *request_json, char *out_buf, size_t buf_len);
-int openai_parse_chat_response(const char *json_str, char *content_out, size_t content_len,
+int oai_parse_chat_resp(const char *json_str, char *content_out, size_t content_len,
                                openai_usage_t *usage);
-openai_rate_result_t openai_check_rate_limit(struct openai_enterprise_adapter_s *adapter,
+openai_rate_result_t oai_check_rate_limit(struct openai_enterprise_adapter_s *adapter,
                                              uint32_t estimated_tokens);
 __attribute__((unused)) void openai_record_request(
     struct openai_enterprise_adapter_s *adapter, uint32_t input_tokens, uint32_t output_tokens);
@@ -147,33 +147,33 @@ void openai_on_429(struct openai_enterprise_adapter_s *adapter);
 int openai_create(openai_enterprise_config_t config, openai_handle_t *out_handle);
 void openai_destroy(openai_handle_t handle);
 int openai_list_models(openai_handle_t handle, const char *search_query, void *out_results);
-int openai_chat_completion(openai_handle_t handle, const openai_chat_request_t *request,
+int oai_chat_completion(openai_handle_t handle, const openai_chat_request_t *request,
                            openai_chat_response_t *out_response);
-int openai_chat_completion_streaming(openai_handle_t handle, const openai_chat_request_t *request,
+int oai_stream_chat(openai_handle_t handle, const openai_chat_request_t *request,
                                      openai_streaming_handler_t on_chunk, void *user_data,
                                      openai_chat_response_t *final_summary);
-int openai_create_embedding(openai_handle_t handle, const openai_embedding_request_t *request,
+int oai_create_embedding(openai_handle_t handle, const openai_embedding_request_t *request,
                             openai_embedding_response_t *out_response);
 int openai_get_stats(void *handle, openai_rate_limit_t *out_stats);
-void openai_free_model_list(void *list);
+void oai_free_model_list(void *list);
 void openai_free_embedding_response(openai_embedding_response_t *response);
-int openai_set_rate_limits(void *handle, uint32_t rpm, uint32_t tpm);
-int openai_get_rate_status(void *handle, uint32_t *out_remaining_rpm, uint32_t *out_remaining_tpm,
+int oai_set_rate_limits(void *handle, uint32_t rpm, uint32_t tpm);
+int oai_get_rate_status(void *handle, uint32_t *out_remaining_rpm, uint32_t *out_remaining_tpm,
                            uint32_t *out_429_count, double *out_backoff);
 
 /* Protocol adapter callbacks (was static; referenced by openai_enterprise_get_adapter()) **/
-int openai_adapter_init_cb(void *context);
-int openai_adapter_destroy_cb(void *context);
-int openai_adapter_encode_cb(void *c, const void *m, void **o, size_t *s);
-int openai_adapter_decode_cb(void *c, const void *d, size_t s, void *o);
-int openai_adapter_connect_cb(void *c, const char *endpoint);
-int openai_adapter_disconnect_cb(void *c);
-int openai_adapter_is_connected_cb(void *c);
-int openai_adapter_send_cb(void *c, const void *d, size_t s);
-int openai_adapter_receive_cb(void *c, void **d, size_t *s, uint32_t t);
-int openai_adapter_handle_request_cb(void *c, const void *r, void **rp);
-int openai_adapter_get_version_cb(void *c, char *b, size_t s);
-uint32_t openai_adapter_capabilities_cb(void *c);
-int openai_adapter_get_stats_cb(void *c, char *b, size_t s);
+int oai_init_cb(void *context);
+int oai_destroy_cb(void *context);
+int oai_encode_cb(void *c, const void *m, void **o, size_t *s);
+int oai_decode_cb(void *c, const void *d, size_t s, void *o);
+int oai_connect_cb(void *c, const char *endpoint);
+int oai_disconnect_cb(void *c);
+int oai_is_connected_cb(void *c);
+int oai_send_cb(void *c, const void *d, size_t s);
+int oai_receive_cb(void *c, void **d, size_t *s, uint32_t t);
+int oai_handle_request_cb(void *c, const void *r, void **rp);
+int oai_get_version_cb(void *c, char *b, size_t s);
+uint32_t oai_capabilities_cb(void *c);
+int oai_get_stats_cb(void *c, char *b, size_t s);
 
 #endif /* OPENAI_ENTERPRISE_ADAPTER_INTERNAL_H */

@@ -90,7 +90,7 @@ void json_escape_string(const char *src, char *dst, size_t dst_size)
     dst[di] = '\0';
 }
 
-int openai_estimate_tokens(const char *text)
+int oai_estimate_tokens(const char *text)
 {
     if (!text || !*text)
         return 0;
@@ -111,7 +111,7 @@ int openai_estimate_tokens(const char *text)
     return count > 0 ? count : 1;
 }
 
-void openai_record_latency(struct openai_enterprise_adapter_s *adapter, double latency_ms)
+void oai_record_latency(struct openai_enterprise_adapter_s *adapter, double latency_ms)
 {
     adapter->stats_total_latency_ms += latency_ms;
     if (latency_ms < adapter->stats_min_latency_ms)
@@ -205,12 +205,12 @@ int openai_api_call(const char *api_key, const char *base_url, const char *endpo
     return AIRY_EINVAL;
 }
 
-int openai_parse_chat_response(const char *json_str, char *content_out, size_t content_len,
+int oai_parse_chat_resp(const char *json_str, char *content_out, size_t content_len,
                                openai_usage_t *usage)
 {
     if (!json_str || !content_out) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "openai_parse_chat_response: parse error");
+                         "oai_parse_chat_resp: parse error");
         return AIRY_ERR_UNKNOWN;
     }
 

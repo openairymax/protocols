@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 
-int openai_adapter_init_cb(void *context)
+int oai_init_cb(void *context)
 {
     if (!context) {
         if (!g_openai_instance) {
@@ -31,7 +31,7 @@ int openai_adapter_init_cb(void *context)
     return 0;
 }
 
-int openai_adapter_destroy_cb(void *context)
+int oai_destroy_cb(void *context)
 {
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)context;
     if (adapter) {
@@ -44,11 +44,11 @@ int openai_adapter_destroy_cb(void *context)
     return 0;
 }
 
-int openai_adapter_encode_cb(void *c, const void *m, void **o, size_t *s)
+int oai_encode_cb(void *c, const void *m, void **o, size_t *s)
 {
     if (!m || !o || !s) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "openai_adapter_encode_cb: failed");
+                         "oai_encode_cb: failed");
         return AIRY_ERR_UNKNOWN;
     }
     (void)c;
@@ -66,11 +66,11 @@ int openai_adapter_encode_cb(void *c, const void *m, void **o, size_t *s)
     return 0;
 }
 
-int openai_adapter_decode_cb(void *c, const void *d, size_t s, void *o)
+int oai_decode_cb(void *c, const void *d, size_t s, void *o)
 {
     if (!d || !o || s == 0) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "openai_adapter_decode_cb: failed");
+                         "oai_decode_cb: failed");
         return AIRY_ERR_UNKNOWN;
     }
     (void)c;
@@ -78,7 +78,7 @@ int openai_adapter_decode_cb(void *c, const void *d, size_t s, void *o)
     return 0;
 }
 
-int openai_adapter_connect_cb(void *c, const char *endpoint)
+int oai_connect_cb(void *c, const char *endpoint)
 {
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)c;
     if (!adapter)
@@ -96,7 +96,7 @@ int openai_adapter_connect_cb(void *c, const char *endpoint)
     return 0;
 }
 
-int openai_adapter_disconnect_cb(void *c)
+int oai_disconnect_cb(void *c)
 {
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)c;
     if (!adapter)
@@ -107,7 +107,7 @@ int openai_adapter_disconnect_cb(void *c)
     return 0;
 }
 
-int openai_adapter_is_connected_cb(void *c)
+int oai_is_connected_cb(void *c)
 {
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)c;
     if (!adapter)
@@ -115,11 +115,11 @@ int openai_adapter_is_connected_cb(void *c)
     return (adapter && adapter->initialized) ? 1 : 0;
 }
 
-int openai_adapter_send_cb(void *c, const void *d, size_t s)
+int oai_send_cb(void *c, const void *d, size_t s)
 {
     if (!d || s == 0) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "openai_adapter_send_cb: IO error");
+                         "oai_send_cb: IO error");
         return AIRY_ERR_UNKNOWN;
     }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)c;
@@ -134,11 +134,11 @@ int openai_adapter_send_cb(void *c, const void *d, size_t s)
     return (int)s;
 }
 
-int openai_adapter_receive_cb(void *c, void **d, size_t *s, uint32_t t)
+int oai_receive_cb(void *c, void **d, size_t *s, uint32_t t)
 {
     if (!d || !s) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "openai_adapter_receive_cb: failed");
+                         "oai_receive_cb: failed");
         return AIRY_ERR_UNKNOWN;
     }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)c;
@@ -175,11 +175,11 @@ int openai_adapter_receive_cb(void *c, void **d, size_t *s, uint32_t t)
     return 0;
 }
 
-int openai_adapter_handle_request_cb(void *c, const void *r, void **rp)
+int oai_handle_request_cb(void *c, const void *r, void **rp)
 {
     if (!r) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "openai_adapter_handle_request_cb: failed");
+                         "oai_handle_request_cb: failed");
         return AIRY_ERR_UNKNOWN;
     }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)c;
@@ -221,20 +221,20 @@ int openai_adapter_handle_request_cb(void *c, const void *r, void **rp)
     return rc != 0 ? rc : -1;
 }
 
-int openai_adapter_get_version_cb(void *c, char *b, size_t s)
+int oai_get_version_cb(void *c, char *b, size_t s)
 {
     (void)c;
     snprintf(b, s, "%s", OPENAI_ADAPTER_VERSION);
     return 0;
 }
 
-uint32_t openai_adapter_capabilities_cb(void *c)
+uint32_t oai_capabilities_cb(void *c)
 {
     (void)c;
     return 0x07;
 }
 
-int openai_adapter_get_stats_cb(void *c, char *b, size_t s)
+int oai_get_stats_cb(void *c, char *b, size_t s)
 {
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)c;
     if (!adapter)

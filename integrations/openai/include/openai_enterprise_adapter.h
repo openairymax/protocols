@@ -230,9 +230,9 @@ int openai_enterprise_route_request(openai_enterprise_context_t *ctx, const char
 
 const protocol_adapter_t *openai_enterprise_get_adapter(void);
 
-void openai_chat_response_destroy(openai_chat_response_t *resp);
-void openai_embedding_response_destroy(openai_embedding_response_t *resp);
-void openai_message_destroy(openai_message_t *msg);
+void oai_chat_resp_destroy(openai_chat_response_t *resp);
+void oai_emb_resp_destroy(openai_embedding_response_t *resp);
+void oai_message_destroy(openai_message_t *msg);
 void openai_model_destroy(openai_model_t *model);
 
 #ifdef __cplusplus

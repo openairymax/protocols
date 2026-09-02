@@ -22,12 +22,12 @@
  * Embeddings
  * ============================================================================ */
 
-int openai_create_embedding(openai_handle_t handle, const openai_embedding_request_t *request,
+int oai_create_embedding(openai_handle_t handle, const openai_embedding_request_t *request,
                             openai_embedding_response_t *out_response)
 {
     if (!handle || !request || !out_response) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "openai_create_embedding: failed");
+                         "oai_create_embedding: failed");
         return AIRY_ERR_UNKNOWN;
     }
     struct openai_enterprise_adapter_s *adapter = (struct openai_enterprise_adapter_s *)handle;
@@ -118,12 +118,12 @@ int openai_create_embedding(openai_handle_t handle, const openai_embedding_reque
     uint64_t ts_end_ms = airy_time_ms();
     double latency_ms = (double)(ts_end_ms - ts_start_ms);
 
-    out_response->usage.prompt_tokens = (uint32_t)openai_estimate_tokens(request->input_text);
+    out_response->usage.prompt_tokens = (uint32_t)oai_estimate_tokens(request->input_text);
     out_response->usage.total_tokens = out_response->usage.prompt_tokens;
 
     adapter->stats_embeddings++;
     adapter->stats_total_input_tokens += out_response->usage.prompt_tokens;
-    openai_record_latency(adapter, latency_ms);
+    oai_record_latency(adapter, latency_ms);
 
     return 0;
 }
