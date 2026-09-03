@@ -5,13 +5,13 @@
 
 **语言:** [English](README.md) | 简体中文
 
-[![Version](https://img.shields.io/badge/version-0.1.1-5a6b7e)](https://atomgit.com/openairymax/protocols)
+[![Version](https://img.shields.io/badge/version-0.1.9-5a6b7e)](https://atomgit.com/openairymax/protocols)
 [![License](https://img.shields.io/badge/license-AGPL--3.0+Apache--2.0-4a90d9)](LICENSE)
 [![C11](https://img.shields.io/badge/C-11-00599C?logo=c&logoColor=white)](https://en.cppreference.com/w/c/11)
 
 - **仓库地址：** `git@atomgit.com:openairymax/protocols.git`
-- **分支：** `feature/official-hubs-01`
-- **版本：** 0.1.1（Airymax 奠基版本）
+- **分支：** `develop/hubs-01`
+- **版本：** 0.1.9（与 agentrt 管理仓对齐）
 
 ---
 
@@ -27,7 +27,7 @@
 
 核心设计原则：协议无关 API（上层业务代码面向统一 `unified_message_t` 模型和 `protocol_adapter_t` 接口）、可拔插适配器（每个协议可独立注册/注销/热加载）、智能路由（基于规则引擎的协议路由器自动跨协议消息转换）、统一注册中心（协议发现、能力查询、依赖追踪、生命周期管理）。
 
-在 Airymax 0.1.1 发行版中，工作区被拆分为 **38 个仓库**（1 umbrella + 5 management + 29 leaf + 3 top-level）；`protocols` 是 [agentrt](../) 管理仓聚合的 7 个叶子仓之一，构成循环架构中的**协议层**（位于存储层 `heapstore` 之上，网关层与服务层之下）。
+`protocols` 是 [agentrt](../) 管理仓聚合的 7 个叶子仓之一，构成循环架构中的**协议层**（位于存储层 `heapstore` 之上，网关层与服务层之下）。
 
 ## 模块分类
 

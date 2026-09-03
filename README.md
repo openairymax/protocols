@@ -5,13 +5,13 @@
 
 **Language:** English | [简体中文](README_zh.md)
 
-[![Version](https://img.shields.io/badge/version-0.1.1-5a6b7e)](https://atomgit.com/openairymax/protocols)
+[![Version](https://img.shields.io/badge/version-0.1.9-5a6b7e)](https://atomgit.com/openairymax/protocols)
 [![License](https://img.shields.io/badge/license-AGPL--3.0+Apache--2.0-4a90d9)](LICENSE)
 [![C11](https://img.shields.io/badge/C-11-00599C?logo=c&logoColor=white)](https://en.cppreference.com/w/c/11)
 
 - **Repository:** `git@atomgit.com:openairymax/protocols.git`
-- **Branch:** `feature/official-hubs-01`
-- **Version:** 0.1.1 (Airymax foundational release)
+- **Branch:** `develop/hubs-01`
+- **Version:** 0.1.9 (aligned with agentrt management repo)
 
 ---
 
@@ -27,7 +27,7 @@ The stack carries three protocol families:
 
 Core design principles: protocol-agnostic API (upper-layer code talks to a unified `unified_message_t` model and `protocol_adapter_t` interface), pluggable adapters (each protocol is independently registerable / unregisterable / hot-loadable), intelligent routing (rule-engine-based protocol router performs automatic cross-protocol message conversion), and a unified registry (protocol discovery, capability query, dependency tracking, lifecycle management).
 
-Within the Airymax 0.1.1 release, the workspace is partitioned into **38 repositories** (1 umbrella + 5 management + 29 leaf + 3 top-level); `protocols` is one of the 7 leaf repositories aggregated by the [agentrt](../) management repo, forming the **Protocol Layer** in the cyclic architecture (above the Storage Layer `heapstore`, below the Gateway and Service layers).
+`protocols` is one of the 7 leaf repositories aggregated by the [agentrt](../) management repo, forming the **Protocol Layer** in the cyclic architecture (above the Storage Layer `heapstore`, below the Gateway and Service layers).
 
 ## Module Classification
 
