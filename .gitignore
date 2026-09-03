@@ -47,7 +47,11 @@ test-results/
 test_output/
 
 # ---------- Core dump ----------
-core
+# 注意：`core`（无锚定）会连带忽略整个 core/ 源码目录（v0.1.9 CI
+# configure "Cannot find source file" 根因）。core dump 是仓库根下的
+# 单个文件，用正则锚定文件名精确匹配 core 本体及 core.NNNNN 变体，
+# 不得波及 core/ 目录（gitignore 原生语法无"仅文件"修饰符）。
+/core[^/]
 core.*
 *.core
 
