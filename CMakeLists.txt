@@ -144,13 +144,21 @@ if(PROTOCOLS_ENABLE_MCP)
         standards/mcp/src/mcp_v1_adapter_route.c
         standards/mcp/src/mcp_v1_adapter_sampling.c
         standards/mcp/src/mcp_v1_adapter_stream.c
-        standards/mcp/src/mcp_v1_adapter_tool.c
-        standards/mcp/src/mcp_client.c
-        standards/mcp/src/mcp_client_frame.c
-        standards/mcp/src/mcp_client_http.c
-        standards/mcp/src/mcp_client_rpc.c
-        standards/mcp/src/mcp_client_stdio.c
-        standards/mcp/src/mcp_client_tool.c)
+        standards/mcp/src/mcp_v1_adapter_tool.c)
+    # MCP client 子系统（mcp_client_*）为 POSIX-only：mcp_client_internal.h
+    # 用 pid_t（C2061）且源码含 <strings.h>（C1083），Windows MSVC 实证编译
+    # 失败。服务端 v1_adapter（cJSON 核心）跨平台保留；client 列 Windows 移植
+    # 到 0.1.12/13 支持矩阵里程碑。Unix socket transport 已由
+    # PROTOCOLS_ENABLE_MCP_TRANSPORT（WIN32 恒 OFF）单独门控。
+    if(NOT WIN32)
+        list(APPEND PROTOCOLS_STANDARDS_SOURCES
+            standards/mcp/src/mcp_client.c
+            standards/mcp/src/mcp_client_frame.c
+            standards/mcp/src/mcp_client_http.c
+            standards/mcp/src/mcp_client_rpc.c
+            standards/mcp/src/mcp_client_stdio.c
+            standards/mcp/src/mcp_client_tool.c)
+    endif()
     if(PROTOCOLS_ENABLE_MCP_TRANSPORT)
         list(APPEND PROTOCOLS_STANDARDS_SOURCES
             standards/mcp/src/mcp_transport.c)
@@ -411,7 +419,11 @@ airy_print_info("")
 # ============================================================
 # Unit Tests
 # ============================================================
-if(BUILD_TESTS)
+# Windows 支持矩阵（0.1.10 起）：协议适配器单测依赖 daemons svc_common
+# 服务框架与 POSIX socket（mcp_transport），MSVC 下 LNK1181 实证缺
+# svc_common.lib 且 transport 编译不可达；Windows 门禁先保库编译绿，
+# 协议单测随 MCP client/transport 移植到 0.1.12/13 再开。
+if(BUILD_TESTS AND NOT WIN32)
     set(PROTOCOL_TEST_INCLUDE_DIRS
         ${CMAKE_CURRENT_SOURCE_DIR}/common/include
         ${CMAKE_CURRENT_SOURCE_DIR}/integrations/openclaw/include
