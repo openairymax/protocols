@@ -197,6 +197,11 @@ static int mcp_adapter_connect(void *context, const char *address)
         AIRY_FREE(old_name);
     }
     if (ctx->transport) {
+        /* mcp_transport_* 仅在 POSIX 编译（PROTOCOLS_ENABLE_MCP_TRANSPORT
+         * WIN32 恒 OFF，mcp_transport.c 不参与 Windows 构建）；WIN32 下
+         * ctx->transport 恒 NULL，走下方兜底（#112 实证 airy_protocols.lib
+         * mcp_v1_adapter_cb.obj 4×LNK2001 mcp_transport_*） */
+#ifndef _WIN32
         mcp_transport_config_t tcfg;
         AIRY_MEMSET(&tcfg, 0, sizeof(tcfg));
         tcfg.type = MCP_TRANSPORT_HTTP_SSE;
@@ -206,6 +211,7 @@ static int mcp_adapter_connect(void *context, const char *address)
         tcfg.read_timeout_ms = (uint32_t)ctx->config.default_timeout_ms;
         tcfg.write_timeout_ms = (uint32_t)ctx->config.default_timeout_ms;
         return mcp_transport_start(ctx->transport);
+#endif
     }
     return 0;
 }
@@ -230,9 +236,11 @@ static int mcp_adapter_is_connected(void *context)
     if (!context)
         return 0;
     mcp_v1_context_t *ctx = (mcp_v1_context_t *)context;
+#ifndef _WIN32
     if (ctx->transport) {
         return mcp_trans_state(ctx->transport) == MCP_TRANSPORT_CONNECTED ? 1 : 0;
     }
+#endif
     return (ctx->tool_count > 0 || ctx->resource_count > 0) ? 1 : 0;
 }
 
@@ -250,7 +258,12 @@ static int mcp_adapter_send(void *context, const void *data, size_t size)
                          "mcp_v1_adapter: invalid parameter");
         return AIRY_ERR_INVALID_PARAM;
     }
+#ifndef _WIN32
     return mcp_transport_send(ctx->transport, (const char *)data, size);
+#else
+    /* WIN32 无 mcp_transport.c；transport 恒 NULL 已被上方拦截，防御返回 */
+    return AIRY_ERR_UNKNOWN;
+#endif
 }
 
 static int mcp_adapter_receive(void *context, void **data, size_t *size)
@@ -267,12 +280,16 @@ static int mcp_adapter_receive(void *context, void **data, size_t *size)
     }
     char *msg = NULL;
     size_t msg_len = 0;
+#ifndef _WIN32
     int ret = mcp_transport_receive(ctx->transport, &msg, &msg_len, ctx->config.default_timeout_ms);
     if (ret == 0 && msg) {
         *data = msg;
         *size = msg_len;
     }
     return ret;
+#else
+    return AIRY_ERR_UNKNOWN;
+#endif
 }
 
 static int mcp_adapter_receive_adapter(void *context, void **data, size_t *size,
