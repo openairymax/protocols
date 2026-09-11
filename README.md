@@ -114,7 +114,7 @@ The header carries a structured addressing block (64-byte source + 64-byte targe
 | Payload category | Domain | Example use |
 |------------------|--------|-------------|
 | task | Task scheduling | Task creation, cancellation, completion events |
-| memory | Memory management | Allocation records, pool stats, arena ops |
+| memory | Memory management | Allocation records, pool stats |
 | session | Session lifecycle | Session open/close, context sync |
 | telemetry | Observability | Metrics, traces, logs, health |
 | agent | Agent runtime | Agent messages, skill invocations, A2A/A2T |
