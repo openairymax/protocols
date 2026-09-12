@@ -1,89 +1,83 @@
-# Transformers — 协议消息转换器
+# transformers — 协议消息转换器
 
-**模块路径**: `agentrt/protocols/core/transformers/`
-**版本**: v0.1.0
+**位置：** `protocols/core/transformers/` ｜ **版本：** 0.1.15
+**上游文档：** [protocols 主文档（中文）](../../README_zh.md) ｜ [English](../../README.md)
 
 ## 概述
 
-协议消息转换器（Protocol Transformers）实现了 AgentRT 支持的所有协议之间的双向消息格式转换。转换器以 JSON-RPC 2.0 作为内部统一中间格式，实现与 MCP、A2A、OpenAI API、OpenJiuwen 等协议的互操作。转换规则遵循 `airy_contract/protocol_contract.md` 中定义的协议契约。
+协议消息转换器实现 JSON-RPC 2.0 与 MCP、A2A、OpenAI API、
+OpenJiuwen 之间的双向消息格式转换。JSON-RPC 2.0 是内部统一中间
+格式：任何两种外部协议之间的互通都经由 JSON-RPC 中转，转换时携带
+一份跨调用上下文（代理、会话、追踪与 JSON-RPC ID 计数）。
 
 ## 目录结构
 
 ```
 transformers/
-├── README.md
 ├── include/
 │   └── protocol_transformers.h     # 转换器头文件
-└── src/
-    └── protocol_transformers.c     # 转换器实现
+├── src/
+│   └── protocol_transformers.c     # 转换器实现
+└── README.md                       # 本文件
 ```
 
-## 核心组件
+## 转换上下文
 
-### 转换上下文
+`transform_context_t` 携带：`source_protocol[32]`、`target_protocol[32]`、
+`agent_id[64]`、`session_id[64]`、`trace_id[64]`、`jsonrpc_id_counter`。
+经 `transform_context_create(src, tgt)` 创建、`transform_context_destroy()` 释放。
 
-| 类型 | 说明 |
-|------|------|
-| `transform_context_t` | 转换上下文，携带源/目标协议名称、Agent ID、Session ID、Trace ID、JSON-RPC ID 计数器等元数据 |
+## 转换器清单（13 个）
 
-### JSON-RPC ↔ MCP 转换器
+### JSON-RPC ⇄ MCP
 
 | 函数 | 说明 |
 |------|------|
 | `transformer_jsonrpc_to_mcp_request()` | JSON-RPC `skill.execute` → MCP `tools/call` |
 | `transformer_mcp_to_jsonrpc_response()` | MCP `tools/call` 响应 → JSON-RPC 结果 |
-| `transformer_mcp_tools_list_to_jsonrpc()` | MCP `tools/list` 响应 → JSON-RPC `skill.list` |
+| `transformer_mcp_tools_list_to_jsonrpc()` | MCP `tools/list` 响应 → JSON-RPC 工具列表 |
 
-映射规则：
-- `jsonrpc.method = "skill.execute"` → `mcp.method = "tools/call"`
-- `jsonrpc.params.name` → `mcp.params.name`
-- `jsonrpc.params.arguments` → `mcp.params.arguments`
-- `mcp.result.content[]` → `jsonrpc.result.output`
+字段映射：`params.name` → `params.name`、`params.arguments` →
+`params.arguments`；回程 `result.content[]` → `result.output`。
 
-### JSON-RPC ↔ A2A 转换器
+### JSON-RPC ⇄ A2A
 
 | 函数 | 说明 |
 |------|------|
-| `transformer_jsonrpc_to_a2a_task()` | JSON-RPC `task.submit` → A2A `task/delegate` |
+| `transformer_jsonrpc_to_a2a_task()` | JSON-RPC 任务提交 → A2A 任务 |
 | `transformer_a2a_to_jsonrpc_response()` | A2A task 响应 → JSON-RPC |
-| `transformer_jsonrpc_to_a2a_discover()` | JSON-RPC `agent.discover` → A2A `agent/discover` |
-| `transformer_a2a_agents_to_jsonrpc()` | A2A agent card 列表 → JSON-RPC `agent.list` |
+| `transformer_jsonrpc_to_a2a_discover()` | JSON-RPC 代理发现 → A2A 发现 |
+| `transformer_a2a_agents_to_jsonrpc()` | A2A agent card 列表 → JSON-RPC |
 
-### JSON-RPC ↔ OpenAI API 转换器
-
-| 函数 | 说明 |
-|------|------|
-| `transformer_jsonrpc_to_openai_chat()` | JSON-RPC `llm.complete` → OpenAI `/v1/chat/completions` |
-| `transformer_openai_chat_to_jsonrpc()` | OpenAI chat completions 响应 → JSON-RPC |
-| `transformer_openai_stream_chunk_to_jsonrpc()` | OpenAI streaming chunk → JSON-RPC notification |
-| `transformer_jsonrpc_to_openai_embedding()` | JSON-RPC embedding 请求 → OpenAI `/v1/embeddings` |
-
-映射规则：
-- `jsonrpc.params.messages` → `openai.messages` (role/content)
-- `jsonrpc.params.model` → `openai.model`
-- `jsonrpc.params.temperature` → `openai.temperature`
-- `jsonrpc.params.tools` → `openai.tools/functions[]`
-- `openai.choices[0].message.content` → `jsonrpc.result.content`
-- `openai.usage` → `jsonrpc.result.usage`
-
-### JSON-RPC ↔ OpenJiuwen 转换器
+### JSON-RPC ⇄ OpenAI API
 
 | 函数 | 说明 |
 |------|------|
-| `transformer_jsonrpc_to_openjiuwen()` | JSON-RPC → OpenJiuwen 自定义二进制格式 |
+| `transformer_jsonrpc_to_openai_chat()` | JSON-RPC LLM 补全 → `/v1/chat/completions` |
+| `transformer_openai_chat_to_jsonrpc()` | chat completions 响应 → JSON-RPC |
+| `transformer_openai_stream_chunk_to_jsonrpc()` | streaming chunk → JSON-RPC 通知 |
+| `transformer_jsonrpc_to_openai_embedding()` | JSON-RPC embedding 请求 → `/v1/embeddings` |
+
+字段映射：`params.messages` → `messages`（role/content）、
+`params.model` → `model`、`params.tools` → `tools[]`；回程
+`choices[0].message.content` → `result.content`、`usage` → `result.usage`。
+
+### JSON-RPC ⇄ OpenJiuwen
+
+| 函数 | 说明 |
+|------|------|
+| `transformer_jsonrpc_to_openjiuwen()` | JSON-RPC → OpenJiuwen 二进制格式（头部 + payload + CRC32 校验尾） |
 | `transformer_openjiuwen_to_jsonrpc()` | OpenJiuwen 响应 → JSON-RPC |
 
-OpenJiuwen 二进制协议格式：`Header(24B) + Payload(variable) + CRC32(4B)`
-
-### 通用工具函数
+## 通用工具
 
 | 函数 | 说明 |
 |------|------|
-| `protocol_auto_transform()` | 根据源/目标协议自动选择转换器 |
-| `protocol_validate_transformed()` | 验证转换后消息的完整性 |
-| `protocol_list_transformers()` | 获取所有已注册转换器名称列表 |
+| `protocol_auto_transform(source, target, target_protocol_name)` | 按端点模式自动选择转换器 |
+| `protocol_validate_transformed(msg)` | 验证转换后消息完整性 |
+| `protocol_list_transformers(count)` | 获取全部转换器名称列表 |
 
-### 自动转换端点映射
+`protocol_auto_transform()` 的端点映射：
 
 | 端点模式 | 目标协议 |
 |----------|----------|
@@ -92,47 +86,36 @@ OpenJiuwen 二进制协议格式：`Header(24B) + Payload(variable) + CRC32(4B)`
 | `/v1/chat/(*)` | OpenAI |
 | `/ojw/(*)` | OpenJiuwen |
 
-## 依赖关系
-
-| 依赖 | 来源 | 用途 |
-|------|------|------|
-| `unified_protocol.h` | `protocols/include/` | 统一消息模型与协议类型 |
-| `airy_memory.h` | `commons/utils/compat/` | 内存管理宏 |
-
-## 使用说明
+## 用法
 
 ```c
 #include "protocol_transformers.h"
 
-// 创建转换上下文
 transform_context_t *ctx = transform_context_create("jsonrpc", "mcp");
 
-// JSON-RPC → MCP 转换
 unified_message_t mcp_msg;
 transformer_jsonrpc_to_mcp_request(&jsonrpc_msg, &mcp_msg, ctx);
 
-// MCP → JSON-RPC 转换
-unified_message_t jsonrpc_resp;
-transformer_mcp_to_jsonrpc_response(&mcp_resp, &jsonrpc_resp, ctx);
-
-// 自动转换（根据端点自动选择转换器）
 unified_message_t target;
 protocol_auto_transform(&source, &target, "mcp");
 
-// 验证转换结果
 if (protocol_validate_transformed(&target) == 0) {
-    // 转换成功，使用 target 消息
+    /* 转换成功，使用 target */
 }
 
-// 列出所有转换器
-const char **names = NULL;
 size_t count = 0;
-names = protocol_list_transformers(&count);
+const char **names = protocol_list_transformers(&count);
 
-// 清理
 transform_context_destroy(ctx);
 ```
 
+## 构建
+
+本目录源码无条件编译进 `airy_protocols` 静态库，无独立 CMake 选项；
+构建方式见[主文档「构建」一节](../../README_zh.md#构建)。
+
 ---
 
-© 2025-2026 SPHARX Ltd. All Rights Reserved.
+**许可证：** 本模块采用双许可证 `AGPL-3.0-or-later OR Apache-2.0`，
+您可以任选其一遵守；完整文本见 [LICENSE](../../LICENSE)，版权与商标声明见
+[NOTICE](../../NOTICE)。

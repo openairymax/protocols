@@ -1,74 +1,58 @@
-# Frameworks — 框架适配层
+# frameworks — 框架适配器
 
-**模块路径**: `agentrt/protocols/frameworks/`
-**版本**: v0.1.0
+**位置：** `protocols/frameworks/` ｜ **版本：** 0.1.15
+**上游文档：** [protocols 主文档（中文）](../README_zh.md) ｜ [English](../README.md)
 
 ## 概述
 
-Frameworks 层提供主流 AI 框架与 AgentRT 的集成适配，将框架特有的概念和 API 映射到 AgentRT 的统一协议体系。当前支持 LangChain 和 AutoGen 两大框架，分别覆盖链式执行/工具调用/记忆管理和多代理对话/群聊编排等场景。
+本目录收录将主流 Agent 框架的概念与调用模型映射到统一协议层的框架适配器。
+当前包含两个适配器，各自提供独立的公开头文件、完整 C 实现与配套测试：
+
+| 子目录 | 适配框架 | 覆盖概念 | 公开头文件 |
+|--------|----------|----------|-----------|
+| [`langchain/`](langchain/README.md) | LangChain | Chain / Agent / Tool / Memory / 流式输出 | `langchain_adapter.h` |
+| [`autogen/`](autogen/README.md) | Microsoft AutoGen | 多代理对话 / 群聊 / 代码执行 / 人机协作 | `autogen_adapter.h` |
 
 ## 目录结构
 
 ```
 frameworks/
 ├── README.md
-├── langchain/                          # LangChain 框架适配
-│   ├── include/
-│   │   └── langchain_adapter.h
-│   └── src/
-│       └── langchain_adapter.c
-└── autogen/                            # AutoGen 框架适配
-    ├── include/
-    │   └── autogen_adapter.h
-    └── src/
-        └── autogen_adapter.c
+├── langchain/
+│   ├── include/langchain_adapter.h
+│   └── src/                       # 6 个 .c + langchain_adapter_internal.h
+└── autogen/
+    ├── include/autogen_adapter.h
+    └── src/                       # 4 个 .c + autogen_adapter_internal.h
 ```
 
-## 核心组件
+## 编译门控
 
-| 适配器 | 版本 | 说明 |
-|--------|------|------|
-| **LangChain** | 1.0.0 | LangChain 框架适配器，支持 Chain/Agent/Tool/Memory/RAG/Streaming |
-| **AutoGen** | 1.0.0 | AutoGen 多代理框架适配器，支持多代理对话/群聊/代码执行/人机协作 |
+两个适配器均由独立 CMake 选项门控，默认启用；关闭后对应源码不参与编译，
+头文件亦不安装。
 
-## 框架概念映射
+| CMake 选项 | 默认值 | 门控目标 |
+|------------|--------|----------|
+| `PROTOCOLS_ENABLE_LANGCHAIN` | `ON` | `langchain/` |
+| `PROTOCOLS_ENABLE_AUTOGEN` | `ON` | `autogen/` |
 
-### LangChain → AgentRT
-
-| LangChain 概念 | AgentRT 映射 |
-|----------------|-------------|
-| Chain | AgentRT Task Pipeline |
-| Agent | AgentRT Agent + Protocol Session |
-| Tool | AgentRT MCP/OpenAI tool interface |
-| LLM | AgentRT LLM Daemon via protocol |
-| Memory | AgentRT MemoryRovol (L1-L4) |
-| Retriever | AgentRT memory.search protocol |
-
-### AutoGen → AgentRT
-
-| AutoGen 概念 | AgentRT 映射 |
-|-------------|-------------|
-| ConversableAgent | AgentRT Agent + Protocol Session |
-| GroupChat | AgentRT A2A multi-agent coordination |
-| UserProxyAgent | AgentRT human-in-the-loop interface |
-| CodeExecutor | AgentRT tool execution sandbox |
-| AssistantAgent | LLM-backed agent via protocol |
-| ChatCompletionClient | Protocol-based LLM client |
-
-## 构建选项
-
-| CMake 选项 | 默认值 | 说明 |
-|------------|--------|------|
-| `PROTOCOLS_ENABLE_LANGCHAIN` | ON | 启用 LangChain 框架适配器 |
-| `PROTOCOLS_ENABLE_AUTOGEN` | ON | 启用 AutoGen 框架适配器 |
-
-## 依赖关系
+## 依赖
 
 | 依赖 | 来源 | 用途 |
 |------|------|------|
-| `airy_protocol_interface.h` | `protocols/include/` | 适配器虚表与接口定义 |
+| `airy_protocol_interface.h` | `protocols/include/` | 协议适配器接口（`proto_adapter_t` 虚表） |
 | `unified_protocol.h` | `protocols/include/` | 统一消息模型 |
+
+两个适配器分别通过 `langchain_get_protocol_adapter()` / `autogen_get_protocol_adapter()`
+向协议注册表暴露统一的 `proto_adapter_t` 实例。
+
+## 相关
+
+- 各适配器的常量、枚举、API 与用法示例见对应子目录 README。
+- 构建方式与选项总表见[主文档「构建」一节](../README_zh.md#构建)。
 
 ---
 
-© 2025-2026 SPHARX Ltd. All Rights Reserved.
+**许可证：** 本模块采用双许可证 `AGPL-3.0-or-later OR Apache-2.0`，
+您可以任选其一遵守；完整文本见 [LICENSE](../LICENSE)，版权与商标声明见
+[NOTICE](../NOTICE)。

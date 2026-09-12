@@ -1,98 +1,125 @@
-# MCP v1.0 Adapter — Model Context Protocol 协议适配器
+# mcp — Model Context Protocol 适配三件套
 
-> **模块路径**: `agentrt/protocols/standards/mcp/` | **版本**: v1.0.0
+**位置：** `protocols/standards/mcp/` ｜ **版本：** 0.1.15
+**上游文档：** [protocols 主文档（中文）](../../README_zh.md) ｜ [English](../../README.md)
 
 ## 概述
 
-`mcp/` 是 AgentRT 协议栈的 MCP v1.0（Model Context Protocol）协议适配器，实现 MCP 规范定义的工具发现、调用、资源访问、采样等核心能力。MCP 是 Anthropic 提出的开放标准协议，用于 AI 模型与外部工具/数据源之间的上下文交互，在 AgentRT 中承担 Agent-to-Tool（A2T）协议的角色。
+`mcp/` 目录包含三个相互衔接的组件：
 
-### 核心能力
-
-| 能力 | 标志 | 说明 |
-|------|------|------|
-| **Tools** | `MCP_CAP_TOOLS` | tools/list + tools/call — 工具发现与调用（最多 1024 个工具） |
-| **Resources** | `MCP_CAP_RESOURCES` | resources/list + resources/read + resources/templates — 资源管理（最多 512 个资源） |
-| **Prompts** | `MCP_CAP_PROMPTS` | prompts/list + prompts/get — 提示模板管理（最多 256 个模板） |
-| **Sampling** | `MCP_CAP_SAMPLING` | sampling/createMessage — LLM 采样请求 |
-| **Logging** | `MCP_CAP_LOGGING` | logging/setLogLevel — 日志级别控制 |
-| **Completion** | `MCP_CAP_COMPLETION` | completion/complete — 自动补全 |
+1. **MCP v1 适配器**（`mcp_v1_*`）：服务端角色——对外暴露工具、资源、
+   提示模板，并处理 `tools/call`、`sampling/createMessage` 等请求；
+2. **MCP 客户端**（`mcp_client_*`）：客户端角色——连接并消费**外部**
+   MCP server 的工具（stdio 子进程或 HTTP 两种方式）；
+3. **传输抽象层**（`mcp_transport_*`）：为适配器提供统一的
+   STDIO / HTTP+SSE / Streamable HTTP 消息通道。
 
 ## 目录结构
 
 ```
 mcp/
 ├── include/
-│   ├── mcp_v1_adapter.h             # 适配器接口（工具/资源/提示/采样/日志/完成）
-│   └── mcp_transport.h              # 传输层抽象（HTTP/WS/stdio）
-└── src/
-    ├── mcp_v1_adapter.c             # 适配器实现
-    └── mcp_transport.c              # 传输层实现
+│   ├── mcp_v1_adapter.h       # 适配器接口
+│   ├── mcp_client.h           # 客户端接口
+│   └── mcp_transport.h        # 传输抽象接口
+├── src/
+│   ├── mcp_v1_adapter.c · mcp_v1_adapter_cb.c · mcp_v1_adapter_route.c
+│   ├── mcp_v1_adapter_prompt.c · mcp_v1_adapter_sampling.c
+│   ├── mcp_v1_adapter_tool.c · mcp_v1_adapter_stream.c · mcp_v1_adapter_resource.c
+│   ├── mcp_client.c · mcp_client_tool.c · mcp_client_rpc.c
+│   ├── mcp_client_http.c · mcp_client_frame.c · mcp_client_stdio.c
+│   └── mcp_transport.c
+└── README.md
 ```
 
-## 核心数据结构
+## MCP v1 适配器
 
-### 内容类型
+### 常量与规模
 
-| 类型 | 说明 |
+| 常量 | 值 |
+|------|-----|
+| `MCP_V1_VERSION` | `"1.0.0"` |
+| 工具 / 资源 / 提示上限 | 1024 / 512 / 256 |
+| 单工具参数上限 / Schema 嵌套深度 | 32 / 16 |
+| 默认超时 / 消息上限 | 30s / 10 MB |
+
+能力标志 6 项（工具、资源、提示、采样、日志、补全）；内容类型 4 种
+（text / image / resource / embedded）；日志级别 8 级（对齐 syslog，
+`MCP_LOG_DEBUG` … `MCP_LOG_EMERGENCY`）。
+
+### API 摘要
+
+| 分组 | 函数 |
 |------|------|
-| `MCP_CONTENT_TEXT` | 文本内容 |
-| `MCP_CONTENT_IMAGE` | 图像内容 |
-| `MCP_CONTENT_RESOURCE` | 资源引用 |
-| `MCP_CONTENT_EMBEDDED` | 嵌入式资源 |
+| 生命周期 | `mcp_v1_config_default()`、`mcp_v1_context_create(config)` / `mcp_v1_context_destroy()` |
+| 注册 | `mcp_v1_register_tool()` / `register_resource()` / `register_resource_template()` / `register_prompt()` |
+| 回调挂接 | `mcp_v1_set_sampling_handler()` / `set_completion_handler()` / `set_progress_callback()` / `set_log_callback()` / `set_log_level()` |
+| 请求处理 | `mcp_v1_handle_tools_list()` / `tools_call()` / `resources_list()` / `resources_read()` / `resources_templates()` / `prompts_list()` / `prompts_get()` / `sampling()` / `completion()` |
+| 流式 | `mcp_v1_stream_config()` / `handle_tools_call_streaming()` / `handle_sampling_streaming()`、`mcp_stream_event_init()` / `mcp_stream_event_type_string()` |
+| 通知 | `mcp_v1_send_progress()`、`mcp_v1_notify_cancelled()` |
+| 统一入口 | `mcp_v1_route_request(method, params_json, ...)` |
+| 查询 | `mcp_v1_get_adapter()`（统一适配器接口）、`get_tool/resource/prompt_count()`、`get_capabilities()` |
+| 传输绑定 | `mcp_v1_set_transport(ctx, transport)` / `mcp_v1_get_transport()` |
+| 释放 | `mcp_content_destroy()`、`mcp_sampling_result_destroy()`、`mcp_completion_result_destroy()` |
 
-### 日志级别（8 级，对齐 syslog）
+响应以 JSON 字符串返回（`char **response_json`），由调用方释放。
 
-| 级别 | 说明 |
+## MCP 客户端
+
+面向「gateway 消费外部 MCP server 工具」的场景。客户端协议版本为
+MCP `"2024-11-05"`，默认超时 60s，消息上限 10 MB。
+
+| 传输 | 枚举值 | 机制 |
+|------|--------|------|
+| stdio | `MCP_CLIENT_TRANSPORT_STDIO` | fork + exec 外部 server 进程，stdin/stdout 承载 JSON-RPC 2.0；LSP 风格 `Content-Length` 帧，状态机处理粘帧/拆帧 |
+| http | `MCP_CLIENT_TRANSPORT_HTTP` | 基本 Streamable HTTP：每请求一次 POST，`Accept: application/json, text/event-stream` |
+
+另有 `MCP_CLIENT_TRANSPORT_NONE`（未连接）。API：
+
+| 函数 | 说明 |
 |------|------|
-| `MCP_LOG_DEBUG` | 调试 |
-| `MCP_LOG_INFO` | 信息 |
-| `MCP_LOG_NOTICE` | 注意 |
-| `MCP_LOG_WARNING` | 警告 |
-| `MCP_LOG_ERROR` | 错误 |
-| `MCP_LOG_CRITICAL` | 严重 |
-| `MCP_LOG_ALERT` | 告警 |
-| `MCP_LOG_EMERGENCY` | 紧急 |
+| `mcp_client_connect_stdio(name, command, argv[])` | 拉起外部 MCP server 并握手 |
+| `mcp_client_connect_http(name, url)` | 连接 HTTP 端点的 MCP server |
+| `mcp_client_disconnect()` | 断开连接 |
+| `mcp_client_list_tools()` | 枚举远端工具 |
+| `mcp_client_call_tool()` | 调用远端工具 |
+| `mcp_client_extract_text()` | 从工具结果提取文本内容 |
+| `mcp_client_tool_list_free()` | 释放工具列表 |
+| `mcp_client_transport_string()` | 传输类型转字符串 |
 
-### 传输层（mcp_transport）
+错误码基于 `-2000`（进程退出、RPC 错误、连接失败、未连接、帧错误等）。
 
-MCP 适配器支持三种传输方式：
+> 客户端源码使用 POSIX 子进程/管道模型，**仅在非 Windows 平台编译**。
 
-| 传输 | 说明 |
-|------|------|
-| HTTP | 标准 HTTP REST API |
-| WebSocket | 双向实时通信 |
-| Stdio | 标准输入/输出（本地进程通信） |
+## 传输抽象层
 
-## 上游依赖
+| 类型枚举 | 值 |
+|----------|-----|
+| `MCP_TRANSPORT_STDIO` | 0（配置 `input_fd` / `output_fd`） |
+| `MCP_TRANSPORT_HTTP_SSE` | 1 |
+| `MCP_TRANSPORT_STREAMABLE_HTTP` | 2 |
 
-| 依赖 | 来源 | 用途 |
-|------|------|------|
-| **unified_protocol.h** | `protocols/include/` | 统一消息模型 |
-| **airy_protocol_interface.h** | `protocols/include/` | 适配器虚表与接口定义 |
-| cJSON | 外部 | JSON 解析 |
-| libcurl | 外部 | HTTP 客户端 |
+HTTP 配置含 `base_url`、`api_key`、`sse_endpoint`、`post_endpoint`、
+重连间隔与最大重连次数。状态机：`DISCONNECTED` / `CONNECTING` /
+`CONNECTED` / `ERROR`。API：`mcp_transport_config_stdio_default()`、
+`mcp_transport_config_http_default(base_url)`、`create()` / `destroy()`、
+`start()` / `stop()`、`send()` / `receive()`、
+`mcp_transport_state_string()` / `type_string()`。
 
-## 下游消费者
+> 传输层由 `PROTOCOLS_ENABLE_MCP_TRANSPORT` 门控，Windows 平台强制关闭。
 
-| 消费者 | 使用方式 |
-|--------|----------|
-| **gateway_d** | 通过 `gateway_mcp_server` 处理 MCP 客户端请求，暴露 AgentRT 工具和资源 |
-| **tool_d** | 通过 MCP 协议将工具注册暴露给外部 MCP 客户端 |
-| **llm_d** | 通过 MCP sampling 能力请求 LLM 采样 |
+## 构建门控
 
-## 构建
+| 组件 | CMake 条件 |
+|------|-----------|
+| MCP v1 适配器（8 文件） | `PROTOCOLS_ENABLE_MCP`（默认 `ON`） |
+| MCP 客户端（6 文件） | 非 Windows 平台 |
+| MCP 传输层（1 文件） | `PROTOCOLS_ENABLE_MCP_TRANSPORT`（默认 `ON`，Windows 强制 `OFF`） |
 
-默认编译，无独立 CMake 选项。
-
-```bash
-cmake -S . -B build
-cmake --build build --target airy_protocols
-```
-
-## 许可证
-
-Copyright (c) 2025-2026 SPHARX Ltd. All Rights Reserved. 双许可证：AGPL-3.0-or-later OR Apache-2.0。
+`tests/test_mcp_adapter.c` 覆盖适配器行为（仅 `BUILD_TESTS=ON` 且非 Windows）。
 
 ---
 
-> **文档结束** | 1.0.0（MCP v1.0 协议适配器）
+**许可证：** 本模块采用双许可证 `AGPL-3.0-or-later OR Apache-2.0`，
+您可以任选其一遵守；完整文本见 [LICENSE](../../LICENSE)，版权与商标声明见
+[NOTICE](../../NOTICE)。
