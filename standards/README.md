@@ -1,92 +1,66 @@
-# Standards — 标准协议适配层
+# standards — 开放标准协议适配层
 
-> **模块路径**: `agentrt/protocols/standards/` | **版本**: v0.1.0
+**位置：** `protocols/standards/` ｜ **版本：** 0.1.15
+**上游文档：** [protocols 主文档（中文）](../README_zh.md) ｜ [English](../README.md)
 
 ## 概述
 
-`standards/` 是 AgentRT 协议栈的标准协议适配层，包含三个开放标准协议适配器，负责将外部标准协议映射到 AgentRT 的统一协议体系。与 `integrations/`（平台集成适配）不同，`standards/` 实现的是行业通用开放标准。
+`standards/` 收录三个开放标准协议适配器，把行业标准协议映射到
+AgentRT 统一协议体系：
 
-### 支持的协议
-
-| 协议 | 目录 | 版本 | 类型 | 说明 |
-|------|------|------|------|------|
-| **A2A** | `a2a/` | v0.3.0 | Agent-to-Agent | Google 提出的智能体间通信标准 |
-| **MCP** | `mcp/` | v1.0.0 | Agent-to-Tool | Anthropic 提出的模型上下文协议 |
-| **AGNTCY ACP** | `agntcy/` | v0.1.0 | Agent Communication | 智能体通信协议（注册/发现/通道/消息/编排） |
+| 协议 | 目录 | 适配版本 | 定位 | 说明 |
+|------|------|----------|------|------|
+| MCP | [`mcp/`](mcp/README.md) | v1.0.0 | Agent ↔ Tool/数据 | Model Context Protocol：工具、资源、提示、采样 |
+| A2A | [`a2a/`](a2a/README.md) | v0.3.0 | Agent ↔ Agent | 智能体互访：Agent Card、任务、消息、协商 |
+| AGNTCY ACP | [`agntcy/`](agntcy/README.md) | v0.1.0 | Agent ↔ Agent | 智能体连接协议：发现、频道、广播、编排、确认 |
 
 ## 目录结构
 
 ```
 standards/
-├── README.md                         # 本文件
-├── a2a/                              # A2A v0.3.0 协议适配器
+├── a2a/
 │   ├── include/a2a_v03_adapter.h
-│   └── src/a2a_v03_adapter.c
-├── mcp/                              # MCP v1.0 协议适配器
-│   ├── include/mcp_v1_adapter.h
-│   ├── include/mcp_transport.h
-│   ├── src/mcp_v1_adapter.c
-│   └── src/mcp_transport.c
-└── agntcy/                           # AGNTCY ACP 协议适配器
+│   └── src/  a2a_v03_adapter.c · _task.c · _auth.c · _cb.c · _agent.c · _msg.c
+├── mcp/
+│   ├── include/  mcp_v1_adapter.h · mcp_client.h · mcp_transport.h
+│   └── src/  适配器 8 文件 · 客户端 6 文件 · 传输层 1 文件
+└── agntcy/
     ├── include/agntcy_acp_adapter.h
     └── src/agntcy_acp_adapter.c
 ```
 
-## 协议对比
+完整文件清单见各子目录 README。
 
-| 维度 | A2A | MCP | AGNTCY ACP |
-|------|-----|-----|------------|
-| **通信对象** | Agent ↔ Agent | Agent ↔ Tool/Data | Agent ↔ Agent |
-| **核心原语** | Agent Card / Task / Message | Tool / Resource / Prompt / Sampling | Agent Card / Channel / Message / Task / ACK |
-| **安全模型** | Token + AES-256-GCM | 传输层 TLS | Mutual TLS + Token |
-| **最大 Agent** | 256 | N/A | 512 |
-| **最大工具** | N/A | 1024 | N/A |
-| **最大任务** | 4096 | N/A | 2048 |
-| **消息大小** | 16 MB | 10 MB | 8 MB |
-| **默认超时** | 60s | 30s | 30s |
+## 规模与默认参数对比
 
-## 架构定位
+| 维度 | MCP v1 | A2A v0.3 | AGNTCY ACP |
+|------|--------|----------|------------|
+| 默认超时 | 30s | 60s | 30s |
+| 消息上限 | 10 MB | 16 MB | 8 MB |
+| 容量 | 工具 1024 / 资源 512 / 提示 256 | Agent 256 / 任务 4096 | Agent 512 / 任务 2048 / 频道 256 |
+| 安全 | 由承载传输决定 | Token 认证 + AES-256-GCM 签名 | 能力标志 + ACK 协商 |
 
-```
-协议栈分层:
-  integrations/  ← 平台集成适配（OpenAI / Claude / OpenJiuwen / OpenClaw / 国内生态）
-  ★ standards/  ★  ← 开放标准协议适配（A2A / MCP / AGNTCY ACP）
-  core/           ← 核心路由 / 扩展框架 / 转换 / 注册表
-  common/         ← 统一协议接口 / 消息模型
-  include/        ← 顶层公共接口（unified_protocol.h / airy_protocol_interface.h）
-```
+## 依赖与消费者
 
-## 上游依赖
+上游依赖与 `core/`、`common/` 相同（`unified_protocol.h`、
+`airy_protocol_interface.h`、commons）；HTTP/JSON 路径在配置期检测到
+cURL、cJSON 时启用。下游主要为 [gateway](https://atomgit.com/openairymax/gateway)：
+对外 MCP/A2A 兼容端点由这些适配器与 JSON-RPC 枢纽转换协同完成。
 
-| 依赖 | 来源 | 用途 |
-|------|------|------|
-| **unified_protocol.h** | `protocols/include/` | 统一消息模型 |
-| **airy_protocol_interface.h** | `protocols/include/` | 适配器虚表与接口定义 |
-| cJSON | 外部 | JSON 解析 |
-| libcurl | 外部 | HTTP 客户端 |
+## 构建门控
 
-## 下游消费者
+| 组件 | 门控 |
+|------|------|
+| A2A 适配器 | 源码无条件编译；`PROTOCOLS_ENABLE_A2A` 为功能标记 |
+| MCP v1 适配器 | `PROTOCOLS_ENABLE_MCP`（默认 `ON`） |
+| MCP 客户端 | 仅非 Windows 平台编译（POSIX 子进程/管道模型） |
+| MCP 传输层 | `PROTOCOLS_ENABLE_MCP_TRANSPORT`（Windows 强制 `OFF`） |
+| AGNTCY ACP | `PROTOCOLS_ENABLE_AGNTCY`（默认 `ON`） |
 
-| 消费者 | 使用方式 |
-|--------|----------|
-| **gateway_d** | 通过 `gateway_a2a_handler` / `gateway_mcp_server` 处理标准协议请求 |
-| **channel_d** | 通过 A2A / AGNTCY 适配器管理 Agent 间通信通道 |
-| **tool_d** | 通过 MCP 协议暴露工具注册接口 |
-| **sched_d** | 通过 A2A / AGNTCY 任务委派机制进行跨 Agent 任务调度 |
-
-## 构建
-
-全部三个协议适配器默认编译，编译为 `libairy_protocols` 的一部分。
-
-```bash
-cmake -S . -B build
-cmake --build build --target airy_protocols
-```
-
-## 许可证
-
-Copyright (c) 2025-2026 SPHARX Ltd. All Rights Reserved. 双许可证：AGPL-3.0-or-later OR Apache-2.0。
+详见[主文档「构建」一节](../README_zh.md#构建)。
 
 ---
 
-> **文档结束** | 0.1.0（标准协议适配层：A2A + MCP + AGNTCY ACP）
+**许可证：** 本模块采用双许可证 `AGPL-3.0-or-later OR Apache-2.0`，
+您可以任选其一遵守；完整文本见 [LICENSE](../LICENSE)，版权与商标声明见
+[NOTICE](../NOTICE)。

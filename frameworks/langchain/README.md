@@ -1,20 +1,14 @@
-# LangChain — 框架适配器
+# langchain — LangChain 框架适配器
 
-**模块路径**: `agentrt/protocols/frameworks/langchain/`
-**版本**: v0.1.0
+**位置：** `protocols/frameworks/langchain/` ｜ **版本：** 0.1.15
+**上游文档：** [protocols 主文档（中文）](../../README_zh.md) ｜ [English](../../README.md)
 
 ## 概述
 
-LangChain 框架适配器实现 AgentRT 与 LangChain 生态的完整集成。将 LangChain 的 Chain、Agent、Tool、Memory、Retriever 等核心概念映射到 AgentRT 的统一协议体系。
-
-支持的 LangChain 组件：
-
-1. **LCEL (LangChain Expression Language)** — 链式执行
-2. **AgentExecutor** — 多步推理代理
-3. **Tool Calling** — 原生工具调用
-4. **RAG** — 检索增强生成
-5. **ConversationBufferMemory** — 对话记忆
-6. **StreamingIterator** — 流式输出
+本目录实现 LangChain 框架适配器：将 LangChain 的 Chain、Agent、Tool、Memory
+等核心对象模型映射到统一协议层，支持链式执行（含流式）、多步推理代理运行、
+工具注册与调用、对话记忆管理，以及 LLM 调用、追踪、流式输出等回调挂接。
+适配器同时以 `proto_adapter_t` 虚表形式接入协议注册表。
 
 ## 目录结构
 
@@ -22,128 +16,168 @@ LangChain 框架适配器实现 AgentRT 与 LangChain 生态的完整集成。�
 langchain/
 ├── README.md
 ├── include/
-│   └── langchain_adapter.h         # LangChain 适配器头文件
+│   └── langchain_adapter.h            # 公开头文件
 └── src/
-    └── langchain_adapter.c         # LangChain 适配器实现
+    ├── langchain_adapter.c            # 适配器生命周期与配置
+    ├── langchain_adapter_chain.c      # Chain 创建/编译/执行
+    ├── langchain_adapter_agent.c      # Agent 创建与运行
+    ├── langchain_adapter_tool.c       # Tool 注册与调用
+    ├── langchain_adapter_memory.c     # Memory 创建与读写
+    ├── langchain_adapter_proto.c      # proto_adapter_t 虚表接入
+    └── langchain_adapter_internal.h   # 内部共享声明
 ```
 
-## 核心组件
+配套测试：`tests/test_langchain_adapter.c`。
 
-### 数据类型
-
-| 类型 | 说明 |
-|------|------|
-| `langchain_component_type_t` | 组件类型枚举（LLM / CHAT_MODEL / EMBEDDING_MODEL / TOOL / CHAIN / AGENT / MEMORY / RETRIEVER / OUTPUT_PARSER） |
-| `langchain_chain_type_t` | Chain 类型枚举（SEQUENTIAL / ROUTER / MAP_REDUCE / PARALLEL / CONDITIONAL / CUSTOM） |
-| `langchain_agent_type_t` | Agent 类型枚举（REACT / PLAN_AND_EXECUTE / OPENAI_FUNCTIONS / STRUCTURED_CHAT / XML） |
-| `langchain_memory_type_t` | Memory 类型枚举（BUFFER / SUMMARY / WINDOW / TOKEN / ENTITY / KG） |
-| `langchain_chain_def_t` | Chain 定义（ID、名称、类型、步骤 ID 列表、编译标志） |
-| `langchain_chain_instance_t` | Chain 实例（含编译后的可执行对象、输入/输出 Schema） |
-| `langchain_agent_def_t` | Agent 定义（ID、名称、类型、LLM ID、工具列表、记忆 ID、最大迭代次数） |
-| `langchain_tool_def_t` | Tool 定义（ID、名称、描述、函数 Schema、类型、异步标志） |
-| `langchain_memory_t` | Memory 实例（ID、类型、最大条目数、消息列表、摘要） |
-| `langchain_execution_result_t` | 执行结果（Chain ID、输入/输出 JSON、耗时、步骤数、中间结果） |
-| `langchain_config_t` | 适配器配置（API URL/Key、超时、流式/追踪/缓存开关、默认模型） |
-| `langchain_adapter_context_t` | 适配器上下文（配置、Chain/Tool/Agent/Memory 实例数组、回调函数、统计） |
-
-### 常量限制
+## 常量
 
 | 常量 | 值 | 说明 |
 |------|-----|------|
-| `LANGCHAIN_MAX_CHAINS` | 64 | 最大 Chain 数量 |
-| `LANGCHAIN_MAX_TOOLS` | 128 | 最大 Tool 数量 |
-| `LANGCHAIN_MAX_AGENTS` | 32 | 最大 Agent 数量 |
-| `LANGCHAIN_MAX_MEMORY_ENTRIES` | 1024 | 最大 Memory 条目数 |
-| `LANGCHAIN_DEFAULT_TIMEOUT_MS` | 60000 | 默认超时 60s |
+| `LANGCHAIN_ADAPTER_VERSION` | `"1.0.0"` | 适配器版本字符串 |
+| `LANGCHAIN_MAX_CHAINS` | 64 | 上下文内 Chain 槽位上限 |
+| `LANGCHAIN_MAX_TOOLS` | 128 | 上下文内 Tool 槽位上限 |
+| `LANGCHAIN_MAX_AGENTS` | 32 | 上下文内 Agent 槽位上限 |
+| `LANGCHAIN_MAX_MEMORY_ENTRIES` | 1024 | 上下文内 Memory 实例上限 |
+| `LANGCHAIN_DEFAULT_TIMEOUT_MS` | 60000 | 默认超时（毫秒） |
 
-### 核心 API
+## 枚举
+
+组件类型 `langchain_component_type_t`：
+`LC_TYPE_LLM`、`LC_TYPE_CHAT_MODEL`、`LC_TYPE_EMBEDDING_MODEL`、`LC_TYPE_TOOL`、
+`LC_TYPE_CHAIN`、`LC_TYPE_AGENT`、`LC_TYPE_MEMORY`、`LC_TYPE_RETRIEVER`、
+`LC_TYPE_OUTPUT_PARSER`。
+
+Chain 类型 `langchain_chain_type_t`：
+`LC_CHAIN_SEQUENTIAL`、`LC_CHAIN_ROUTER`、`LC_CHAIN_MAP_REDUCE`、
+`LC_CHAIN_PARALLEL`、`LC_CHAIN_CONDITIONAL`、`LC_CHAIN_CUSTOM`。
+
+Agent 类型 `langchain_agent_type_t`：
+`LC_AGENT_REACT`、`LC_AGENT_PLAN_AND_EXECUTE`、`LC_AGENT_OPENAI_FUNCTIONS`、
+`LC_AGENT_STRUCTURED_CHAT`、`LC_AGENT_XML`。
+
+Memory 类型 `langchain_memory_type_t`：
+`LC_MEM_BUFFER`、`LC_MEM_SUMMARY`、`LC_MEM_WINDOW`、`LC_MEM_TOKEN`、
+`LC_MEM_ENTITY`、`LC_MEM_KG`。
+
+## 主要类型
+
+| 类型 | 说明 |
+|------|------|
+| `langchain_config_t` | 适配器配置（base URL、API Key、超时、流式/追踪/缓存开关、默认模型等） |
+| `langchain_adapter_context_t` | 适配器上下文（公开结构，内含固定容量的 Chain/Tool/Agent/Memory 数组、回调与统计字段） |
+| `langchain_chain_def_t` / `langchain_chain_instance_t` | Chain 定义与编译后的实例 |
+| `langchain_agent_def_t` / `langchain_agent_instance_t` | Agent 定义与运行实例 |
+| `langchain_tool_def_t` | Tool 定义（名称、描述、JSON Schema、异步标志） |
+| `langchain_memory_t` | Memory 实例（类型、条目上限、消息列表、摘要） |
+| `langchain_execution_result_t` | 执行结果（输入/输出 JSON、耗时、步骤数、中间结果） |
+| `langchain_tool_executor_fn` | 工具执行回调：`int (*)(tool_name, input_json, char **output_json, user_data)` |
+| `langchain_streaming_fn` / `langchain_trace_fn` / `langchain_llm_callback_fn` | 流式分块、追踪事件、LLM 调用回调 |
+
+## 核心 API
+
+### 生命周期
 
 | 函数 | 说明 |
 |------|------|
-| `langchain_config_default()` | 获取默认配置 |
-| `langchain_adapter_create()` / `langchain_adapter_destroy()` | 创建/销毁适配器上下文 |
-| `langchain_register_tool()` | 注册自定义工具（含执行器回调） |
-| `langchain_list_tools()` | 列出已注册工具 |
-| `langchain_create_chain()` | 创建 Chain 实例 |
-| `langchain_execute_chain()` | 执行 Chain（同步） |
-| `langchain_execute_chain_streaming()` | 执行 Chain（流式） |
-| `langchain_create_agent()` | 创建 Agent |
-| `langchain_agent_run()` | 运行 Agent |
-| `langchain_create_memory()` | 创建 Memory |
-| `langchain_memory_add()` / `langchain_memory_get()` | 添加/获取 Memory 条目 |
-| `langchain_set_streaming_handler()` | 设置流式输出回调 |
-| `langchain_set_trace_handler()` | 设置追踪回调 |
-| `langchain_set_llm_callback()` | 设置 LLM 调用回调 |
-| `langchain_get_statistics()` | 获取使用统计 |
-| `langchain_get_protocol_adapter()` | 获取协议适配器实例 |
+| `langchain_config_default()` | 返回默认配置（按值返回） |
+| `langchain_adapter_create(config)` | 创建适配器上下文 |
+| `langchain_adapter_destroy(ctx)` | 销毁适配器上下文 |
+| `langchain_adapter_is_initialized(ctx)` | 查询初始化状态 |
+| `langchain_adapter_version()` | 返回版本字符串 |
 
-## 依赖关系
+### Chain / Agent / Tool / Memory
 
-| 依赖 | 来源 | 用途 |
-|------|------|------|
-| `airy_protocol_interface.h` | `protocols/include/` | 适配器虚表与接口定义 |
-| `unified_protocol.h` | `protocols/include/` | 统一消息模型 |
+| 函数 | 说明 |
+|------|------|
+| `langchain_create_chain(ctx, definition, instance)` | 按定义创建 Chain 实例（输出结构体） |
+| `langchain_execute_chain(ctx, chain_id, input_json, result)` | 同步执行 Chain |
+| `langchain_execute_chain_streaming(ctx, chain_id, input_json, stream_handler, user_data)` | 流式执行 Chain |
+| `langchain_create_agent(ctx, definition, out_agent_id)` | 创建 Agent，输出 ID 写入调用方缓冲 |
+| `langchain_agent_run(ctx, agent_id, task_input, result)` | 运行 Agent |
+| `langchain_register_tool(ctx, tool, executor, user_data)` | 注册工具及执行回调 |
+| `langchain_list_tools(ctx, tools, count)` | 列出已注册工具 |
+| `langchain_create_memory(ctx, type, max_entries, out_memory)` | 创建 Memory 实例 |
+| `langchain_memory_add(ctx, memory_id, role, content)` | 追加记忆条目 |
+| `langchain_memory_get(ctx, memory_id, snapshot)` | 获取 Memory 快照 |
 
-## 使用说明
+### 回调与统计
+
+| 函数 | 说明 |
+|------|------|
+| `langchain_set_streaming_handler(ctx, handler, user_data)` | 设置流式输出回调 |
+| `langchain_set_trace_handler(ctx, handler, user_data)` | 设置追踪回调 |
+| `langchain_set_llm_callback(ctx, callback, user_data)` | 设置 LLM 调用回调 |
+| `langchain_get_statistics(ctx, stats_json, buffer_size)` | 导出 JSON 格式统计 |
+
+### 协议接入与实体释放
+
+| 函数 | 说明 |
+|------|------|
+| `langchain_get_protocol_adapter()` | 返回 `const proto_adapter_t *` 适配器实例 |
+| `langchain_tool_def_destroy` / `langchain_chain_def_destroy` / `langchain_chain_instance_destroy` / `langchain_agent_def_destroy` / `langchain_memory_destroy` / `langchain_execution_result_destroy` | 释放对应结构体内部资源 |
+
+## 用法示例
 
 ```c
 #include "langchain_adapter.h"
 
-// 创建适配器
+static int calculator_executor(const char *tool_name, const char *input_json,
+                               char **output_json, void *user_data)
+{
+    *output_json = strdup("{\"result\":42}");
+    return 0;
+}
+
 langchain_config_t cfg = langchain_config_default();
 langchain_adapter_context_t *ctx = langchain_adapter_create(&cfg);
 
-// 注册工具
+/* 注册工具 */
 langchain_tool_def_t tool = {
     .name = "calculator",
     .description = "Performs arithmetic calculations",
-    .function_schema_json = "{\"type\":\"object\",...}",
+    .function_schema_json = "{\"type\":\"object\"}",
     .tool_type = LC_TYPE_TOOL,
 };
-langchain_register_tool(ctx, &tool, my_tool_executor, NULL);
+langchain_register_tool(ctx, &tool, calculator_executor, NULL);
 
-// 创建 Chain
-langchain_chain_def_t chain_def = {
+/* 创建并执行 Chain */
+char *steps[] = {"retriever", "llm"};
+langchain_chain_def_t cdef = {
     .name = "qa-chain",
     .type = LC_CHAIN_SEQUENTIAL,
-    .step_ids = (char*[]){"retriever", "llm"},
+    .step_ids = steps,
     .step_count = 2,
 };
-langchain_chain_instance_t chain;
-langchain_create_chain(ctx, &chain_def, &chain);
+langchain_chain_instance_t chain = {0};
+langchain_create_chain(ctx, &cdef, &chain);
 
-// 执行 Chain
-langchain_execution_result_t result;
+langchain_execution_result_t result = {0};
 langchain_execute_chain(ctx, chain.id, "{\"query\":\"What is AI?\"}", &result);
 
-// 创建 Agent
-langchain_agent_def_t agent_def = {
-    .name = "research-agent",
-    .type = LC_AGENT_REACT,
-    .llm_id = "default-llm",
-    .max_iterations = 10,
-};
-char agent_id[64];
-langchain_create_agent(ctx, &agent_def, agent_id);
+/* 创建 Memory 并写入对话 */
+langchain_memory_t mem = {0};
+langchain_create_memory(ctx, LC_MEM_BUFFER, 100, &mem);
+langchain_memory_add(ctx, mem.id, "user", "Hello!");
 
-// 运行 Agent
-langchain_execution_result_t agent_result;
-langchain_agent_run(ctx, agent_id, "Research quantum computing", &agent_result);
-
-// 创建 Memory
-langchain_memory_t memory;
-langchain_create_memory(ctx, LC_MEM_BUFFER, 100, &memory);
-langchain_memory_add(ctx, memory.id, "user", "Hello!");
-langchain_memory_add(ctx, memory.id, "assistant", "Hi! How can I help?");
-
-// 流式执行
+/* 挂接流式回调 */
 langchain_set_streaming_handler(ctx, my_stream_handler, NULL);
 
-// 清理
+/* 接入统一协议注册表 */
+const proto_adapter_t *adapter = langchain_get_protocol_adapter();
+
+/* 清理 */
 langchain_execution_result_destroy(&result);
 langchain_adapter_destroy(ctx);
 ```
 
+## 构建
+
+本目录由 CMake 选项 `PROTOCOLS_ENABLE_LANGCHAIN` 门控（默认 `ON`）；
+关闭该选项后源码不参与编译。构建方式见
+[主文档「构建」一节](../../README_zh.md#构建)。
+
 ---
 
-© 2025-2026 SPHARX Ltd. All Rights Reserved.
+**许可证：** 本模块采用双许可证 `AGPL-3.0-or-later OR Apache-2.0`，
+您可以任选其一遵守；完整文本见 [LICENSE](../../LICENSE)，版权与商标声明见
+[NOTICE](../../NOTICE)。
