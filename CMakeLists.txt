@@ -60,6 +60,7 @@ set(PROTOCOLS_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/../commons/platform/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils
     ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/types
     ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/compat
     ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/logging
     ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/error
