@@ -12,6 +12,7 @@
 
 #include "protocol_transformers.h"
 
+#include "llm_service_types.h"
 #include "error.h"
 #include "airy_memory.h"
 #include "types.h"
@@ -447,14 +448,14 @@ int transformer_openai_chat_to_jsonrpc(const unified_message_t *source, unified_
 
     if (!source->payload) {
         target->payload = AIRY_STRDUP(
-            "{\"content\":\"\",\"finish_reason\":\"stop\","
+            "{\"content\":\"\",\"finish_reason\":\"" LLM_FINISH_STOP "\","
             "\"usage\":{\"prompt_tokens\":0,\"completion_tokens\":0,\"total_tokens\":0}}");
         target->payload_size = strlen((const char *)target->payload) + 1;
         return 0;
     }
 
     const char *content = "";
-    const char *finish_reason = "stop";
+    const char *finish_reason = LLM_FINISH_STOP;
     char usage_str[512] = "{}";
 
     const char *choices_key = strstr((const char *)source->payload, "\"choices\"");
