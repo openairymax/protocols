@@ -1,6 +1,6 @@
 # 国内生态适配器
 
-**位置：** `protocols/integrations/china_eco/` ｜ **版本：** 0.1.15
+**位置：** `protocols/integrations/china_eco/` ｜ **版本：** 0.1.16
 **上游文档：** [protocols 主文档（中文）](../../README_zh.md) ｜ [English](../../README.md)
 
 ## 概述

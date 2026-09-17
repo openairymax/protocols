@@ -1,6 +1,6 @@
 # AGNTCY ACP 0.1.0 协议适配器
 
-**位置：** `protocols/standards/agntcy/` ｜ **版本：** 0.1.15
+**位置：** `protocols/standards/agntcy/` ｜ **版本：** 0.1.16
 **上游文档：** [protocols 主文档（中文）](../../README_zh.md) ｜ [English](../../README.md)
 
 ## 概述
