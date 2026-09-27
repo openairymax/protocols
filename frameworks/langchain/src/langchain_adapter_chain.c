@@ -63,18 +63,6 @@ int langchain_create_chain(langchain_adapter_context_t *ctx,
     return 0;
 }
 
-static uint64_t __attribute__((unused)) lc_hash(const char *s)
-{
-    uint64_t h = 14695981039346656037ULL;
-    if (!s)
-        return h;
-    for (; *s; s++) {
-        h ^= (unsigned char)*s;
-        h *= 1099511628211ULL;
-    }
-    return h;
-}
-
 int lc_word_count(const char *t)
 {
     if (!t || !*t)
@@ -91,65 +79,6 @@ int lc_word_count(const char *t)
     }
     return c > 0 ? c : 1;
 }
-
-typedef struct {
-    const char *keywords[6];
-    int kcount;
-    const char *intros[4];
-    int icount;
-    const char *bodies[5];
-    int bcount;
-    const char *tool_desc[4];
-    int tdcount;
-} lc_chain_template_t;
-
-static const lc_chain_template_t __attribute__((unused)) g_lc_chains[] = {
-    {{"query", "search", "find", "lookup", "retrieve"},
-     5,
-     {
-         "Executing retrieval-augmented chain: ",
-         "Running RAG pipeline: ",
-     },
-     2,
-     {"Document indexing complete. Found relevant passages matching the query context.",
-      "Vector similarity search returned ranked results. Top-K documents extracted.",
-      "Retrieval pipeline executed successfully. Context window populated with source material.",
-      "Embedding-based lookup finished. Retrieved chunks are ready for synthesis.",
-      "Knowledge base queried and results aggregated."},
-     5,
-     {"retriever", "vectorstore", "embeddings", "document-loader"},
-     4},
-    {{"analyze", "process", "transform", "extract", "summarize"},
-     5,
-     {
-         "Processing through sequential chain: ",
-         "Applying transformation pipeline: ",
-     },
-     2,
-     {"Input data has been parsed and structured according to schema definitions.",
-      "Sequential transformations applied. Each stage validated output format.",
-      "Data processing pipeline completed with all intermediate steps verified.",
-      "Extraction phase identified key entities and relationships from input.",
-      "Summarization condensed input into coherent output maintaining core semantics."},
-     5,
-     {"parser", "transformer", "output-parser", "prompt-template"},
-     4},
-    {{"chat", "converse", "talk", "ask", "question"},
-     5,
-     {
-         "Invoking conversational agent chain: ",
-         "Starting dialogue execution: ",
-     },
-     2,
-     {"Conversation history loaded into context window for coherence.",
-      "Agent reasoning path evaluated multiple response strategies.",
-      "Dialogue state machine transitioned to response generation phase.",
-      "Contextual understanding established based on message history.",
-      "Response synthesized using configured LLM provider with current parameters."},
-     5,
-     {"chat-model", "memory", "conversation-chain", "output-parser"},
-     4},
-};
 
 int lc_generate_chain_response(langchain_adapter_context_t *ctx, const char *input_json,
                                size_t tool_count, bool is_agent_mode, char *out_buf,

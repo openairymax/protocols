@@ -22,7 +22,7 @@
 static int test_sm3_empty(void)
 {
     uint8_t digest[CHINA_ECO_SM3_DIGEST_SIZE];
-    int ret __attribute__((unused)) = china_eco_sm3_hash(NULL, 0, digest);
+    int ret = china_eco_sm3_hash(NULL, 0, digest);
     assert(ret == 0);
 
     printf("  empty: ");
@@ -37,11 +37,11 @@ static int test_sm3_abc(void)
     const char *input = "abc";
     uint8_t digest[CHINA_ECO_SM3_DIGEST_SIZE];
 
-    int ret __attribute__((unused)) = china_eco_sm3_hash(input, strlen(input), digest);
+    int ret = china_eco_sm3_hash(input, strlen(input), digest);
     assert(ret == 0);
 
     const uint8_t expected[CHINA_ECO_SM3_DIGEST_SIZE]
-        __attribute__((unused)) = {0x66, 0xC7, 0xF0, 0xF4, 0x62, 0xEE, 0xED, 0xD9, 0xD1, 0xF2, 0xD4,
+        = {0x66, 0xC7, 0xF0, 0xF4, 0x62, 0xEE, 0xED, 0xD9, 0xD1, 0xF2, 0xD4,
                                    0x6B, 0xDC, 0x10, 0xE4, 0xE2, 0x41, 0x67, 0xC4, 0x87, 0x5C, 0xF2,
                                    0xF7, 0xA2, 0x29, 0x7D, 0xA0, 0x2B, 0x8F, 0x4B, 0xA8, 0xE0};
 
@@ -55,11 +55,11 @@ static int test_sm3_abcd_x16(void)
                          "abcdabcdabcdabcdabcdabcdabcdabcd";
     uint8_t digest[CHINA_ECO_SM3_DIGEST_SIZE];
 
-    int ret __attribute__((unused)) = china_eco_sm3_hash(input, strlen(input), digest);
+    int ret = china_eco_sm3_hash(input, strlen(input), digest);
     assert(ret == 0);
 
     const uint8_t expected[CHINA_ECO_SM3_DIGEST_SIZE]
-        __attribute__((unused)) = {0xDE, 0xBE, 0x9F, 0xF9, 0x22, 0x75, 0xB8, 0xA1, 0x38, 0x60, 0x48,
+        = {0xDE, 0xBE, 0x9F, 0xF9, 0x22, 0x75, 0xB8, 0xA1, 0x38, 0x60, 0x48,
                                    0x89, 0xC1, 0x8E, 0x5A, 0x4D, 0x6F, 0xDB, 0x70, 0xE5, 0x38, 0x7E,
                                    0x57, 0x65, 0x29, 0x3D, 0xCB, 0xA3, 0x9C, 0x0C, 0x57, 0x32};
 
@@ -70,7 +70,7 @@ static int test_sm3_abcd_x16(void)
 static int test_sm3_null_params(void)
 {
     uint8_t digest[CHINA_ECO_SM3_DIGEST_SIZE];
-    int ret __attribute__((unused)) = china_eco_sm3_hash(NULL, 10, digest);
+    int ret = china_eco_sm3_hash(NULL, 10, digest);
     assert(ret != 0);
 
     ret = china_eco_sm3_hash("data", 4, NULL);
@@ -94,7 +94,7 @@ static int test_sm4_encrypt_decrypt(void)
     uint8_t ciphertext[1024] = {0};
     size_t ct_len = sizeof(ciphertext);
 
-    int ret __attribute__((unused)) =
+    int ret =
         china_eco_sm4_encrypt(&ctx, plaintext, pt_len, ciphertext, &ct_len);
     assert(ret == 0);
     assert(ct_len > 0);
@@ -119,7 +119,7 @@ static int test_sm4_not_initialized(void)
     uint8_t buf[64] = {0};
     size_t len = sizeof(buf);
 
-    int ret __attribute__((unused)) = china_eco_sm4_encrypt(&ctx, "test", 4, buf, &len);
+    int ret = china_eco_sm4_encrypt(&ctx, "test", 4, buf, &len);
     assert(ret != 0);
 
     return 0;
@@ -135,7 +135,7 @@ static int test_sm4_bad_alignment(void)
     uint8_t data[128] = {0};
     size_t len = 128;
 
-    int ret __attribute__((unused)) = china_eco_sm4_decrypt(&ctx, "bad", 3, data, &len);
+    int ret = china_eco_sm4_decrypt(&ctx, "bad", 3, data, &len);
     assert(ret != 0);
 
     return 0;

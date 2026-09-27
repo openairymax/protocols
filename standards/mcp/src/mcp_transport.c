@@ -84,13 +84,6 @@ static void notify_error(mcp_transport_t *t, int code, const char *msg)
     }
 }
 
-static void __attribute__((unused)) notify_message(mcp_transport_t *t, const char *msg, size_t len)
-{
-    if (t && t->on_message) {
-        t->on_message(msg, len, t->user_data);
-    }
-}
-
 static int read_line(int fd, char *buf, size_t buf_size, uint32_t timeout_ms)
 {
     size_t pos = 0;
@@ -498,7 +491,7 @@ int mcp_transport_send(mcp_transport_t *transport, const char *message, size_t l
     return AIRY_EINVAL;
 }
 
-__attribute__((unused)) int mcp_transport_receive(mcp_transport_t *transport, char **out_message,
+int mcp_transport_receive(mcp_transport_t *transport, char **out_message,
                                                   size_t *out_length, uint32_t timeout_ms)
 {
     if (!transport || !out_message || !out_length) {
@@ -619,7 +612,7 @@ __attribute__((unused)) int mcp_transport_receive(mcp_transport_t *transport, ch
     return AIRY_EINVAL;
 }
 
-__attribute__((unused)) mcp_transport_state_t
+mcp_transport_state_t
 mcp_trans_state(const mcp_transport_t *transport)
 {
     if (!transport)
@@ -628,7 +621,7 @@ mcp_trans_state(const mcp_transport_t *transport)
 }
 
 // clang-format off
-__attribute__((unused)) mcp_transport_type_t
+mcp_transport_type_t
 mcp_trans_type(const mcp_transport_t *transport)
 // clang-format on
 {
@@ -637,7 +630,7 @@ mcp_trans_type(const mcp_transport_t *transport)
     return transport->type;
 }
 
-__attribute__((unused)) const char *mcp_transport_state_string(mcp_transport_state_t state)
+const char *mcp_transport_state_string(mcp_transport_state_t state)
 {
     switch (state) {
     case MCP_TRANSPORT_DISCONNECTED:
@@ -653,7 +646,7 @@ __attribute__((unused)) const char *mcp_transport_state_string(mcp_transport_sta
     }
 }
 
-__attribute__((unused)) const char *mcp_transport_type_string(mcp_transport_type_t type)
+const char *mcp_transport_type_string(mcp_transport_type_t type)
 {
     switch (type) {
     case MCP_TRANSPORT_STDIO:
