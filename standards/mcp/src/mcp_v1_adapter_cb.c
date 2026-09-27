@@ -281,7 +281,7 @@ static int mcp_adapter_receive(void *context, void **data, size_t *size)
     char *msg = NULL;
     size_t msg_len = 0;
 #ifndef _WIN32
-    int ret = mcp_transport_receive(ctx->transport, &msg, &msg_len, ctx->config.default_timeout_ms);
+    int ret = mcp_trans_receive(ctx->transport, &msg, &msg_len, ctx->config.default_timeout_ms);
     if (ret == 0 && msg) {
         *data = msg;
         *size = msg_len;

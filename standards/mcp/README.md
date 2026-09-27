@@ -104,7 +104,7 @@ HTTP 配置含 `base_url`、`api_key`、`sse_endpoint`、`post_endpoint`、
 `CONNECTED` / `ERROR`。API：`mcp_transport_config_stdio_default()`、
 `mcp_transport_config_http_default(base_url)`、`create()` / `destroy()`、
 `start()` / `stop()`、`send()` / `receive()`、
-`mcp_transport_state_string()` / `type_string()`。
+`mcp_trans_state_str()` / `mcp_trans_type_str()`。
 
 > 传输层由 `PROTOCOLS_ENABLE_MCP_TRANSPORT` 门控，Windows 平台强制关闭。
 

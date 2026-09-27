@@ -195,7 +195,7 @@ int oai_chat_completion(openai_handle_t handle, const openai_chat_request_t *req
     adapter->stats_total_input_tokens += out_response->usage.prompt_tokens;
     adapter->stats_total_output_tokens += out_response->usage.completion_tokens;
     oai_record_latency(adapter, latency_ms);
-    openai_record_request(adapter, out_response->usage.prompt_tokens,
+    openai_rec_request(adapter, out_response->usage.prompt_tokens,
                           out_response->usage.completion_tokens);
 #endif
 

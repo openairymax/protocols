@@ -491,12 +491,12 @@ int mcp_transport_send(mcp_transport_t *transport, const char *message, size_t l
     return AIRY_EINVAL;
 }
 
-int mcp_transport_receive(mcp_transport_t *transport, char **out_message,
+int mcp_trans_receive(mcp_transport_t *transport, char **out_message,
                                                   size_t *out_length, uint32_t timeout_ms)
 {
     if (!transport || !out_message || !out_length) {
         airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__,
-                         "mcp_transport_receive: timeout");
+                         "mcp_trans_receive: timeout");
         return AIRY_ERR_TIMEOUT;
     }
     if (transport->state != MCP_TRANSPORT_CONNECTED) {
@@ -599,11 +599,11 @@ int mcp_transport_receive(mcp_transport_t *transport, char **out_message,
         }
 
         if (strncmp(line_buf, "event: ", 7) == 0) {
-            return mcp_transport_receive(transport, out_message, out_length, timeout_ms);
+            return mcp_trans_receive(transport, out_message, out_length, timeout_ms);
         }
 
         if (strlen(line_buf) == 0) {
-            return mcp_transport_receive(transport, out_message, out_length, timeout_ms);
+            return mcp_trans_receive(transport, out_message, out_length, timeout_ms);
         }
 
         return AIRY_EINVAL;
@@ -630,7 +630,7 @@ mcp_trans_type(const mcp_transport_t *transport)
     return transport->type;
 }
 
-const char *mcp_transport_state_string(mcp_transport_state_t state)
+const char *mcp_trans_state_str(mcp_transport_state_t state)
 {
     switch (state) {
     case MCP_TRANSPORT_DISCONNECTED:
@@ -646,7 +646,7 @@ const char *mcp_transport_state_string(mcp_transport_state_t state)
     }
 }
 
-const char *mcp_transport_type_string(mcp_transport_type_t type)
+const char *mcp_trans_type_str(mcp_transport_type_t type)
 {
     switch (type) {
     case MCP_TRANSPORT_STDIO:

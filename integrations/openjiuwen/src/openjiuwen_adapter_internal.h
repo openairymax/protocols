@@ -43,7 +43,6 @@ int openjiuwen_adapter_decode(void *context, const void *data, size_t size, void
 
 /* ============ 门面/生命周期域 (openjiuwen_adapter.c) ============ */
 int openjiuwen_adapter_init(void *context);
-int openjiuwen_adapter_deinit(void *context);
 int openjiuwen_adapter_is_connected(void *context);
 int openjiuwen_adapter_handle_request(void *context, const void *req, void **resp);
 int openjiuwen_adapter_get_version(void *context, char *version_buf, size_t max_size);
