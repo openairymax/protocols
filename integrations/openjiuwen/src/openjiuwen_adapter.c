@@ -69,18 +69,6 @@ int openjiuwen_adapter_init(void *context)
     return 0;
 }
 
-int openjiuwen_adapter_deinit(void *context)
-{
-    openjiuwen_adapter_t *adapter = (openjiuwen_adapter_t *)context;
-    if (!adapter)
-        return AIRY_ERR_NULL_POINTER;
-
-    openjiuwen_net_disconnect(adapter);
-    adapter->consecutive_errors = 0;
-    AIRY_LOG_INFO("OpenJiuwen: deinitialized");
-    return 0;
-}
-
 int openjiuwen_adapter_is_connected(void *context)
 {
     openjiuwen_adapter_t *adapter = (openjiuwen_adapter_t *)context;

@@ -71,21 +71,6 @@ int openclaw_parse_endpoint(const char *endpoint_url, char *host, size_t host_si
     return 0;
 }
 
-static int openclaw_socket_set_nonblocking(socket_fd_t fd)
-{
-#ifdef _WIN32
-    u_long mode = 1;
-    return ioctlsocket(fd, FIONBIO, &mode);
-#else
-    int flags = fcntl(fd, F_GETFL, 0);
-    if (flags < 0) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "ioctlsocket: IO error");
-        return AIRY_ERR_UNKNOWN;
-    }
-    return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-#endif
-}
-
 int openclaw_socket_connect(socket_fd_t fd, const char *host, int port, uint32_t timeout_ms)
 {
     struct addrinfo hints;

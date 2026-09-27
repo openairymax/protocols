@@ -137,7 +137,7 @@ int oai_parse_chat_resp(const char *json_str, char *content_out, size_t content_
                                openai_usage_t *usage);
 openai_rate_result_t oai_check_rate_limit(struct openai_enterprise_adapter_s *adapter,
                                              uint32_t estimated_tokens);
-void openai_record_request(
+void openai_rec_request(
     struct openai_enterprise_adapter_s *adapter, uint32_t input_tokens, uint32_t output_tokens);
 void openai_on_429(struct openai_enterprise_adapter_s *adapter);
 

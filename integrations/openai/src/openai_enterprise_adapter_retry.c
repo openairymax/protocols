@@ -51,7 +51,7 @@ openai_rate_result_t oai_check_rate_limit(struct openai_enterprise_adapter_s *ad
     return OPENAI_RATE_OK;
 }
 
-void openai_record_request(
+void openai_rec_request(
     struct openai_enterprise_adapter_s *adapter, uint32_t input_tokens, uint32_t output_tokens)
 {
     adapter->rate_window_requests++;
