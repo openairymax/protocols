@@ -27,17 +27,6 @@
 #include <string.h>
 #include <time.h>
 
-static uint64_t __attribute__((unused)) autogen_hash_str(const char *s)
-{
-    uint64_t h = 14695981039346656037ULL;
-    if (!s)
-        return h;
-    for (; *s; s++) {
-        h = (h ^ (unsigned char)*s) * 1099511628211ULL;
-    }
-    return h;
-}
-
 static int __attribute__((used)) autogen_count_words(const char *t)
 {
     if (!t || !*t)
@@ -54,39 +43,6 @@ static int __attribute__((used)) autogen_count_words(const char *t)
     }
     return c > 0 ? c : 1;
 }
-
-typedef struct {
-    const char *role_prefixes[4];
-    int prefix_count;
-    const char *body_templates[6];
-    int body_count;
-    const char *suffix_templates[3];
-    int suffix_count;
-} autogen_response_role_t;
-
-static const autogen_response_role_t __attribute__((unused)) g_autogen_roles[] = {
-    {{"As ", "From a ", "In my capacity as "},
-     3,
-     {"I've analyzed your request and prepared a response based on my role.",
-      "Processing through the multi-agent framework, here's my assessment.",
-      "After consulting with peer agents, I can provide this answer.",
-      "My analysis of the input yields the following conclusion.",
-      "Through the AutoGen orchestration layer, I've generated this response.",
-      "Based on the group chat context and available tools, here's my output."},
-     6,
-     {" Would you like me to elaborate on any aspect?", " I'm ready for follow-up questions.", ""},
-     3},
-    {{"Acknowledged. ", "Noted. ", "Copy that. "},
-     3,
-     {"I've received and processed the message. Standing by for next instruction.",
-      "Message acknowledged and logged. Awaiting further direction.",
-      "Input received via AgentRT protocol bridge. Ready to proceed.",
-      "Confirmed. The data has been routed through the agent mesh.",
-      "Roger. Message processed successfully.", "Affirmative. All systems operational."},
-     6,
-     {" Over.", "", ""},
-     2},
-};
 
 int autogen_generate_response(autogen_adapter_context_t *ctx, const char *incoming_msg,
                               int agent_index, int total_agents, bool is_first_in_round,

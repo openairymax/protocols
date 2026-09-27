@@ -69,7 +69,7 @@ int openjiuwen_adapter_init(void *context)
     return 0;
 }
 
-__attribute__((unused)) int openjiuwen_adapter_deinit(void *context)
+int openjiuwen_adapter_deinit(void *context)
 {
     openjiuwen_adapter_t *adapter = (openjiuwen_adapter_t *)context;
     if (!adapter)

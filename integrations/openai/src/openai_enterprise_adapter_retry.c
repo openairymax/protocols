@@ -51,7 +51,7 @@ openai_rate_result_t oai_check_rate_limit(struct openai_enterprise_adapter_s *ad
     return OPENAI_RATE_OK;
 }
 
-__attribute__((unused)) void openai_record_request(
+void openai_record_request(
     struct openai_enterprise_adapter_s *adapter, uint32_t input_tokens, uint32_t output_tokens)
 {
     adapter->rate_window_requests++;
@@ -76,19 +76,6 @@ void openai_on_429(struct openai_enterprise_adapter_s *adapter)
     if (delay_sec > 30)
         delay_sec = 30;
     adapter->rate_backoff_until = now + delay_sec;
-}
-
-static int __attribute__((unused)) openai_retry_delay_ms(
-    struct openai_enterprise_adapter_s *adapter, int attempt)
-{
-    uint32_t base_delay = (uint32_t)(OPENAI_RETRY_BASE_DELAY_MS * adapter->rate_backoff_multiplier);
-    double exponential = base_delay * (1 << attempt);
-    if (exponential > OPENAI_RETRY_MAX_DELAY_MS)
-        exponential = OPENAI_RETRY_MAX_DELAY_MS;
-
-    unsigned int jitter = (unsigned int)(attempt * OPENAI_RETRY_JITTER_MS);
-    jitter = jitter % OPENAI_RETRY_JITTER_MS;
-    return (int)(exponential + (double)jitter);
 }
 
 /* ============================================================================

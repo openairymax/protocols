@@ -71,7 +71,7 @@ int openclaw_parse_endpoint(const char *endpoint_url, char *host, size_t host_si
     return 0;
 }
 
-static int __attribute__((unused)) openclaw_socket_set_nonblocking(socket_fd_t fd)
+static int openclaw_socket_set_nonblocking(socket_fd_t fd)
 {
 #ifdef _WIN32
     u_long mode = 1;

@@ -219,15 +219,6 @@ static int autogen_proto_destroy(void *context)
     return 0;
 }
 
-__attribute__((unused)) static int autogen_adapter_deinit(void *context)
-{
-    autogen_adapter_context_t *ctx = (autogen_adapter_context_t *)context;
-    if (!ctx)
-        return AIRY_ERR_NULL_POINTER;
-    autogen_adapter_destroy(ctx);
-    return 0;
-}
-
 const proto_adapter_t *autogen_get_protocol_adapter(void)
 {
     static proto_adapter_t adapter = {0};

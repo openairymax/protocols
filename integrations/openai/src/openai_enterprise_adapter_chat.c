@@ -70,7 +70,7 @@ int oai_chat_completion(openai_handle_t handle, const openai_chat_request_t *req
                       sizeof(out_response->model));
     out_response->created = (uint64_t)time(NULL);
 
-    __attribute__((unused)) uint64_t ts_start_ms = airy_time_ms();
+    uint64_t ts_start_ms = airy_time_ms();
 
 #ifndef AIRY_HAS_CURL
     return -ENOSYS;

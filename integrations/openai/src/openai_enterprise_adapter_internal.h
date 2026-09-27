@@ -70,8 +70,6 @@ typedef struct {
 #define OPENAI_RATE_LIMIT_WINDOW_SEC 60
 #define OPENAI_RETRY_MAX_ATTEMPTS 5
 #define OPENAI_RETRY_BASE_DELAY_MS 1000
-#define OPENAI_RETRY_MAX_DELAY_MS 30000
-#define OPENAI_RETRY_JITTER_MS 200
 
 struct openai_enterprise_adapter_s {
     openai_enterprise_config_t config;
@@ -139,7 +137,7 @@ int oai_parse_chat_resp(const char *json_str, char *content_out, size_t content_
                                openai_usage_t *usage);
 openai_rate_result_t oai_check_rate_limit(struct openai_enterprise_adapter_s *adapter,
                                              uint32_t estimated_tokens);
-__attribute__((unused)) void openai_record_request(
+void openai_record_request(
     struct openai_enterprise_adapter_s *adapter, uint32_t input_tokens, uint32_t output_tokens);
 void openai_on_429(struct openai_enterprise_adapter_s *adapter);
 
