@@ -452,15 +452,10 @@ if(BUILD_TESTS AND NOT WIN32)
     )
 
     if(PROTOCOLS_ENABLE_OPENCLAW)
-        add_executable(test_openclaw_adapter
-            tests/test_openclaw_adapter.c
-            integrations/openclaw/src/openclaw_adapter.c
-            common/src/unified_protocol.c
-            core/transformers/src/protocol_transformers.c
-        )
+        add_executable(test_openclaw_adapter tests/test_openclaw_adapter.c)
         target_compile_definitions(test_openclaw_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
         target_include_directories(test_openclaw_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_openclaw_adapter PRIVATE airy_common svc_common airy_platform_libs)
+        target_link_libraries(test_openclaw_adapter PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
         if(UNIX)
             target_link_libraries(test_openclaw_adapter PRIVATE pthread)
         endif()
@@ -468,15 +463,10 @@ if(BUILD_TESTS AND NOT WIN32)
     endif()
 
     if(PROTOCOLS_ENABLE_AGNTCY)
-        add_executable(test_agntcy_acp
-            tests/test_agntcy_acp.c
-            standards/agntcy/src/agntcy_acp_adapter.c
-            common/src/unified_protocol.c
-            core/transformers/src/protocol_transformers.c
-        )
+        add_executable(test_agntcy_acp tests/test_agntcy_acp.c)
         target_compile_definitions(test_agntcy_acp PRIVATE AIRY_COMPLIANCE_IMPL)
         target_include_directories(test_agntcy_acp PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_agntcy_acp PRIVATE airy_common svc_common airy_platform_libs)
+        target_link_libraries(test_agntcy_acp PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
         if(UNIX)
             target_link_libraries(test_agntcy_acp PRIVATE pthread)
         endif()
@@ -484,17 +474,10 @@ if(BUILD_TESTS AND NOT WIN32)
     endif()
 
     if(PROTOCOLS_ENABLE_CHINA_ECO)
-        add_executable(test_china_eco_crypto
-            tests/test_china_eco_crypto.c
-            integrations/china_eco/src/china_eco_adapter.c
-            integrations/china_eco/src/china_eco_llm.c
-            integrations/china_eco/src/china_eco_crypto.c
-            common/src/unified_protocol.c
-            core/transformers/src/protocol_transformers.c
-        )
+        add_executable(test_china_eco_crypto tests/test_china_eco_crypto.c)
         target_compile_definitions(test_china_eco_crypto PRIVATE AIRY_COMPLIANCE_IMPL)
         target_include_directories(test_china_eco_crypto PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_china_eco_crypto PRIVATE airy_common svc_common airy_platform_libs)
+        target_link_libraries(test_china_eco_crypto PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
         if(UNIX)
             target_link_libraries(test_china_eco_crypto PRIVATE pthread)
         endif()
@@ -503,20 +486,10 @@ if(BUILD_TESTS AND NOT WIN32)
 
     # P1-16: 10 adapter unit tests (mcp/a2a/openai/openjiuwen/langchain/autogen/claude/openclaw/china_eco/agntcy)
     if(PROTOCOLS_ENABLE_A2A)
-        add_executable(test_a2a_adapter
-            tests/test_a2a_adapter.c
-            standards/a2a/src/a2a_v03_adapter.c
-            standards/a2a/src/a2a_v03_adapter_agent.c
-            standards/a2a/src/a2a_v03_adapter_auth.c
-            standards/a2a/src/a2a_v03_adapter_cb.c
-            standards/a2a/src/a2a_v03_adapter_msg.c
-            standards/a2a/src/a2a_v03_adapter_task.c
-            common/src/unified_protocol.c
-            core/transformers/src/protocol_transformers.c
-        )
+        add_executable(test_a2a_adapter tests/test_a2a_adapter.c)
         target_compile_definitions(test_a2a_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
         target_include_directories(test_a2a_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_a2a_adapter PRIVATE airy_common svc_common airy_platform_libs)
+        target_link_libraries(test_a2a_adapter PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
         if(UNIX)
             target_link_libraries(test_a2a_adapter PRIVATE pthread)
         endif()
@@ -524,23 +497,10 @@ if(BUILD_TESTS AND NOT WIN32)
     endif()
 
     if(PROTOCOLS_ENABLE_MCP)
-        add_executable(test_mcp_adapter
-            tests/test_mcp_adapter.c
-            standards/mcp/src/mcp_v1_adapter.c
-            standards/mcp/src/mcp_v1_adapter_cb.c
-            standards/mcp/src/mcp_v1_adapter_prompt.c
-            standards/mcp/src/mcp_v1_adapter_resource.c
-            standards/mcp/src/mcp_v1_adapter_route.c
-            standards/mcp/src/mcp_v1_adapter_sampling.c
-            standards/mcp/src/mcp_v1_adapter_stream.c
-            standards/mcp/src/mcp_v1_adapter_tool.c
-            standards/mcp/src/mcp_transport.c
-            common/src/unified_protocol.c
-            core/transformers/src/protocol_transformers.c
-        )
+        add_executable(test_mcp_adapter tests/test_mcp_adapter.c)
         target_compile_definitions(test_mcp_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
         target_include_directories(test_mcp_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_mcp_adapter PRIVATE airy_common svc_common airy_platform_libs)
+        target_link_libraries(test_mcp_adapter PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
         if(UNIX)
             target_link_libraries(test_mcp_adapter PRIVATE pthread)
         endif()
@@ -548,22 +508,10 @@ if(BUILD_TESTS AND NOT WIN32)
     endif()
 
     if(PROTOCOLS_ENABLE_OPENAI)
-        add_executable(test_openai_adapter
-            tests/test_openai_adapter.c
-            integrations/openai/src/openai_enterprise_adapter.c
-            integrations/openai/src/openai_enterprise_adapter_cb.c
-            integrations/openai/src/openai_enterprise_adapter_chat.c
-            integrations/openai/src/openai_enterprise_adapter_ctx.c
-            integrations/openai/src/openai_enterprise_adapter_embed.c
-            integrations/openai/src/openai_enterprise_adapter_model.c
-            integrations/openai/src/openai_enterprise_adapter_retry.c
-            integrations/openai/src/openai_enterprise_adapter_utils.c
-            common/src/unified_protocol.c
-            core/transformers/src/protocol_transformers.c
-        )
+        add_executable(test_openai_adapter tests/test_openai_adapter.c)
         target_compile_definitions(test_openai_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
         target_include_directories(test_openai_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_openai_adapter PRIVATE airy_common svc_common airy_platform_libs)
+        target_link_libraries(test_openai_adapter PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
         if(UNIX)
             target_link_libraries(test_openai_adapter PRIVATE pthread)
         endif()
@@ -571,18 +519,10 @@ if(BUILD_TESTS AND NOT WIN32)
     endif()
 
     if(PROTOCOLS_ENABLE_OPENJIUWEN)
-        add_executable(test_openjiuwen_adapter
-            tests/test_openjiuwen_adapter.c
-            integrations/openjiuwen/src/openjiuwen_adapter.c
-            integrations/openjiuwen/src/openjiuwen_adapter_net.c
-            integrations/openjiuwen/src/openjiuwen_adapter_io.c
-            integrations/openjiuwen/src/openjiuwen_adapter_msg.c
-            common/src/unified_protocol.c
-            core/transformers/src/protocol_transformers.c
-        )
+        add_executable(test_openjiuwen_adapter tests/test_openjiuwen_adapter.c)
         target_compile_definitions(test_openjiuwen_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
         target_include_directories(test_openjiuwen_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_openjiuwen_adapter PRIVATE airy_common svc_common airy_platform_libs)
+        target_link_libraries(test_openjiuwen_adapter PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
         if(UNIX)
             target_link_libraries(test_openjiuwen_adapter PRIVATE pthread)
         endif()
@@ -590,19 +530,10 @@ if(BUILD_TESTS AND NOT WIN32)
     endif()
 
     if(PROTOCOLS_ENABLE_CLAUDE)
-        add_executable(test_claude_adapter
-            tests/test_claude_adapter.c
-            integrations/claude/src/claude_adapter.c
-            integrations/claude/src/claude_adapter_cleanup.c
-            integrations/claude/src/claude_adapter_http.c
-            integrations/claude/src/claude_adapter_model.c
-            integrations/claude/src/claude_adapter_proto.c
-            common/src/unified_protocol.c
-            core/transformers/src/protocol_transformers.c
-        )
+        add_executable(test_claude_adapter tests/test_claude_adapter.c)
         target_compile_definitions(test_claude_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
         target_include_directories(test_claude_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_claude_adapter PRIVATE airy_common svc_common airy_platform_libs)
+        target_link_libraries(test_claude_adapter PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
         if(UNIX)
             target_link_libraries(test_claude_adapter PRIVATE pthread)
         endif()
@@ -610,20 +541,10 @@ if(BUILD_TESTS AND NOT WIN32)
     endif()
 
     if(PROTOCOLS_ENABLE_LANGCHAIN)
-        add_executable(test_langchain_adapter
-            tests/test_langchain_adapter.c
-            frameworks/langchain/src/langchain_adapter.c
-            frameworks/langchain/src/langchain_adapter_agent.c
-            frameworks/langchain/src/langchain_adapter_chain.c
-            frameworks/langchain/src/langchain_adapter_memory.c
-            frameworks/langchain/src/langchain_adapter_proto.c
-            frameworks/langchain/src/langchain_adapter_tool.c
-            common/src/unified_protocol.c
-            core/transformers/src/protocol_transformers.c
-        )
+        add_executable(test_langchain_adapter tests/test_langchain_adapter.c)
         target_compile_definitions(test_langchain_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
         target_include_directories(test_langchain_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_langchain_adapter PRIVATE airy_common svc_common airy_platform_libs)
+        target_link_libraries(test_langchain_adapter PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
         if(UNIX)
             target_link_libraries(test_langchain_adapter PRIVATE pthread)
         endif()
@@ -631,18 +552,10 @@ if(BUILD_TESTS AND NOT WIN32)
     endif()
 
     if(PROTOCOLS_ENABLE_AUTOGEN)
-        add_executable(test_autogen_adapter
-            tests/test_autogen_adapter.c
-            frameworks/autogen/src/autogen_adapter.c
-            frameworks/autogen/src/autogen_adapter_agent.c
-            frameworks/autogen/src/autogen_adapter_msg.c
-            frameworks/autogen/src/autogen_adapter_proto.c
-            common/src/unified_protocol.c
-            core/transformers/src/protocol_transformers.c
-        )
+        add_executable(test_autogen_adapter tests/test_autogen_adapter.c)
         target_compile_definitions(test_autogen_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
         target_include_directories(test_autogen_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_autogen_adapter PRIVATE airy_common svc_common airy_platform_libs)
+        target_link_libraries(test_autogen_adapter PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
         if(UNIX)
             target_link_libraries(test_autogen_adapter PRIVATE pthread)
         endif()
