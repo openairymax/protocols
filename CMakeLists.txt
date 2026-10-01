@@ -58,6 +58,7 @@ set(PROTOCOLS_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/integrations/openai/include
     ${CMAKE_CURRENT_SOURCE_DIR}/integrations/openjiuwen/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../commons/platform/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../commons/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils
     ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/types

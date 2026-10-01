@@ -12,6 +12,7 @@
 #include "openclaw_adapter.h"
 #include "openclaw_adapter_internal.h"
 
+#include "airy_defaults.h"
 #include "protocol_transformers.h"
 
 #include <stdio.h>
@@ -41,7 +42,7 @@ int openclaw_parse_endpoint(const char *endpoint_url, char *host, size_t host_si
         *port = 443;
     } else {
         host_start = url;
-        *port = 28080;
+        *port = AIRY_PORT_OPENCLAW;
     }
 
     const char *colon = strchr(host_start, ':');

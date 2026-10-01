@@ -12,6 +12,7 @@
 #include "openclaw_adapter.h"
 #include "openclaw_adapter_internal.h"
 
+#include "airy_defaults.h"
 #include "protocol_transformers.h"
 
 #include <stdio.h>
@@ -27,7 +28,9 @@ static openclaw_adapter_context_t *g_openclaw_instance = NULL;
 openclaw_config_t openclaw_config_default(void)
 {
     openclaw_config_t cfg = {0};
-    cfg.endpoint_url = "http://localhost:28080";
+    /* OpenClaw 平台默认端点：端口取自 airy_defaults.h 私有端口带 SSoT
+     * （AirymaxRT 自有坐标，非第三方行业固定口），禁止复刻字面量。 */
+    cfg.endpoint_url = "http://localhost:" AIRY_TOSTRING(AIRY_PORT_OPENCLAW);
     cfg.api_key = NULL;
     cfg.organization_id = "default";
     cfg.cluster_id = "default";
@@ -153,7 +156,7 @@ int openclaw_connect(openclaw_adapter_context_t *ctx)
         return 0;
 
     char host[256] = {0};
-    int port = 28080;
+    int port = AIRY_PORT_OPENCLAW;
 
     openclaw_parse_endpoint(ctx->config.endpoint_url, host, sizeof(host), &port);
 
