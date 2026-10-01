@@ -7,7 +7,7 @@
  * @brief Protocol message transformers - complete implementation.
  *
  * Implements bidirectional message format conversion between all protocols,
- * replacing the TODO stubs in protocol_router.c.
+ * superseding the former inline conversions in protocol_router.c.
  */
 
 #include "protocol_transformers.h"
