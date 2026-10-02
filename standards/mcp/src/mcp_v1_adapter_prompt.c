@@ -8,22 +8,6 @@
 
 #include "mcp_v1_adapter_internal.h"
 
-#include "mcp_transport.h"
-#include "airy_memory.h"
-#include "error.h"
-#include "types.h"
-#include "unified_protocol.h"
-
-#include <cjson/cJSON.h>
-
-#include <cjson_helpers.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-#include "logging.h"
-
 int mcp_v1_handle_prompts_list(mcp_v1_context_t *ctx, char **response_json)
 {
     if (!ctx || !response_json) {

@@ -8,22 +8,6 @@
 
 #include "mcp_v1_adapter_internal.h"
 
-#include "mcp_transport.h"
-#include "airy_memory.h"
-#include "error.h"
-#include "types.h"
-#include "unified_protocol.h"
-
-#include <cjson/cJSON.h>
-
-#include <cjson_helpers.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-#include "logging.h"
-
 static void mcp_v1_extract_string_param(const char *params_json, const char *key, char *buf,
                                         size_t buf_size)
 {

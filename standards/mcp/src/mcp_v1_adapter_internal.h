@@ -10,6 +10,21 @@
 #define MCP_V1_ADAPTER_INTERNAL_H
 
 #include "mcp_v1_adapter.h"
+#include "mcp_transport.h"
+#include "airy_memory.h"
+#include "error.h"
+#include "types.h"
+#include "unified_protocol.h"
+
+#include <cjson/cJSON.h>
+
+#include <cjson_helpers.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#include "logging.h"
 
 typedef struct {
     mcp_tool_t tool;
