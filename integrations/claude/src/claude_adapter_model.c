@@ -10,25 +10,7 @@
  * enum to API name mapping, simple token estimation and model list queries.
  */
 
-#define LOG_TAG "claude_adapter"
-
-#include "claude_adapter.h"
 #include "claude_adapter_internal.h"
-
-#include "error.h"
-#include "logging.h"
-#include "airy_memory.h"
-#include "protocol_transformers.h"
-#include "types.h"
-#include "unified_protocol.h"
-
-#include <ctype.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 claude_model_info_t g_builtin_models[] = {
     {

@@ -4,16 +4,31 @@
 /**
  * @file autogen_adapter_internal.h
  * @brief Internal types and cross-file declarations shared by the AutoGen adapter split files.
+ *
+ * @note All split files include only this internal header; the family-common
+ * preamble (LOG_TAG, family and system includes) lives here.
  */
 
 #ifndef AUTOGEN_ADAPTER_INTERNAL_H
 #define AUTOGEN_ADAPTER_INTERNAL_H
 
+#define LOG_TAG "autogen_adapter"
+
 #include "autogen_adapter.h"
 
+#include "airy_protocol_interface.h"
+#include "error.h"
+#include "airy_memory.h"
+#include "types.h"
+
+#include <ctype.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 struct autogen_adapter_context_s {
     autogen_config_t config;

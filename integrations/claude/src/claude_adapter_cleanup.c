@@ -10,17 +10,7 @@
  * claude_tool_def_t / claude_model_info_t / claude_stream_event_t.
  */
 
-#define LOG_TAG "claude_adapter"
-
-#include "claude_adapter.h"
 #include "claude_adapter_internal.h"
-
-#include "airy_memory.h"
-
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
 
 void claude_response_destroy(claude_response_t *resp)
 {

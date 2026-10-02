@@ -7,20 +7,7 @@
  * @brief OpenClaw adapter registration and discovery domain (agent register/discover/unregister, tool register/list).
  */
 
-#define LOG_TAG "openclaw_adapter"
-
-#include "openclaw_adapter.h"
 #include "openclaw_adapter_internal.h"
-
-#include "protocol_transformers.h"
-
-#include <stdio.h>
-#include "error.h"
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include "airy_memory.h"
-#include "types.h"
 
 int openclaw_register_agent(openclaw_adapter_context_t *ctx, const openclaw_agent_card_t *card)
 {

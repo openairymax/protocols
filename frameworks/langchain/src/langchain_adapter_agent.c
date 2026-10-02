@@ -10,21 +10,7 @@
  * agent task execution (langchain_agent_run).
  */
 
-#define LOG_TAG "langchain_adapter"
-
-#include "langchain_adapter.h"
 #include "langchain_adapter_internal.h"
-
-#include "error.h"
-#include "airy_memory.h"
-#include "types.h"
-#include "unified_protocol.h"
-
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 int langchain_create_agent(langchain_adapter_context_t *ctx,
                            const langchain_agent_def_t *definition, char *out_agent_id)

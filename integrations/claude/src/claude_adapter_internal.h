@@ -4,16 +4,33 @@
 /**
  * @file claude_adapter_internal.h
  * @brief Internal types and cross-file declarations shared by the Claude adapter split files.
+ *
+ * @note All split files include only this internal header; the family-common
+ * preamble (LOG_TAG, family and system includes) lives here.
  */
 
 #ifndef CLAUDE_ADAPTER_INTERNAL_H
 #define CLAUDE_ADAPTER_INTERNAL_H
 
+#define LOG_TAG "claude_adapter"
+
 #include "claude_adapter.h"
 
+#include "error.h"
+#include "logging.h"
+#include "airy_memory.h"
+#include "protocol_transformers.h"
+#include "types.h"
+#include "unified_protocol.h"
+
+#include <ctype.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 #define CLAUDE_MAX_RESPONSE_LEN 4096
 #define CLAUDE_STREAM_CHUNK_SIZE 10

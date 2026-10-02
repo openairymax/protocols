@@ -11,21 +11,7 @@
  * (execute_chain_streaming) and chain template helpers.
  */
 
-#define LOG_TAG "langchain_adapter"
-
-#include "langchain_adapter.h"
 #include "langchain_adapter_internal.h"
-
-#include "error.h"
-#include "airy_memory.h"
-#include "types.h"
-#include "unified_protocol.h"
-
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 int langchain_create_chain(langchain_adapter_context_t *ctx,
                            const langchain_chain_def_t *definition,

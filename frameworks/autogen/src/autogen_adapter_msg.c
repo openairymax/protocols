@@ -11,21 +11,7 @@
  * and role-template helpers.
  */
 
-#define LOG_TAG "autogen_adapter"
-
-#include "autogen_adapter.h"
 #include "autogen_adapter_internal.h"
-
-#include "airy_protocol_interface.h"
-#include "error.h"
-#include "airy_memory.h"
-#include "types.h"
-
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 static int __attribute__((used)) autogen_count_words(const char *t)
 {
