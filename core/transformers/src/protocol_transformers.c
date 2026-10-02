@@ -43,6 +43,43 @@ void transform_context_destroy(transform_context_t *ctx)
     AIRY_FREE(ctx);
 }
 
+/* Shared envelope mechanisms: every transformer clears the target, stamps the
+  * protocol/endpoint/direction header, copies trace/session from the transform
+  * context and passes the payload through with a fallback. */
+static void envelope_init(unified_message_t *target, airy_protocol_type_t protocol,
+                          const char *endpoint, message_direction_t direction)
+{
+    AIRY_MEMSET(target, 0, sizeof(*target));
+    target->protocol = protocol;
+    AIRY_STRNCPY_TERM(target->endpoint, endpoint, sizeof(target->endpoint));
+    target->direction = direction;
+}
+
+static void envelope_meta(unified_message_t *target, void *context)
+{
+    transform_context_t *ctx = (transform_context_t *)context;
+    if (!ctx)
+        return;
+    if (ctx->trace_id[0])
+        AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
+                          sizeof(target->metadata.trace_id));
+    if (ctx->session_id[0])
+        AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
+                          sizeof(target->metadata.session_id));
+}
+
+static void payload_pass(unified_message_t *target, const unified_message_t *source,
+                         const char *fallback)
+{
+    if (source->payload) {
+        target->payload_size = strlen((const char *)source->payload) + 1;
+        target->payload = AIRY_STRDUP((const char *)source->payload);
+    } else {
+        target->payload = AIRY_STRDUP(fallback);
+        target->payload_size = strlen((const char *)target->payload) + 1;
+    }
+}
+
 /* ============================================================================
 
  * ============================================================================ */
@@ -111,20 +148,9 @@ int transformer_mcp_to_jsonrpc_response(const unified_message_t *source, unified
     if (!source || !target)
         return AIRY_ERR_NULL_POINTER;
 
-    AIRY_MEMSET(target, 0, sizeof(*target));
-    target->protocol = PROTOCOL_HTTP;
-    AIRY_STRNCPY_TERM(target->protocol_name, "jsonrpc", sizeof(target->protocol_name));
-    target->direction = source->is_error ? MSG_TYPE_ERROR : MSG_TYPE_RESPONSE;
-
-    transform_context_t *ctx = (transform_context_t *)context;
-    if (ctx) {
-        if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
-                              sizeof(target->metadata.trace_id));
-        if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
-                              sizeof(target->metadata.session_id));
-    }
+    envelope_init(target, PROTOCOL_HTTP, "jsonrpc",
+                  source->is_error ? MSG_TYPE_ERROR : MSG_TYPE_RESPONSE);
+    envelope_meta(target, context);
 
     if (source->is_error) {
         target->error_code = source->error_code;
@@ -178,28 +204,9 @@ int transformer_mcp_tools_list_to_jsonrpc(const unified_message_t *source,
     if (!source || !target)
         return AIRY_ERR_NULL_POINTER;
 
-    AIRY_MEMSET(target, 0, sizeof(*target));
-    target->protocol = PROTOCOL_HTTP;
-    AIRY_STRNCPY_TERM(target->protocol_name, "jsonrpc", sizeof(target->protocol_name));
-    target->direction = MSG_TYPE_RESPONSE;
-
-    transform_context_t *ctx = (transform_context_t *)context;
-    if (ctx) {
-        if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
-                              sizeof(target->metadata.trace_id));
-        if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
-                              sizeof(target->metadata.session_id));
-    }
-
-    if (source->payload) {
-        target->payload_size = strlen(source->payload) + 1;
-        target->payload = AIRY_STRDUP(source->payload);
-    } else {
-        target->payload = AIRY_STRDUP("{\"skills\":[]}");
-        target->payload_size = strlen(target->payload) + 1;
-    }
+    envelope_init(target, PROTOCOL_HTTP, "jsonrpc", MSG_TYPE_RESPONSE);
+    envelope_meta(target, context);
+    payload_pass(target, source, "{\"skills\":[]}");
 
     return 0;
 }
@@ -214,10 +221,7 @@ int transformer_jsonrpc_to_a2a_task(const unified_message_t *source, unified_mes
     if (!source || !target)
         return AIRY_ERR_NULL_POINTER;
 
-    AIRY_MEMSET(target, 0, sizeof(*target));
-    target->protocol = PROTOCOL_CUSTOM;
-    AIRY_STRNCPY_TERM(target->protocol_name, "a2a", sizeof(target->protocol_name));
-    target->direction = MSG_TYPE_REQUEST;
+    envelope_init(target, PROTOCOL_CUSTOM, "a2a", MSG_TYPE_REQUEST);
     AIRY_STRNCPY_TERM(target->method, "task/delegate", sizeof(target->method));
 
     transform_context_t *ctx = (transform_context_t *)context;
@@ -264,28 +268,9 @@ int transformer_a2a_to_jsonrpc_response(const unified_message_t *source, unified
     if (!source || !target)
         return AIRY_ERR_NULL_POINTER;
 
-    AIRY_MEMSET(target, 0, sizeof(*target));
-    target->protocol = PROTOCOL_HTTP;
-    AIRY_STRNCPY_TERM(target->endpoint, "jsonrpc", sizeof(target->endpoint));
-    target->direction = DIRECTION_RESPONSE;
-
-    transform_context_t *ctx = (transform_context_t *)context;
-    if (ctx) {
-        if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
-                              sizeof(target->metadata.trace_id));
-        if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
-                              sizeof(target->metadata.session_id));
-    }
-
-    if (source->payload) {
-        target->payload_size = strlen((const char *)source->payload) + 1;
-        target->payload = AIRY_STRDUP((const char *)source->payload);
-    } else {
-        target->payload = AIRY_STRDUP("{\"result\":{}}");
-        target->payload_size = strlen((const char *)target->payload) + 1;
-    }
+    envelope_init(target, PROTOCOL_HTTP, "jsonrpc", MSG_TYPE_RESPONSE);
+    envelope_meta(target, context);
+    payload_pass(target, source, "{\"result\":{}}");
 
     return 0;
 }
@@ -296,10 +281,7 @@ int transformer_jsonrpc_to_a2a_discover(const unified_message_t *source, unified
     if (!target)
         return AIRY_ERR_NULL_POINTER;
 
-    AIRY_MEMSET(target, 0, sizeof(*target));
-    target->protocol = PROTOCOL_CUSTOM;
-    AIRY_STRNCPY_TERM(target->endpoint, "a2a/agent/discover", sizeof(target->endpoint));
-    target->direction = DIRECTION_REQUEST;
+    envelope_init(target, PROTOCOL_CUSTOM, "a2a/agent/discover", DIRECTION_REQUEST);
 
     transform_context_t *ctx = (transform_context_t *)context;
     if (ctx) {
@@ -322,28 +304,9 @@ int transformer_a2a_agents_to_jsonrpc(const unified_message_t *source, unified_m
     if (!source || !target)
         return AIRY_ERR_NULL_POINTER;
 
-    AIRY_MEMSET(target, 0, sizeof(*target));
-    target->protocol = PROTOCOL_HTTP;
-    AIRY_STRNCPY_TERM(target->endpoint, "jsonrpc", sizeof(target->endpoint));
-    target->direction = DIRECTION_RESPONSE;
-
-    transform_context_t *ctx = (transform_context_t *)context;
-    if (ctx) {
-        if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
-                              sizeof(target->metadata.trace_id));
-        if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
-                              sizeof(target->metadata.session_id));
-    }
-
-    if (source->payload) {
-        target->payload_size = strlen((const char *)source->payload) + 1;
-        target->payload = AIRY_STRDUP((const char *)source->payload);
-    } else {
-        target->payload = AIRY_STRDUP("{\"agents\":[]}");
-        target->payload_size = strlen((const char *)target->payload) + 1;
-    }
+    envelope_init(target, PROTOCOL_HTTP, "jsonrpc", DIRECTION_RESPONSE);
+    envelope_meta(target, context);
+    payload_pass(target, source, "{\"agents\":[]}");
 
     return 0;
 }
@@ -358,20 +321,8 @@ int transformer_jsonrpc_to_openai_chat(const unified_message_t *source, unified_
     if (!source || !target)
         return AIRY_ERR_NULL_POINTER;
 
-    AIRY_MEMSET(target, 0, sizeof(*target));
-    target->protocol = PROTOCOL_CUSTOM;
-    AIRY_STRNCPY_TERM(target->endpoint, "openai/chat/completions", sizeof(target->endpoint));
-    target->direction = DIRECTION_REQUEST;
-
-    transform_context_t *ctx = (transform_context_t *)context;
-    if (ctx) {
-        if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
-                              sizeof(target->metadata.trace_id));
-        if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
-                              sizeof(target->metadata.session_id));
-    }
+    envelope_init(target, PROTOCOL_CUSTOM, "openai/chat/completions", DIRECTION_REQUEST);
+    envelope_meta(target, context);
 
     char openai_payload[16384] = {0};
     const char *model = "gpt-4o";
@@ -431,20 +382,8 @@ int transformer_openai_chat_to_jsonrpc(const unified_message_t *source, unified_
     if (!source || !target)
         return AIRY_ERR_NULL_POINTER;
 
-    AIRY_MEMSET(target, 0, sizeof(*target));
-    target->protocol = PROTOCOL_HTTP;
-    AIRY_STRNCPY_TERM(target->endpoint, "jsonrpc", sizeof(target->endpoint));
-    target->direction = DIRECTION_RESPONSE;
-
-    transform_context_t *ctx = (transform_context_t *)context;
-    if (ctx) {
-        if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
-                              sizeof(target->metadata.trace_id));
-        if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
-                              sizeof(target->metadata.session_id));
-    }
+    envelope_init(target, PROTOCOL_HTTP, "jsonrpc", DIRECTION_RESPONSE);
+    envelope_meta(target, context);
 
     if (!source->payload) {
         target->payload = AIRY_STRDUP(
@@ -507,28 +446,9 @@ int transformer_openai_stream_chunk_to_jsonrpc(const unified_message_t *source,
     if (!source || !target)
         return AIRY_ERR_NULL_POINTER;
 
-    AIRY_MEMSET(target, 0, sizeof(*target));
-    target->protocol = PROTOCOL_HTTP;
-    AIRY_STRNCPY_TERM(target->endpoint, "jsonrpc/llm.stream.chunk", sizeof(target->endpoint));
-    target->direction = DIRECTION_NOTIFICATION;
-
-    transform_context_t *ctx = (transform_context_t *)context;
-    if (ctx) {
-        if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
-                              sizeof(target->metadata.trace_id));
-        if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
-                              sizeof(target->metadata.session_id));
-    }
-
-    if (source->payload) {
-        target->payload_size = strlen((const char *)source->payload) + 1;
-        target->payload = AIRY_STRDUP((const char *)source->payload);
-    } else {
-        target->payload = AIRY_STRDUP("{\"delta\":\"\"}");
-        target->payload_size = strlen((const char *)target->payload) + 1;
-    }
+    envelope_init(target, PROTOCOL_HTTP, "jsonrpc/llm.stream.chunk", DIRECTION_NOTIFICATION);
+    envelope_meta(target, context);
+    payload_pass(target, source, "{\"delta\":\"\"}");
 
     return 0;
 }
@@ -539,20 +459,8 @@ int transformer_jsonrpc_to_openai_embedding(const unified_message_t *source,
     if (!source || !target)
         return AIRY_ERR_NULL_POINTER;
 
-    AIRY_MEMSET(target, 0, sizeof(*target));
-    target->protocol = PROTOCOL_CUSTOM;
-    AIRY_STRNCPY_TERM(target->endpoint, "openai/embeddings", sizeof(target->endpoint));
-    target->direction = DIRECTION_REQUEST;
-
-    transform_context_t *ctx = (transform_context_t *)context;
-    if (ctx) {
-        if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
-                              sizeof(target->metadata.trace_id));
-        if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
-                              sizeof(target->metadata.session_id));
-    }
+    envelope_init(target, PROTOCOL_CUSTOM, "openai/embeddings", DIRECTION_REQUEST);
+    envelope_meta(target, context);
 
     const char *text = "";
     const char *model = "text-embedding-ada-002";
@@ -605,20 +513,8 @@ int transformer_jsonrpc_to_openjiuwen(const unified_message_t *source, unified_m
     if (!source || !target)
         return AIRY_ERR_NULL_POINTER;
 
-    AIRY_MEMSET(target, 0, sizeof(*target));
-    target->protocol = PROTOCOL_CUSTOM;
-    AIRY_STRNCPY_TERM(target->endpoint, "openjiuwen", sizeof(target->endpoint));
-    target->direction = DIRECTION_REQUEST;
-
-    transform_context_t *ctx = (transform_context_t *)context;
-    if (ctx) {
-        if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
-                              sizeof(target->metadata.trace_id));
-        if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
-                              sizeof(target->metadata.session_id));
-    }
+    envelope_init(target, PROTOCOL_CUSTOM, "openjiuwen", DIRECTION_REQUEST);
+    envelope_meta(target, context);
 
     openjiuwen_header_t header;
     AIRY_MEMSET(&header, 0, sizeof(header));
@@ -662,19 +558,8 @@ int transformer_openjiuwen_to_jsonrpc(const unified_message_t *source, unified_m
         return AIRY_ERR_NULL_POINTER;
     }
 
-    AIRY_MEMSET(target, 0, sizeof(*target));
-    target->protocol = PROTOCOL_HTTP;
-    AIRY_STRNCPY_TERM(target->endpoint, "jsonrpc", sizeof(target->endpoint));
-
-    transform_context_t *ctx = (transform_context_t *)context;
-    if (ctx) {
-        if (ctx->trace_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.trace_id, ctx->trace_id,
-                              sizeof(target->metadata.trace_id));
-        if (ctx->session_id[0])
-            AIRY_STRNCPY_TERM(target->metadata.session_id, ctx->session_id,
-                              sizeof(target->metadata.session_id));
-    }
+    envelope_init(target, PROTOCOL_HTTP, "jsonrpc", DIRECTION_RESPONSE);
+    envelope_meta(target, context);
 
     const unsigned char *data = (const unsigned char *)source->payload;
     const openjiuwen_header_t *hdr = (const openjiuwen_header_t *)data;
