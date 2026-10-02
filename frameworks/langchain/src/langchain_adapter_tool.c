@@ -10,21 +10,7 @@
  * tool list query (langchain_list_tools).
  */
 
-#define LOG_TAG "langchain_adapter"
-
-#include "langchain_adapter.h"
 #include "langchain_adapter_internal.h"
-
-#include "error.h"
-#include "airy_memory.h"
-#include "types.h"
-#include "unified_protocol.h"
-
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 int langchain_register_tool(langchain_adapter_context_t *ctx, const langchain_tool_def_t *tool,
                             langchain_tool_executor_fn executor, void *user_data)

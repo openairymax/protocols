@@ -7,20 +7,7 @@
  * @brief OpenClaw adapter monitoring and callback domain (handler registration/heartbeat/statistics).
  */
 
-#define LOG_TAG "openclaw_adapter"
-
-#include "openclaw_adapter.h"
 #include "openclaw_adapter_internal.h"
-
-#include "protocol_transformers.h"
-
-#include <stdio.h>
-#include "error.h"
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include "airy_memory.h"
-#include "types.h"
 
 int openclaw_set_message_handler(openclaw_adapter_context_t *ctx,
                                  openclaw_message_handler_t handler, void *user_data)

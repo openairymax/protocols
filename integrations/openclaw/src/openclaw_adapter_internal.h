@@ -4,18 +4,35 @@
 /**
  * @file openclaw_adapter_internal.h
  * @brief Internal types and cross-file declarations shared by the OpenClaw adapter split files.
+ *
+ * @note All split files include only this internal header; the family-common
+ * preamble (LOG_TAG, family and system includes) lives here.
  */
 
 #ifndef OPENCLAW_ADAPTER_INTERNAL_H
 #define OPENCLAW_ADAPTER_INTERNAL_H
 
+#define LOG_TAG "openclaw_adapter"
+
 #include "openclaw_adapter.h"
+
+#include "error.h"
+#include "airy_memory.h"
+#include "protocol_transformers.h"
+#include "types.h"
+
+#include <errno.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 #ifndef _WIN32
 #include <pthread.h>
 #endif
-
-#include <errno.h>
 
 #ifdef _WIN32
 #include <winsock2.h>

@@ -13,21 +13,7 @@
  * autogen_adapter_msg.c / autogen_adapter_proto.c.
  */
 
-#define LOG_TAG "autogen_adapter"
-
-#include "autogen_adapter.h"
 #include "autogen_adapter_internal.h"
-
-#include "airy_protocol_interface.h"
-#include "error.h"
-#include "airy_memory.h"
-#include "types.h"
-
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 autogen_config_t autogen_config_default(void)
 {

@@ -19,25 +19,7 @@
  * template-generated fake responses.
  */
 
-#define LOG_TAG "claude_adapter"
-
-#include "claude_adapter.h"
 #include "claude_adapter_internal.h"
-
-#include "error.h"
-#include "logging.h"
-#include "airy_memory.h"
-#include "protocol_transformers.h"
-#include "types.h"
-#include "unified_protocol.h"
-
-#include <ctype.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 #ifdef AIRY_HAS_CURL
 #include <cjson/cJSON.h>

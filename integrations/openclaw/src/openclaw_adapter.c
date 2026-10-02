@@ -7,21 +7,9 @@
  * @brief OpenClaw Platform Integration Adapter Implementation
  */
 
-#define LOG_TAG "openclaw_adapter"
-
-#include "openclaw_adapter.h"
 #include "openclaw_adapter_internal.h"
 
 #include "airy_defaults.h"
-#include "protocol_transformers.h"
-
-#include <stdio.h>
-#include "error.h"
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include "airy_memory.h"
-#include "types.h"
 
 static openclaw_adapter_context_t *g_openclaw_instance = NULL;
 

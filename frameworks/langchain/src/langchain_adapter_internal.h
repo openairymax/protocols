@@ -6,17 +6,30 @@
  * @brief Cross-file declarations shared by the LangChain adapter split files.
  *
  * @note langchain_adapter_context_s is fully defined in the public header
- * langchain_adapter.h; it does not need to be redeclared here.
+ * langchain_adapter.h. All split files include only this internal header; the
+ * family-common preamble (LOG_TAG, family and system includes) lives here.
  */
 
 #ifndef LANGCHAIN_ADAPTER_INTERNAL_H
 #define LANGCHAIN_ADAPTER_INTERNAL_H
 
+#define LOG_TAG "langchain_adapter"
+
 #include "langchain_adapter.h"
 
+#include "error.h"
+#include "airy_memory.h"
+#include "types.h"
+#include "unified_protocol.h"
+
+#include <ctype.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 /* Chain execution domain (was static; referenced by agent-exec and protocol-callback domains) **/
 int lc_generate_chain_response(langchain_adapter_context_t *ctx, const char *input_json,

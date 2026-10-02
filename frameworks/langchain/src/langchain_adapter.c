@@ -14,21 +14,7 @@
  * langchain_adapter_memory.c / langchain_adapter_proto.c.
  */
 
-#define LOG_TAG "langchain_adapter"
-
-#include "langchain_adapter.h"
 #include "langchain_adapter_internal.h"
-
-#include "error.h"
-#include "airy_memory.h"
-#include "types.h"
-#include "unified_protocol.h"
-
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 langchain_config_t langchain_config_default(void)
 {

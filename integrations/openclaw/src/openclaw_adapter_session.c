@@ -7,20 +7,7 @@
  * @brief OpenClaw adapter session domain (session creation and closing).
  */
 
-#define LOG_TAG "openclaw_adapter"
-
-#include "openclaw_adapter.h"
 #include "openclaw_adapter_internal.h"
-
-#include "protocol_transformers.h"
-
-#include <stdio.h>
-#include "error.h"
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include "airy_memory.h"
-#include "types.h"
 
 int openclaw_create_session(openclaw_adapter_context_t *ctx,
                             const openclaw_session_t *session_template,

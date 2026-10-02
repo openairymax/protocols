@@ -10,7 +10,6 @@
 
 #include "airy_memory.h"
 #include "types.h"
-#include "../../../../commons/utils/error/error.h"
 #include "error.h"
 
 #include <ctype.h>
@@ -25,6 +24,36 @@
 #include <cjson/cJSON.h>
 
 #include <cjson_helpers.h>
+
+static cJSON *oai_msgs_json(const openai_chat_request_t *request)
+{
+    cJSON *msgs_arr = cJSON_CreateArray();
+    for (size_t i = 0; i < request->num_messages && i < 256; i++) {
+        cJSON *msg_obj = cJSON_CreateObject();
+        const char *role_str = "user";
+        switch (request->messages[i].role) {
+        case OPENAI_ROLE_SYSTEM:
+            role_str = "system";
+            break;
+        case OPENAI_ROLE_ASSISTANT:
+            role_str = "assistant";
+            break;
+        case OPENAI_ROLE_TOOL:
+            role_str = "tool";
+            break;
+        case OPENAI_ROLE_FUNCTION:
+            role_str = "function";
+            break;
+        default:
+            break;
+        }
+        cJSON_AddStringToObject(msg_obj, "role", role_str);
+        if (request->messages[i].content)
+            cJSON_AddStringToObject(msg_obj, "content", request->messages[i].content);
+        cJSON_AddItemToArray(msgs_arr, msg_obj);
+    }
+    return msgs_arr;
+}
 #endif
 
 int oai_chat_completion(openai_handle_t handle, const openai_chat_request_t *request,
@@ -123,32 +152,7 @@ int oai_chat_completion(openai_handle_t handle, const openai_chat_request_t *req
         cJSON_AddItemToObject(req_json, "tools", tools_arr);
     }
 
-    cJSON *msgs_arr = cJSON_CreateArray();
-    for (size_t i = 0; i < request->num_messages && i < 256; i++) {
-        cJSON *msg_obj = cJSON_CreateObject();
-        const char *role_str = "user";
-        switch (request->messages[i].role) {
-        case OPENAI_ROLE_SYSTEM:
-            role_str = "system";
-            break;
-        case OPENAI_ROLE_ASSISTANT:
-            role_str = "assistant";
-            break;
-        case OPENAI_ROLE_TOOL:
-            role_str = "tool";
-            break;
-        case OPENAI_ROLE_FUNCTION:
-            role_str = "function";
-            break;
-        default:
-            break;
-        }
-        cJSON_AddStringToObject(msg_obj, "role", role_str);
-        if (request->messages[i].content)
-            cJSON_AddStringToObject(msg_obj, "content", request->messages[i].content);
-        cJSON_AddItemToArray(msgs_arr, msg_obj);
-    }
-    cJSON_AddItemToObject(req_json, "messages", msgs_arr);
+    cJSON_AddItemToObject(req_json, "messages", oai_msgs_json(request));
 
     char *req_str = cJSON_PrintUnformatted(req_json);
     cJSON_Delete(req_json);
@@ -242,32 +246,7 @@ int oai_stream_chat(openai_handle_t handle, const openai_chat_request_t *request
                             request->max_tokens > 0 ? request->max_tokens : 4096);
     cJSON_AddBoolToObject(req_json, "stream", 1);
 
-    cJSON *msgs_arr = cJSON_CreateArray();
-    for (size_t i = 0; i < request->num_messages && i < 256; i++) {
-        cJSON *msg_obj = cJSON_CreateObject();
-        const char *role_str = "user";
-        switch (request->messages[i].role) {
-        case OPENAI_ROLE_SYSTEM:
-            role_str = "system";
-            break;
-        case OPENAI_ROLE_ASSISTANT:
-            role_str = "assistant";
-            break;
-        case OPENAI_ROLE_TOOL:
-            role_str = "tool";
-            break;
-        case OPENAI_ROLE_FUNCTION:
-            role_str = "function";
-            break;
-        default:
-            break;
-        }
-        cJSON_AddStringToObject(msg_obj, "role", role_str);
-        if (request->messages[i].content)
-            cJSON_AddStringToObject(msg_obj, "content", request->messages[i].content);
-        cJSON_AddItemToArray(msgs_arr, msg_obj);
-    }
-    cJSON_AddItemToObject(req_json, "messages", msgs_arr);
+    cJSON_AddItemToObject(req_json, "messages", oai_msgs_json(request));
 
     char *req_str = cJSON_PrintUnformatted(req_json);
     cJSON_Delete(req_json);

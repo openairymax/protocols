@@ -7,20 +7,7 @@
  * @brief OpenClaw adapter message and task domain (send/recv, delegation, query, cancel, cluster status).
  */
 
-#define LOG_TAG "openclaw_adapter"
-
-#include "openclaw_adapter.h"
 #include "openclaw_adapter_internal.h"
-
-#include "protocol_transformers.h"
-
-#include <stdio.h>
-#include "error.h"
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include "airy_memory.h"
-#include "types.h"
 
 int openclaw_send_message(openclaw_adapter_context_t *ctx, const openclaw_message_t *msg,
                           openclaw_message_t *response)
