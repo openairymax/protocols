@@ -11,19 +11,7 @@
  * key-value extraction helpers.
  */
 
-#define LOG_TAG "protocol_extension_framework"
-
-#include "protocol_extension_framework.h"
 #include "protocol_extension_framework_internal.h"
-
-#include "airy_memory.h"
-#include "types.h"
-
-#include <stdio.h>
-#include "error.h"
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 static char *json_extract_string(const char *json, const char *key)
 {

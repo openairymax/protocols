@@ -10,19 +10,7 @@
  * state machine, adapter statistics and list/capability queries.
  */
 
-#define LOG_TAG "protocol_extension_framework"
-
-#include "protocol_extension_framework.h"
 #include "protocol_extension_framework_internal.h"
-
-#include "airy_memory.h"
-#include "types.h"
-
-#include <stdio.h>
-#include "error.h"
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 int proto_ext_register(proto_ext_framework_t *fw, const proto_ext_descriptor_t *descriptor,
                        const proto_ext_callbacks_t *callbacks)
