@@ -13,19 +13,7 @@
  * protocol_extension_framework_registry.c / _middleware.c / _route.c / _config.c.
  */
 
-#define LOG_TAG "protocol_extension_framework"
-
-#include "protocol_extension_framework.h"
 #include "protocol_extension_framework_internal.h"
-
-#include "airy_memory.h"
-#include "types.h"
-
-#include <stdio.h>
-#include "error.h"
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 uint64_t current_time_ms(void)
 {

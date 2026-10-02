@@ -4,16 +4,30 @@
 /**
  * @file protocol_extension_framework_internal.h
  * @brief Internal types and cross-file declarations shared by the framework split files.
+ *
+ * Also serves as the family prelude: the common LOG_TAG, family headers and
+ * system headers live here so each split .c keeps only its own doc block plus
+ * this single include.
  */
 
 #ifndef PROTOCOL_EXTENSION_FRAMEWORK_INTERNAL_H
 #define PROTOCOL_EXTENSION_FRAMEWORK_INTERNAL_H
 
+#define LOG_TAG "protocol_extension_framework"
+
 #include "protocol_extension_framework.h"
+
+#include "airy_memory.h"
+#include "error.h"
+#include "types.h"
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 typedef struct {
     proto_ext_descriptor_t descriptor;

@@ -10,19 +10,7 @@
  * extension, auto-route by protocol type and negotiate protocol versions.
  */
 
-#define LOG_TAG "protocol_extension_framework"
-
-#include "protocol_extension_framework.h"
 #include "protocol_extension_framework_internal.h"
-
-#include "airy_memory.h"
-#include "types.h"
-
-#include <stdio.h>
-#include "error.h"
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 int proto_ext_send_message(proto_ext_framework_t *fw, const char *adapter_name,
                            const unified_message_t *message)
