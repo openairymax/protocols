@@ -11,35 +11,7 @@
  * the response (for the gateway to assemble MCP responses).
  */
 
-#define LOG_TAG "mcp_client"
-
-#include "mcp_client.h"
 #include "mcp_client_internal.h"
-
-#include "airy_memory.h"
-#include "error.h"
-#include "logging.h"
-
-#include <cjson/cJSON.h>
-#include <cjson_helpers.h>
-
-#include <ctype.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <strings.h>
-#include <time.h>
-
-#ifndef _WIN32
-#include <netdb.h>
-#include <netinet/in.h>
-#include <poll.h>
-#include <signal.h>
-#include <sys/socket.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#endif
 
 /**
   * @brief Escape a JSON string and quote it (same as json_string_escape in mcp_v1_adapter.c)

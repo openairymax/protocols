@@ -4,19 +4,35 @@
 /**
  * @file mcp_client_internal.h
  * @brief Internal types and cross-file declarations shared by the MCP client split files.
+ *
+ * Also serves as the family prelude: common LOG_TAG and includes live here so
+ * the split .c files keep only their own doc block plus this single include.
  */
 
 #ifndef MCP_CLIENT_INTERNAL_H
 #define MCP_CLIENT_INTERNAL_H
 
+#define LOG_TAG "mcp_client"
+
 #include "mcp_client.h"
+
+#include "airy_memory.h"
+#include "error.h"
+#include "logging.h"
 
 #include <cjson/cJSON.h>
 #include <cjson_helpers.h>
 
+#include <ctype.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <time.h>
 
 #ifndef _WIN32
 #include <netdb.h>
