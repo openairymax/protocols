@@ -17,6 +17,7 @@
 #include "safe_string_utils.h"
 #include "types.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -403,6 +404,33 @@ void unified_message_destroy(unified_message_t *message)
 
     // Note: payload is not freed here; the caller manages it
     AIRY_MEMSET(message, 0, sizeof(unified_message_t));
+}
+
+int umsg_to_json(const unified_message_t *umsg, void **out_data, size_t *out_size)
+{
+    const char *payload = umsg->payload ? (const char *)umsg->payload : "";
+    size_t payload_len = umsg->payload_size;
+    size_t buf_size = 256 + payload_len;
+    char *buf = (char *)AIRY_MALLOC(buf_size);
+    if (!buf) {
+        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
+                         "umsg_to_json: oom");
+        return AIRY_ERR_OUT_OF_MEMORY;
+    }
+    int written =
+        snprintf(buf, buf_size,
+                 "{\"protocol\":%d,\"direction\":%d,\"timestamp\":%llu,\"payload\":\"%.*s\"}",
+                 (int)umsg->protocol, (int)umsg->direction, (unsigned long long)umsg->timestamp,
+                 (int)payload_len, payload);
+    if (written < 0 || (size_t)written >= buf_size) {
+        AIRY_FREE(buf);
+        airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__,
+                         "umsg_to_json: snprintf failed");
+        return AIRY_ERR_IO;
+    }
+    *out_data = buf;
+    *out_size = (size_t)written;
+    return 0;
 }
 
 const char *protocol_type_to_string(protocol_type_t type)

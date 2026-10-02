@@ -11,25 +11,7 @@
  * send/receive/get_stats), mounted via claude_get_protocol_adapter().
  */
 
-#define LOG_TAG "claude_adapter"
-
-#include "claude_adapter.h"
 #include "claude_adapter_internal.h"
-
-#include "error.h"
-#include "logging.h"
-#include "airy_memory.h"
-#include "protocol_transformers.h"
-#include "types.h"
-#include "unified_protocol.h"
-
-#include <ctype.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 int claude_proto_encode(void *context, const void *msg, void **out_data, size_t *out_size)
 {
@@ -39,29 +21,7 @@ int claude_proto_encode(void *context, const void *msg, void **out_data, size_t 
         return AIRY_ERR_INVALID_PARAM;
     }
     const unified_message_t *umsg = (const unified_message_t *)msg;
-    const char *payload = umsg->payload ? (const char *)umsg->payload : "";
-    size_t payload_len = umsg->payload_size;
-    size_t buf_size = 256 + payload_len;
-    char *buf = (char *)AIRY_MALLOC(buf_size);
-    if (!buf) {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
-                         "claude_proto_encode: oom");
-        return AIRY_ERR_OUT_OF_MEMORY;
-    }
-    int written =
-        snprintf(buf, buf_size,
-                 "{\"protocol\":%d,\"direction\":%d,\"timestamp\":%llu,\"payload\":\"%.*s\"}",
-                 (int)umsg->protocol, (int)umsg->direction, (unsigned long long)umsg->timestamp,
-                 (int)payload_len, payload);
-    if (written < 0 || (size_t)written >= buf_size) {
-        AIRY_FREE(buf);
-        airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__,
-                         "claude_proto_encode: snprintf failed/truncated");
-        return AIRY_ERR_IO;
-    }
-    *out_data = buf;
-    *out_size = (size_t)written;
-    return 0;
+    return umsg_to_json(umsg, out_data, out_size);
 }
 
 int claude_proto_decode(void *context, const void *data, size_t size, void *out_msg)
