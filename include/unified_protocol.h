@@ -197,6 +197,8 @@ unified_message_t unified_message_create(protocol_type_t protocol, message_direc
                                          const char *endpoint, const void *payload,
                                          size_t payload_size);
 void unified_message_destroy(unified_message_t *message);
+int unified_decode(const void *data, size_t size, unified_message_t *message,
+                   protocol_type_t default_protocol);
 const char *protocol_type_to_string(protocol_type_t type);
 protocol_type_t protocol_type_from_string(const char *str);
 

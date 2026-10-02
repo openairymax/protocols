@@ -461,49 +461,7 @@ static int agntcy_proto_decode(void *context, const void *data, size_t size, voi
         return AIRY_ERR_INVALID_PARAM;
     }
 
-    unified_message_t *msg = (unified_message_t *)out_msg;
-    char *copy = (char *)AIRY_MALLOC(size + 1);
-    if (!copy) {
-        airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
-                         "agntcy_proto_decode: oom");
-        return AIRY_ERR_OUT_OF_MEMORY;
-    }
-    __builtin_memcpy(copy, data, size);
-    copy[size] = '\0';
-
-    msg->protocol = AIRY_PROTOCOL_AGNTCY;
-    char *p = strstr(copy, "\"protocol\":");
-    if (p)
-        msg->protocol = (airy_protocol_type_t)strtol(p + 11, NULL, 10);
-
-    msg->direction = DIRECTION_RESPONSE;
-    p = strstr(copy, "\"direction\":");
-    if (p)
-        msg->direction = (message_direction_t)strtol(p + 12, NULL, 10);
-
-    msg->timestamp = (uint64_t)time(NULL);
-    p = strstr(copy, "\"timestamp\":");
-    if (p)
-        msg->timestamp = (uint64_t)strtoull(p + 12, NULL, 10);
-
-    p = strstr(copy, "\"payload\":\"");
-    if (p) {
-        p += 11;
-        char *end = strchr(p, '"');
-        size_t plen = end ? (size_t)(end - p) : strlen(p);
-        msg->payload = AIRY_MALLOC(plen + 1);
-        if (msg->payload) {
-            __builtin_memcpy(msg->payload, p, plen);
-            ((char *)msg->payload)[plen] = '\0';
-            msg->payload_size = plen;
-        }
-    } else {
-        msg->payload = AIRY_STRDUP("");
-        msg->payload_size = 0;
-    }
-
-    AIRY_FREE(copy);
-    return 0;
+    return unified_decode(data, size, (unified_message_t *)out_msg, AIRY_PROTOCOL_AGNTCY);
 }
 
 static int agntcy_proto_connect(void *context, const char *endpoint)
