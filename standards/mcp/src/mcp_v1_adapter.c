@@ -150,7 +150,21 @@ mcp_v1_context_t *mcp_v1_context_create(const mcp_v1_config_t *config)
     return ctx;
 }
 
-void mcp_v1_context_destroy(mcp_v1_context_t *ctx)
+const char *mcp_type_str(mcp_content_type_t type)
+{
+    switch (type) {
+    case MCP_CONTENT_IMAGE:
+        return "image";
+    case MCP_CONTENT_RESOURCE:
+        return "resource";
+    case MCP_CONTENT_EMBEDDED:
+        return "embedded";
+    default:
+        return "text";
+    }
+}
+
+void mcp_v1_context_clear(mcp_v1_context_t *ctx)
 {
     if (!ctx)
         return;
@@ -161,6 +175,9 @@ void mcp_v1_context_destroy(mcp_v1_context_t *ctx)
         AIRY_FREE(ctx->tools[i].tool.input_schema_json);
     }
     AIRY_FREE(ctx->tools);
+    ctx->tools = NULL;
+    ctx->tool_count = 0;
+    ctx->tool_capacity = 0;
 
     for (size_t i = 0; i < ctx->resource_count; i++) {
         AIRY_FREE(ctx->resources[i].resource.uri);
@@ -169,6 +186,9 @@ void mcp_v1_context_destroy(mcp_v1_context_t *ctx)
         AIRY_FREE(ctx->resources[i].resource.mime_type);
     }
     AIRY_FREE(ctx->resources);
+    ctx->resources = NULL;
+    ctx->resource_count = 0;
+    ctx->resource_capacity = 0;
 
     for (size_t i = 0; i < ctx->template_count; i++) {
         AIRY_FREE(ctx->resource_templates[i].uri_template);
@@ -177,6 +197,9 @@ void mcp_v1_context_destroy(mcp_v1_context_t *ctx)
         AIRY_FREE(ctx->resource_templates[i].mime_type);
     }
     AIRY_FREE(ctx->resource_templates);
+    ctx->resource_templates = NULL;
+    ctx->template_count = 0;
+    ctx->template_capacity = 0;
 
     for (size_t i = 0; i < ctx->prompt_count; i++) {
         AIRY_FREE(ctx->prompts[i].prompt.name);
@@ -184,9 +207,22 @@ void mcp_v1_context_destroy(mcp_v1_context_t *ctx)
         AIRY_FREE(ctx->prompts[i].prompt.arguments_schema_json);
     }
     AIRY_FREE(ctx->prompts);
+    ctx->prompts = NULL;
+    ctx->prompt_count = 0;
+    ctx->prompt_capacity = 0;
 
     AIRY_FREE(ctx->config.server_name);
     AIRY_FREE(ctx->config.server_version);
+    ctx->config.server_name = NULL;
+    ctx->config.server_version = NULL;
+}
+
+void mcp_v1_context_destroy(mcp_v1_context_t *ctx)
+{
+    if (!ctx)
+        return;
+
+    mcp_v1_context_clear(ctx);
     AIRY_FREE(ctx);
 }
 

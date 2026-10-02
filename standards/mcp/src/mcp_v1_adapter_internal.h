@@ -92,5 +92,7 @@ void emit_sse_line(mcp_stream_callback_t callback, void *user_data, const char *
                    const char *value);
 int emit_sse_event(mcp_stream_callback_t callback, void *user_data, const char *event_type,
                    const char *json_data);
+const char *mcp_type_str(mcp_content_type_t type);
+void mcp_v1_context_clear(mcp_v1_context_t *ctx);
 
 #endif /* MCP_V1_ADAPTER_INTERNAL_H */

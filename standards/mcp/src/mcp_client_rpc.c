@@ -10,35 +10,7 @@
  * exchange, initialize handshake (idempotent) and the initialized notification.
  */
 
-#define LOG_TAG "mcp_client"
-
-#include "mcp_client.h"
 #include "mcp_client_internal.h"
-
-#include "airy_memory.h"
-#include "error.h"
-#include "logging.h"
-
-#include <cjson/cJSON.h>
-#include <cjson_helpers.h>
-
-#include <ctype.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <strings.h>
-#include <time.h>
-
-#ifndef _WIN32
-#include <netdb.h>
-#include <netinet/in.h>
-#include <poll.h>
-#include <signal.h>
-#include <sys/socket.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#endif
 
 static int64_t now_ms(void)
 {

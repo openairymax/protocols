@@ -113,20 +113,7 @@ int mcp_v1_handle_tools_call(mcp_v1_context_t *ctx, const char *name, const char
     for (size_t i = 0; i < result_count; i++) {
         if (i > 0)
             offset += snprintf(buf + offset, buf_size - offset, ",");
-        const char *type_str = "text";
-        switch (results[i].type) {
-        case MCP_CONTENT_IMAGE:
-            type_str = "image";
-            break;
-        case MCP_CONTENT_RESOURCE:
-            type_str = "resource";
-            break;
-        case MCP_CONTENT_EMBEDDED:
-            type_str = "embedded";
-            break;
-        default:
-            break;
-        }
+        const char *type_str = mcp_type_str(results[i].type);
         char *text_esc = json_string_escape(results[i].text);
         offset += snprintf(buf + offset, buf_size - offset, "{\"type\":\"%s\",\"text\":%s}",
                            type_str, text_esc);
@@ -198,20 +185,7 @@ int mcp_v1_handle_tools_call_streaming(mcp_v1_context_t *ctx, const char *name,
         size_t buf_size = 512 + (results[i].text ? strlen(results[i].text) : 0);
         char *chunk_json = AIRY_MALLOC(buf_size);
         if (chunk_json) {
-            const char *type_str = "text";
-            switch (results[i].type) {
-            case MCP_CONTENT_IMAGE:
-                type_str = "image";
-                break;
-            case MCP_CONTENT_RESOURCE:
-                type_str = "resource";
-                break;
-            case MCP_CONTENT_EMBEDDED:
-                type_str = "embedded";
-                break;
-            default:
-                break;
-            }
+            const char *type_str = mcp_type_str(results[i].type);
             snprintf(chunk_json, buf_size, "{\"index\":%zu,\"type\":\"%s\",\"partial\":true}", i,
                      type_str);
 
@@ -261,20 +235,7 @@ int mcp_v1_handle_tools_call_streaming(mcp_v1_context_t *ctx, const char *name,
         for (size_t i = 0; i < result_count; i++) {
             if (i > 0)
                 offset += snprintf(final_json + offset, final_buf_size - offset, ",");
-            const char *type_str = "text";
-            switch (results[i].type) {
-            case MCP_CONTENT_IMAGE:
-                type_str = "image";
-                break;
-            case MCP_CONTENT_RESOURCE:
-                type_str = "resource";
-                break;
-            case MCP_CONTENT_EMBEDDED:
-                type_str = "embedded";
-                break;
-            default:
-                break;
-            }
+            const char *type_str = mcp_type_str(results[i].type);
             char *text_esc = json_string_escape(results[i].text);
             offset += snprintf(final_json + offset, final_buf_size - offset,
                                "{\"type\":\"%s\",\"text\":%s}", type_str, text_esc);

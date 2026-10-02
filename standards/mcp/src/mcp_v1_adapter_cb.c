@@ -33,43 +33,13 @@ static int mcp_adapter_destroy(void *context)
     if (!context)
         return 0;
     mcp_v1_context_t *ctx = (mcp_v1_context_t *)context;
-    /* Free internal heap fields (as mcp_v1_context_destroy does) but never the shell:
-      * the adapter's context may be the static global s_mcp_default_context (P0-01 default
-      * context obtained by gateway_d via mcp_v1_get_adapter()); freeing the shell
-      * triggers an ASan bad-free (free on a non-malloc address). The holder owns the shell
-      * (protocol_adapter_t.context); destroy only frees internal resources. */
-    for (size_t i = 0; i < ctx->tool_count; i++) {
-        AIRY_FREE(ctx->tools[i].tool.name);
-        AIRY_FREE(ctx->tools[i].tool.description);
-        AIRY_FREE(ctx->tools[i].tool.input_schema_json);
-    }
-    AIRY_FREE(ctx->tools);
-
-    for (size_t i = 0; i < ctx->resource_count; i++) {
-        AIRY_FREE(ctx->resources[i].resource.uri);
-        AIRY_FREE(ctx->resources[i].resource.name);
-        AIRY_FREE(ctx->resources[i].resource.description);
-        AIRY_FREE(ctx->resources[i].resource.mime_type);
-    }
-    AIRY_FREE(ctx->resources);
-
-    for (size_t i = 0; i < ctx->template_count; i++) {
-        AIRY_FREE(ctx->resource_templates[i].uri_template);
-        AIRY_FREE(ctx->resource_templates[i].name);
-        AIRY_FREE(ctx->resource_templates[i].description);
-        AIRY_FREE(ctx->resource_templates[i].mime_type);
-    }
-    AIRY_FREE(ctx->resource_templates);
-
-    for (size_t i = 0; i < ctx->prompt_count; i++) {
-        AIRY_FREE(ctx->prompts[i].prompt.name);
-        AIRY_FREE(ctx->prompts[i].prompt.description);
-        AIRY_FREE(ctx->prompts[i].prompt.arguments_schema_json);
-    }
-    AIRY_FREE(ctx->prompts);
-
-    AIRY_FREE(ctx->config.server_name);
-    AIRY_FREE(ctx->config.server_version);
+    /* Free internal heap fields via the shared clear mechanism, but never the
+      * shell: the adapter's context may be the static global s_mcp_default_context
+      * (P0-01 default context obtained by gateway_d via mcp_v1_get_adapter());
+      * freeing the shell triggers an ASan bad-free (free on a non-malloc address).
+      * The holder owns the shell (protocol_adapter_t.context); destroy only frees
+      * internal resources. */
+    mcp_v1_context_clear(ctx);
 
     __builtin_memset(ctx, 0, sizeof(mcp_v1_context_t));
     return 0;
