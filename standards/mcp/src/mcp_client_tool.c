@@ -13,52 +13,8 @@
 
 #include "mcp_client_internal.h"
 
-/**
-  * @brief Escape a JSON string and quote it (same as json_string_escape in mcp_v1_adapter.c)
-  * @return Quoted JSON string (AIRY_MALLOC)
- */
-static char *json_string_escape(const char *str)
-{
-    if (!str)
-        return AIRY_STRDUP("null");
-    size_t len = strlen(str);
-    size_t escaped_len = len * 2 + 3;
-    char *escaped = AIRY_MALLOC(escaped_len);
-    if (!escaped)
-        return NULL;
-    size_t j = 0;
-    escaped[j++] = '"';
-    for (size_t i = 0; i < len; i++) {
-        switch (str[i]) {
-        case '"':
-            escaped[j++] = '\\';
-            escaped[j++] = '"';
-            break;
-        case '\\':
-            escaped[j++] = '\\';
-            escaped[j++] = '\\';
-            break;
-        case '\n':
-            escaped[j++] = '\\';
-            escaped[j++] = 'n';
-            break;
-        case '\r':
-            escaped[j++] = '\\';
-            escaped[j++] = 'r';
-            break;
-        case '\t':
-            escaped[j++] = '\\';
-            escaped[j++] = 't';
-            break;
-        default:
-            escaped[j++] = str[i];
-            break;
-        }
-    }
-    escaped[j++] = '"';
-    escaped[j] = '\0';
-    return escaped;
-}
+/* json_string_escape is the single module-wide definition in mcp_v1_adapter.c. */
+#include "mcp_v1_adapter_internal.h"
 
 int mcp_client_list_tools(mcp_client_t *c, mcp_client_tool_list_t *out)
 {
