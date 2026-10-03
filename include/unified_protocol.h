@@ -200,6 +200,21 @@ void unified_message_destroy(unified_message_t *message);
 int umsg_to_json(const unified_message_t *umsg, void **out_data, size_t *out_size);
 int unified_decode(const void *data, size_t size, unified_message_t *message,
                    protocol_type_t default_protocol);
+
+/**
+  * @brief Count words in text (alnum runs or multi-byte sequences)
+ */
+int uword_count(const char *text);
+
+/** @brief LLM invocation callback: fills *response, caller frees via AIRY_FREE */
+typedef int (*ullm_invoke_fn)(const char *prompt, const char *model, char **response,
+                              void *user_data);
+
+/**
+  * @brief Run one LLM round-trip through cb and copy the response into out_buf
+ */
+int ullm_round(ullm_invoke_fn cb, void *cb_data, const char *model, const char *prompt,
+               char *out_buf, size_t buf_len);
 const char *protocol_type_to_string(protocol_type_t type);
 protocol_type_t protocol_type_from_string(const char *str);
 

@@ -17,6 +17,7 @@
 #include "safe_string_utils.h"
 #include "types.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -431,6 +432,47 @@ int umsg_to_json(const unified_message_t *umsg, void **out_data, size_t *out_siz
     *out_data = buf;
     *out_size = (size_t)written;
     return 0;
+}
+
+int uword_count(const char *text)
+{
+    if (!text || !*text)
+        return 0;
+    int words = 0, in_word = 0;
+    for (; *text; text++) {
+        if (isalnum((unsigned char)*text) || (*text & 0x80)) {
+            if (!in_word) {
+                words++;
+                in_word = 1;
+            }
+        } else
+            in_word = 0;
+    }
+    return words > 0 ? words : 1;
+}
+
+int ullm_round(ullm_invoke_fn cb, void *cb_data, const char *model, const char *prompt,
+               char *out_buf, size_t buf_len)
+{
+    if (!out_buf || buf_len == 0)
+        return AIRY_ERR_NULL_POINTER;
+    if (!cb) {
+        out_buf[0] = '\0';
+        return AIRY_ERR_OUT_OF_MEMORY;
+    }
+    char *resp = NULL;
+    int rc = cb(prompt, model, &resp, cb_data);
+    if (rc == 0 && resp) {
+        size_t n = strlen(resp);
+        if (n >= buf_len)
+            n = buf_len - 1;
+        __builtin_memcpy(out_buf, resp, n);
+        out_buf[n] = '\0';
+        AIRY_FREE(resp);
+        return 0;
+    }
+    AIRY_FREE(resp);
+    return AIRY_ERR_NULL_POINTER;
 }
 
 const char *protocol_type_to_string(protocol_type_t type)

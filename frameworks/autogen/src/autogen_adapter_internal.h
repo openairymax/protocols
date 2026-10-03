@@ -20,6 +20,7 @@
 #include "error.h"
 #include "airy_memory.h"
 #include "types.h"
+#include "unified_protocol.h"
 
 #include <ctype.h>
 #include <stdbool.h>

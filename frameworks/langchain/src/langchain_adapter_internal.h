@@ -35,7 +35,6 @@
 int lc_generate_chain_response(langchain_adapter_context_t *ctx, const char *input_json,
                                size_t tool_count, bool is_agent_mode, char *out_buf,
                                size_t buf_len);
-int lc_word_count(const char *t);
 
 /* Protocol adapter callbacks (was static; referenced by langchain_get_protocol_adapter()) **/
 int langchain_proto_encode(void *context, const void *msg, void **out_data, size_t *out_size);
