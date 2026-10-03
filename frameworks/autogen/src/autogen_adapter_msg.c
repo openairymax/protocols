@@ -13,23 +13,6 @@
 
 #include "autogen_adapter_internal.h"
 
-static int __attribute__((used)) autogen_count_words(const char *t)
-{
-    if (!t || !*t)
-        return 0;
-    int c = 0, in = 0;
-    for (; *t; t++) {
-        if (isalnum((unsigned char)*t) || (*t & 0x80)) {
-            if (!in) {
-                c++;
-                in = 1;
-            }
-        } else
-            in = 0;
-    }
-    return c > 0 ? c : 1;
-}
-
 int autogen_generate_response(autogen_adapter_context_t *ctx, const char *incoming_msg,
                               int agent_index, int total_agents, bool is_first_in_round,
                               char *out_buf, size_t buf_len)
@@ -37,36 +20,19 @@ int autogen_generate_response(autogen_adapter_context_t *ctx, const char *incomi
     if (!out_buf || buf_len == 0)
         return AIRY_ERR_NULL_POINTER;
 
-    if (ctx && ctx->llm_callback) {
-        char prompt[4096];
-        int plen = 0;
-        if (is_first_in_round && total_agents > 1) {
-            plen = snprintf(prompt, sizeof(prompt), "[AutoGen Agent #%d in group of %d] %s",
-                            agent_index, total_agents, incoming_msg ? incoming_msg : "");
-        } else {
-            plen = snprintf(prompt, sizeof(prompt), "%s", incoming_msg ? incoming_msg : "");
-        }
-        if (plen <= 0)
-            return AIRY_ERR_NOT_FOUND;
-
-        char *llm_response = NULL;
-        int rc = ctx->llm_callback(prompt, ctx->config.default_llm_model, &llm_response,
-                                   ctx->llm_callback_data);
-        if (rc == 0 && llm_response) {
-            size_t copy_len = strlen(llm_response);
-            if (copy_len >= buf_len)
-                copy_len = buf_len - 1;
-            __builtin_memcpy(out_buf, llm_response, copy_len);
-            out_buf[copy_len] = '\0';
-            AIRY_FREE(llm_response);
-            return 0;
-        }
-        AIRY_FREE(llm_response);
-        return AIRY_ERR_NULL_POINTER;
+    char prompt[4096];
+    int plen = 0;
+    if (is_first_in_round && total_agents > 1) {
+        plen = snprintf(prompt, sizeof(prompt), "[AutoGen Agent #%d in group of %d] %s",
+                        agent_index, total_agents, incoming_msg ? incoming_msg : "");
+    } else {
+        plen = snprintf(prompt, sizeof(prompt), "%s", incoming_msg ? incoming_msg : "");
     }
+    if (plen <= 0)
+        return AIRY_ERR_NOT_FOUND;
 
-    out_buf[0] = '\0';
-    return AIRY_ERR_OUT_OF_MEMORY;
+    return ullm_round(ctx ? ctx->llm_callback : NULL, ctx ? ctx->llm_callback_data : NULL,
+                      ctx ? ctx->config.default_llm_model : NULL, prompt, out_buf, buf_len);
 }
 
 int autogen_initiate_chat(autogen_adapter_context_t *ctx, const char *group_id,

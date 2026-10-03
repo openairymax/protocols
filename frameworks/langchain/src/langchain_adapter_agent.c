@@ -71,8 +71,8 @@ int langchain_agent_run(langchain_adapter_context_t *ctx, const char *agent_id,
         lc_generate_chain_response(ctx, task_input, tool_cnt, true, resp_text, sizeof(resp_text));
 
     if (rc == 0 && resp_text[0]) {
-        int input_tokens = lc_word_count(task_input);
-        int output_tokens = lc_word_count(resp_text);
+        int input_tokens = uword_count(task_input);
+        int output_tokens = uword_count(resp_text);
 
         char output_buf[LC_MAX_RESPONSE_LEN + 256];
         snprintf(output_buf, sizeof(output_buf),

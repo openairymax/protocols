@@ -49,55 +49,22 @@ int langchain_create_chain(langchain_adapter_context_t *ctx,
     return 0;
 }
 
-int lc_word_count(const char *t)
-{
-    if (!t || !*t)
-        return 0;
-    int c = 0, in = 0;
-    for (; *t; t++) {
-        if (isalnum((unsigned char)*t) || (*t & 0x80)) {
-            if (!in) {
-                c++;
-                in = 1;
-            }
-        } else
-            in = 0;
-    }
-    return c > 0 ? c : 1;
-}
-
 int lc_generate_chain_response(langchain_adapter_context_t *ctx, const char *input_json,
                                size_t tool_count, bool is_agent_mode, char *out_buf,
                                size_t buf_len)
 {
+    (void)tool_count;
     if (!out_buf || !buf_len)
         return AIRY_ERR_NULL_POINTER;
 
-    if (ctx && ctx->llm_callback) {
-        char prompt[4096];
-        int plen = snprintf(prompt, sizeof(prompt), "[LangChain %s] %s",
-                            is_agent_mode ? "Agent" : "Chain", input_json ? input_json : "");
-        if (plen <= 0)
-            return AIRY_ERR_NOT_FOUND;
+    char prompt[4096];
+    int plen = snprintf(prompt, sizeof(prompt), "[LangChain %s] %s",
+                        is_agent_mode ? "Agent" : "Chain", input_json ? input_json : "");
+    if (plen <= 0)
+        return AIRY_ERR_NOT_FOUND;
 
-        char *llm_response = NULL;
-        int rc = ctx->llm_callback(prompt, ctx->config.default_llm_model, &llm_response,
-                                   ctx->llm_callback_data);
-        if (rc == 0 && llm_response) {
-            size_t copy_len = strlen(llm_response);
-            if (copy_len >= buf_len)
-                copy_len = buf_len - 1;
-            __builtin_memcpy(out_buf, llm_response, copy_len);
-            out_buf[copy_len] = '\0';
-            AIRY_FREE(llm_response);
-            return 0;
-        }
-        AIRY_FREE(llm_response);
-        return AIRY_ERR_NULL_POINTER;
-    }
-
-    out_buf[0] = '\0';
-    return AIRY_ERR_OUT_OF_MEMORY;
+    return ullm_round(ctx ? ctx->llm_callback : NULL, ctx ? ctx->llm_callback_data : NULL,
+                      ctx ? ctx->config.default_llm_model : NULL, prompt, out_buf, buf_len);
 }
 
 int langchain_execute_chain(langchain_adapter_context_t *ctx, const char *chain_id,
@@ -129,8 +96,8 @@ int langchain_execute_chain(langchain_adapter_context_t *ctx, const char *chain_
                  "{\"status\":\"success\",\"adapter_version\":\"%s\","
                  "\"response\":\"%.1800s\","
                  "\"input_tokens\":%d,\"output_tokens\":%d}",
-                 LANGCHAIN_ADAPTER_VERSION, resp_text, lc_word_count(input_json),
-                 lc_word_count(resp_text));
+                 LANGCHAIN_ADAPTER_VERSION, resp_text, uword_count(input_json),
+                 uword_count(resp_text));
         result->output_json = AIRY_STRDUP(output_buf);
     } else {
         result->output_json =
@@ -146,7 +113,6 @@ int langchain_execute_chain(langchain_adapter_context_t *ctx, const char *chain_
     result->step_count = (ctx->tool_count > 0) ? (int)(ctx->tool_count + 2) : 3;
     result->success = true;
 
-    ctx->total_chains_executed++;
     ctx->total_execution_time_ms += result->execution_time_ms;
 
     return 0;
@@ -196,6 +162,5 @@ int langchain_execute_chain_streaming(langchain_adapter_context_t *ctx, const ch
         stream_handler(chunk_buf, chain_id ? chain_id : "", user_data);
     }
 
-    ctx->total_chains_executed++;
     return 0;
 }
