@@ -10,16 +10,13 @@
 
 #include "airy_memory.h"
 #include "types.h"
+#include "proto_http.h"
 #include "../../../../commons/utils/error/error.h"
 #include "error.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifdef AIRY_HAS_CURL
-#include <curl/curl.h>
-#endif
 
 #ifdef AIRY_HAS_CJSON
 #include <cjson/cJSON.h>
@@ -103,25 +100,6 @@ void oai_record_latency(struct openai_enterprise_adapter_s *adapter, double late
 }
 
 #ifdef AIRY_HAS_CURL
-typedef struct {
-    char *data;
-    size_t size;
-} openai_curl_buffer_t;
-
-static size_t openai_curl_write_cb(void *ptr, size_t size, size_t nmemb, void *userdata)
-{
-    openai_curl_buffer_t *buf = (openai_curl_buffer_t *)userdata;
-    size_t total = size * nmemb;
-    char *new_data = (char *)AIRY_REALLOC(buf->data, buf->size + total + 1);
-    if (!new_data)
-        return 0;
-    buf->data = new_data;
-    __builtin_memcpy(buf->data + buf->size, ptr, total);
-    buf->size += total;
-    buf->data[buf->size] = '\0';
-    return total;
-}
-
 int openai_api_call(const char *api_key, const char *base_url, const char *endpoint,
                     const char *request_json, char *out_buf, size_t buf_len)
 {
@@ -130,56 +108,35 @@ int openai_api_call(const char *api_key, const char *base_url, const char *endpo
         return AIRY_ERR_UNKNOWN;
     }
 
-    CURL *curl = curl_easy_init();
-    if (!curl) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "if: failed");
-        return AIRY_ERR_UNKNOWN;
-    }
-
-    openai_curl_buffer_t response_buf = {.data = NULL, .size = 0};
-
     char url[1024];
     snprintf(url, sizeof(url), "%s%s", base_url ? base_url : "https://api.openai.com/v1",
              endpoint ? endpoint : "/chat/completions");
 
-    struct curl_slist *headers = NULL;
     char auth_header[512];
     snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", api_key);
-    headers = curl_slist_append(headers, auth_header);
-    headers = curl_slist_append(headers, "Content-Type: application/json");
+    const char *hdrs[] = {auth_header, "Content-Type: application/json", NULL};
 
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_POST, 1L);
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request_json);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, openai_curl_write_cb);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_buf);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 60L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
-
-    CURLcode res = curl_easy_perform(curl);
     long http_code = 0;
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-
-    curl_slist_free_all(headers);
-    curl_easy_cleanup(curl);
-
-    if (res != CURLE_OK) {
-        AIRY_FREE(response_buf.data);
-        return AIRY_EIO;
+    char *resp = NULL;
+    proto_http_result_t tr = proto_http_post(url, hdrs, request_json, &resp, &http_code);
+    if (tr == PROTO_HTTP_E_INIT) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "if: failed");
+        return AIRY_ERR_UNKNOWN;
     }
+    if (tr == PROTO_HTTP_E_TRANSPORT)
+        return AIRY_EIO;
 
-    if (http_code == 200 && response_buf.data) {
-        size_t copy_len = response_buf.size;
+    if (http_code == 200 && resp) {
+        size_t copy_len = strlen(resp);
         if (copy_len >= buf_len)
             copy_len = buf_len - 1;
-        __builtin_memcpy(out_buf, response_buf.data, copy_len);
+        AIRY_MEMCPY(out_buf, resp, copy_len);
         out_buf[copy_len] = '\0';
-        AIRY_FREE(response_buf.data);
+        AIRY_FREE(resp);
         return (int)copy_len;
     }
 
-    AIRY_FREE(response_buf.data);
+    AIRY_FREE(resp);
     return AIRY_EINVAL;
 }
 

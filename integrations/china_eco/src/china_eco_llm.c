@@ -17,6 +17,7 @@
 #include "error.h"
 #include "airy_memory.h"
 #include "types.h"
+#include "proto_http.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -25,9 +26,6 @@
 
 #ifdef AIRY_HAS_CJSON
 #include <cjson/cJSON.h>
-#endif
-#ifdef AIRY_HAS_CURL
-#include <curl/curl.h>
 #endif
 
 /* ------------------------------------------------------------------ */
@@ -49,31 +47,6 @@ const char *g_provider_names[] = {
     [CHINA_ECO_PROVIDER_DASHSCOPE] = "dashscope", [CHINA_ECO_PROVIDER_ZHIPU] = "zhipu",
     [CHINA_ECO_PROVIDER_MINIMAX] = "minimax",     [CHINA_ECO_PROVIDER_MOONSHOT] = "moonshot",
     [CHINA_ECO_PROVIDER_DEEPSEEK] = "deepseek",   [CHINA_ECO_PROVIDER_QWEN] = "qwen"};
-
-/* ------------------------------------------------------------------ */
-/* curl write callback                                                 */
-/* ------------------------------------------------------------------ */
-
-#ifdef AIRY_HAS_CURL
-typedef struct {
-    char *data;
-    size_t size;
-} china_eco_curl_buf_t;
-
-static size_t china_eco_curl_write_cb(void *ptr, size_t size, size_t nmemb, void *userdata)
-{
-    size_t total = size * nmemb;
-    china_eco_curl_buf_t *buf = (china_eco_curl_buf_t *)userdata;
-    char *new_data = (char *)AIRY_REALLOC(buf->data, buf->size + total + 1);
-    if (!new_data)
-        return 0;
-    __builtin_memcpy(new_data + buf->size, ptr, total);
-    buf->data = new_data;
-    buf->size += total;
-    buf->data[buf->size] = '\0';
-    return total;
-}
-#endif
 
 /* ------------------------------------------------------------------ */
 /* HTTP chat completion                                                */
@@ -109,52 +82,34 @@ int china_eco_llm_chat_http(const china_eco_llm_provider_t *provider,
     snprintf(url, sizeof(url), "%s/chat/completions",
              api_base_url && api_base_url[0] ? api_base_url : "https://api.openai.com/v1");
 
-    CURL *curl = curl_easy_init();
-    if (!curl) {
-        AIRY_FREE(req_str);
+    char auth_header[512];
+    snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", provider->api_key);
+    const char *hdrs[] = {auth_header, "Content-Type: application/json", NULL};
+
+    long http_code = 0;
+    char *resp = NULL;
+    proto_http_result_t tr = proto_http_post(url, hdrs, req_str, &resp, &http_code);
+    AIRY_FREE(req_str);
+
+    if (tr == PROTO_HTTP_E_INIT) {
         airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
                          "china_eco_llm_chat_http: curl init failed");
         return AIRY_ERR_OUT_OF_MEMORY;
     }
-
-    china_eco_curl_buf_t response_buf = {0};
-    struct curl_slist *headers = NULL;
-    char auth_header[512];
-    snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", provider->api_key);
-    headers = curl_slist_append(headers, auth_header);
-    headers = curl_slist_append(headers, "Content-Type: application/json");
-
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_POST, 1L);
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, req_str);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, china_eco_curl_write_cb);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_buf);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 60L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
-
-    CURLcode res = curl_easy_perform(curl);
-    long http_code = 0;
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-    curl_slist_free_all(headers);
-    curl_easy_cleanup(curl);
-    AIRY_FREE(req_str);
-
-    if (res != CURLE_OK) {
-        AIRY_FREE(response_buf.data);
+    if (tr == PROTO_HTTP_E_TRANSPORT) {
         airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__,
-                         "china_eco_llm_chat_http: curl transfer failed (code %d)", (int)res);
+                         "china_eco_llm_chat_http: curl transfer failed");
         return AIRY_ERR_IO;
     }
-    if (http_code != 200 || !response_buf.data) {
-        AIRY_FREE(response_buf.data);
+    if (http_code != 200 || !resp) {
+        AIRY_FREE(resp);
         airy_err_push_ex(AIRY_ERR_IO, __FILE__, __LINE__, __func__,
                          "china_eco_llm_chat_http: provider returned HTTP %ld", http_code);
         return AIRY_ERR_IO;
     }
 
-    cJSON *root = cJSON_Parse(response_buf.data);
-    AIRY_FREE(response_buf.data);
+    cJSON *root = cJSON_Parse(resp);
+    AIRY_FREE(resp);
     if (!root) {
         airy_err_push_ex(AIRY_ERR_PARSE_ERROR, __FILE__, __LINE__, __func__,
                          "china_eco_llm_chat_http: invalid response JSON");

@@ -13,30 +13,12 @@
 
 #include "claude_adapter_internal.h"
 
+#include "proto_http.h"
+
 #ifdef AIRY_HAS_CURL
 #include <cjson/cJSON.h>
 
 #include <cjson_helpers.h>
-#include <curl/curl.h>
-
-typedef struct {
-    char *data;
-    size_t size;
-} claude_curl_buffer_t;
-
-static size_t claude_curl_write_cb(void *ptr, size_t size, size_t nmemb, void *userdata)
-{
-    claude_curl_buffer_t *buf = (claude_curl_buffer_t *)userdata;
-    size_t total = size * nmemb;
-    char *new_data = (char *)AIRY_REALLOC(buf->data, buf->size + total + 1);
-    if (!new_data)
-        return 0;
-    buf->data = new_data;
-    __builtin_memcpy(buf->data + buf->size, ptr, total);
-    buf->size += total;
-    buf->data[buf->size] = '\0';
-    return total;
-}
 
 int claude_api_call(const char *api_key, const char *base_url, const char *request_json,
                     char *out_buf, size_t buf_len)
@@ -44,47 +26,26 @@ int claude_api_call(const char *api_key, const char *base_url, const char *reque
     if (!api_key || !request_json || !out_buf)
         return AIRY_ERR_NULL_POINTER;
 
-    CURL *curl = curl_easy_init();
-    if (!curl)
-        return AIRY_ERR_SYS_RESOURCE;
-
-    claude_curl_buffer_t response_buf = {.data = NULL, .size = 0};
-
     char url[512];
     snprintf(url, sizeof(url), "%s/v1/messages", base_url ? base_url : "https://api.anthropic.com");
 
-    struct curl_slist *headers = NULL;
     char auth_header[256];
     snprintf(auth_header, sizeof(auth_header), "x-api-key: %s", api_key);
-    headers = curl_slist_append(headers, auth_header);
-    headers = curl_slist_append(headers, "anthropic-version: 2023-06-01");
-    headers = curl_slist_append(headers, "content-type: application/json");
+    const char *hdrs[] = {auth_header, "anthropic-version: 2023-06-01",
+                          "content-type: application/json", NULL};
 
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_POST, 1L);
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request_json);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, claude_curl_write_cb);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_buf);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 60L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
-
-    CURLcode res = curl_easy_perform(curl);
     long http_code = 0;
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-
-    curl_slist_free_all(headers);
-    curl_easy_cleanup(curl);
-
-    if (res != CURLE_OK) {
-        AIRY_FREE(response_buf.data);
+    char *resp = NULL;
+    proto_http_result_t tr = proto_http_post(url, hdrs, request_json, &resp, &http_code);
+    if (tr == PROTO_HTTP_E_INIT)
+        return AIRY_ERR_SYS_RESOURCE;
+    if (tr == PROTO_HTTP_E_TRANSPORT)
         return AIRY_ERR_IO;
-    }
 
-    if (http_code == 200 && response_buf.data) {
+    if (http_code == 200 && resp) {
 
         do {
-            CJSON_PARSE_GUARD(root, response_buf.data, { break; });
+            CJSON_PARSE_GUARD(root, resp, { break; });
             cJSON *content_arr = cJSON_GetObjectItem(root, "content");
             if (content_arr && cJSON_IsArray(content_arr)) {
                 cJSON *first = cJSON_GetArrayItem(content_arr, 0);
@@ -93,7 +54,7 @@ int claude_api_call(const char *api_key, const char *base_url, const char *reque
                     if (text && text->valuestring) {
                         snprintf(out_buf, buf_len, "%s", text->valuestring);
 
-                        AIRY_FREE(response_buf.data);
+                        AIRY_FREE(resp);
                         return (int)strlen(out_buf);
                     }
                 }
@@ -102,7 +63,7 @@ int claude_api_call(const char *api_key, const char *base_url, const char *reque
         } while (0);
     }
 
-    AIRY_FREE(response_buf.data);
+    AIRY_FREE(resp);
     return AIRY_ERR_LLM_PROVIDER_FAIL;
 }
 
