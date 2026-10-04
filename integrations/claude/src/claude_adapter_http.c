@@ -360,6 +360,6 @@ int claude_messages_stream(claude_adapter_context_t *ctx, const claude_message_t
         chunk_idx++;
     }
 
-    ctx->total_tokens_out += claude_estimate_tokens(full_response);
+    ctx->total_tokens_out += uword_count(full_response);
     return 0;
 }

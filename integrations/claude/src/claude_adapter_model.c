@@ -7,7 +7,7 @@
  * @brief Claude adapter model catalog, model ID mapping and token estimation domain.
  *
  * Single responsibility: built-in model info table (g_builtin_models), model
- * enum to API name mapping, simple token estimation and model list queries.
+ * enum to API name mapping and model list queries.
  */
 
 #include "claude_adapter_internal.h"
@@ -108,27 +108,6 @@ const char *claude_model_id_to_api_name(claude_model_id_t id)
             return g_builtin_models[i].api_name;
     }
     return "claude-3-5-sonnet-20241022";
-}
-
-int claude_estimate_tokens(const char *text)
-{
-    if (!text || !*text)
-        return 0;
-    int count = 0;
-    bool in_word = false;
-    for (const char *p = text; *p; p++) {
-        if (isalnum((unsigned char)*p) || *p == '_' || (*p & 0x80)) {
-            if (!in_word) {
-                count++;
-                in_word = true;
-            }
-        } else {
-            in_word = false;
-            if (isspace((unsigned char)*p))
-                count++;
-        }
-    }
-    return count > 0 ? count : 1;
 }
 
 int claude_count_tokens(claude_adapter_context_t *ctx, const claude_message_t *messages,

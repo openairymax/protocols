@@ -260,9 +260,8 @@ static int claude_proto_handle_request(void *context, const void *req, void **re
     }
 
     ctx->total_requests++;
-    ctx->total_tokens_in +=
-        claude_estimate_tokens(user_content) + claude_estimate_tokens(system_content);
-    ctx->total_tokens_out += claude_estimate_tokens(resp_text);
+    ctx->total_tokens_in += uword_count(user_content) + uword_count(system_content);
+    ctx->total_tokens_out += uword_count(resp_text);
 
     *resp = response;
     return 0;
