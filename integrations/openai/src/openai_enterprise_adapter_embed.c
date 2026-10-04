@@ -10,6 +10,7 @@
 
 #include "airy_memory.h"
 #include "types.h"
+#include "unified_protocol.h"
 #include "../../../../commons/utils/error/error.h"
 #include "error.h"
 
@@ -118,7 +119,7 @@ int oai_create_embedding(openai_handle_t handle, const openai_embedding_request_
     uint64_t ts_end_ms = airy_time_ms();
     double latency_ms = (double)(ts_end_ms - ts_start_ms);
 
-    out_response->usage.prompt_tokens = (uint32_t)oai_estimate_tokens(request->input_text);
+    out_response->usage.prompt_tokens = (uint32_t)uword_count(request->input_text);
     out_response->usage.total_tokens = out_response->usage.prompt_tokens;
 
     adapter->stats_embeddings++;

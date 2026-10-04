@@ -129,7 +129,6 @@ extern struct openai_enterprise_adapter_s *g_openai_instance;
 void oai_register_builtin(struct openai_enterprise_adapter_s *a);
 uint64_t openai_fnv1a_hash(const char *str);
 void json_escape_string(const char *src, char *dst, size_t dst_size);
-int oai_estimate_tokens(const char *text);
 void oai_record_latency(struct openai_enterprise_adapter_s *adapter, double latency_ms);
 int openai_api_call(const char *api_key, const char *base_url, const char *endpoint,
                     const char *request_json, char *out_buf, size_t buf_len);

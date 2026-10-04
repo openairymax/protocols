@@ -3,7 +3,7 @@
 
 /**
  * @file openai_enterprise_adapter_utils.c
- * @brief OpenAI enterprise adapter utility domain (hashing/JSON escaping/token estimation/latency stats/curl API calls).
+ * @brief OpenAI enterprise adapter utility domain (hashing/JSON escaping/latency stats/curl API calls).
  */
 
 #include "openai_enterprise_adapter_internal.h"
@@ -13,7 +13,6 @@
 #include "../../../../commons/utils/error/error.h"
 #include "error.h"
 
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,7 +28,7 @@
 #endif
 
 /* ============================================================================
- * Internal: Response Generation & Token Estimation
+ * Internal: Hashing, JSON Escaping & Latency Stats
  * ============================================================================ */
 
 uint64_t openai_fnv1a_hash(const char *str)
@@ -88,27 +87,6 @@ void json_escape_string(const char *src, char *dst, size_t dst_size)
         si++;
     }
     dst[di] = '\0';
-}
-
-int oai_estimate_tokens(const char *text)
-{
-    if (!text || !*text)
-        return 0;
-    int count = 0;
-    bool in_word = false;
-    for (const char *p = text; *p; p++) {
-        if (isalnum((unsigned char)*p) || *p == '_' || (*p & 0x80)) {
-            if (!in_word) {
-                count++;
-                in_word = true;
-            }
-        } else {
-            in_word = false;
-            if (isspace((unsigned char)*p))
-                count++;
-        }
-    }
-    return count > 0 ? count : 1;
 }
 
 void oai_record_latency(struct openai_enterprise_adapter_s *adapter, double latency_ms)

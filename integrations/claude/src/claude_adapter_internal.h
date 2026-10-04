@@ -66,7 +66,6 @@ extern const int g_builtin_model_count;
 
 /* Helpers shared across files (was static; now external linkage) **/
 const char *claude_model_id_to_api_name(claude_model_id_t id);
-int claude_estimate_tokens(const char *text);
 int claude_generate_response(const char *user_msg, const char *system_ctx, char *out_buf,
                              size_t buf_len);
 int claude_api_call(const char *api_key, const char *base_url, const char *request_json,
