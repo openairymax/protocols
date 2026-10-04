@@ -109,6 +109,7 @@ set(PROTOCOLS_COMMON_SOURCES
     common/src/unified_protocol.c
     common/src/unified_decode.c
     common/src/protocols_impl.c
+    common/src/proto_http.c
     src/airy_protocol_interface.c
     src/protocol_toplevel_impl.c
 )
