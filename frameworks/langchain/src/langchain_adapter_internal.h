@@ -7,7 +7,8 @@
  *
  * @note langchain_adapter_context_s is fully defined in the public header
  * langchain_adapter.h. All split files include only this internal header; the
- * family-common preamble (LOG_TAG, family and system includes) lives here.
+ * LOG_TAG lives here and the family-common include surface is provided by
+ * protocol_adapter_prelude.h.
  */
 
 #ifndef LANGCHAIN_ADAPTER_INTERNAL_H
@@ -17,19 +18,7 @@
 
 #include "langchain_adapter.h"
 
-#include "error.h"
-#include "airy_memory.h"
-#include "types.h"
-#include "unified_protocol.h"
-
-#include <ctype.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include "protocol_adapter_prelude.h"
 
 /* Chain execution domain (was static; referenced by agent-exec and protocol-callback domains) **/
 int lc_generate_chain_response(langchain_adapter_context_t *ctx, const char *input_json,
