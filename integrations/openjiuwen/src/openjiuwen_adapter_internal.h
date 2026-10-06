@@ -23,8 +23,6 @@ extern "C" {
 
 /* ============ 工具：消息 ID/时间戳（门面域实现） ============ */
 uint32_t openjiuwen_generate_message_id(void);
-uint32_t openjiuwen_get_timestamp(void);
-uint64_t openjiuwen_get_timestamp_ms(void);
 
 /* ============ 网络传输域 (openjiuwen_adapter_net.c) ============ */
 int openjiuwen_net_connect(openjiuwen_adapter_t *adapter);

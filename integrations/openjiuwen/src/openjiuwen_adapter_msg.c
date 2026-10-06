@@ -13,6 +13,7 @@
 #include "openjiuwen_adapter_internal.h"
 
 #include "airy_memory.h"
+#include "platform.h"
 #include "error.h"
 #include "logging.h"
 #include "safe_string_utils.h"
@@ -70,7 +71,7 @@ int openjiuwen_unified_to_native(const unified_message_t *msg, void *out_buffer,
     AIRY_MEMSET(&header, 0, sizeof(header));
 
     header.message_id = openjiuwen_generate_message_id();
-    header.timestamp = openjiuwen_get_timestamp();
+    header.timestamp = (uint32_t)(airy_time_wall_ms() / 1000);
     header.message_type = OPENJIUWEN_MSG_TYPE_REQUEST;
     header.flags = 0x0001;
 

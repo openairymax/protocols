@@ -17,6 +17,8 @@
 
 #include "mcp_client_internal.h"
 
+#include "platform.h"
+
 mcp_client_t *mcp_client_connect_stdio(const char *name, const char *command, char *const argv[])
 {
 #ifdef _WIN32
@@ -149,10 +151,7 @@ int mcp_client_disconnect(mcp_client_t *c)
                     break;
                 if (r < 0)
                     break;
-                struct timespec ts;
-                ts.tv_sec = 0;
-                ts.tv_nsec = 100 * 1000 * 1000;
-                (void)nanosleep(&ts, NULL);
+                airy_sleep_ms(100);
             }
             int st = 0;
             if (waitpid(c->child_pid, &st, WNOHANG) == 0) {

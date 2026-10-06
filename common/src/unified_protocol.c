@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include "error.h"
 
 typedef struct {
@@ -315,12 +314,11 @@ int protocol_stack_receive(protocol_stack_handle_t handle, unified_message_t *me
     }
 
     if (timeout_ms > 0) {
-        struct timespec ts = {.tv_sec = timeout_ms / 1000,
-                              .tv_nsec = (timeout_ms % 1000) * 1000000LL};
-        nanosleep(&ts, NULL);
+        airy_sleep_ms((uint32_t)timeout_ms);
     }
 
-    airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__, "nanosleep: timeout");
+    airy_err_push_ex(AIRY_ERR_TIMEOUT, __FILE__, __LINE__, __func__,
+                     "protocol stack: no adapter handled message within timeout");
     return AIRY_ERR_TIMEOUT;
 }
 

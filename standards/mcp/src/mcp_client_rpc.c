@@ -11,12 +11,11 @@
  */
 
 #include "mcp_client_internal.h"
+#include "platform.h"
 
 static int64_t now_ms(void)
 {
-    struct timespec ts;
-    (void)clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (int64_t)ts.tv_sec * 1000 + (int64_t)ts.tv_nsec / 1000000;
+    return (int64_t)airy_time_ms();
 }
 
 /**

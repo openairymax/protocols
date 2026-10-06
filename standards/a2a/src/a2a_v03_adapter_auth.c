@@ -16,18 +16,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "error.h"
 #include "logging.h"
 
 #define A2A_MAX_SESSIONS 128
 #define A2A_MAX_TOKENS 256
-
-uint64_t a2a_timestamp_ms(void)
-{
-    return airy_time_ms();
-}
 
 static void a2a_hex_encode(const uint8_t *data, size_t len, char *out, size_t out_size)
 {
@@ -307,7 +301,7 @@ int a2a_v03_authenticate(a2a_v03_context_t *ctx, const char *agent_id, const cha
         return AIRY_ERR_STATE_ERROR;
     }
 
-    uint64_t now = a2a_timestamp_ms() / 1000;
+    uint64_t now = airy_time_wall_ms() / 1000;
 
     if (g_a2a_auth.lockout_until > 0 && now < g_a2a_auth.lockout_until) {
         AIRY_LOG_ERROR("authentication locked out: agent_id=%s, lockout_until=%llu, now=%llu", agent_id,
@@ -400,7 +394,7 @@ int a2a_v03_verify_token(a2a_v03_context_t *ctx, const char *token_str,
         return AIRY_ERR_STATE_ERROR;
     }
 
-    uint64_t now = a2a_timestamp_ms() / 1000;
+    uint64_t now = airy_time_wall_ms() / 1000;
 
     for (size_t i = 0; i < g_a2a_auth.token_count; i++) {
         a2a_auth_token_t *tok = &g_a2a_auth.tokens[i];
@@ -537,7 +531,7 @@ int a2a_v03_create_session(a2a_v03_context_t *ctx, const char *remote_agent_id,
         g_a2a_auth.session_count--;
     }
 
-    uint64_t now = a2a_timestamp_ms();
+    uint64_t now = airy_time_wall_ms();
 
     a2a_session_t *sess = &g_a2a_auth.sessions[g_a2a_auth.session_count++];
     AIRY_MEMSET(sess, 0, sizeof(*sess));
@@ -573,7 +567,7 @@ int a2a_v03_validate_session(a2a_v03_context_t *ctx, const char *session_id,
         if (strncmp(sess->session_id, session_id, sizeof(sess->session_id)) != 0)
             continue;
 
-        uint64_t now = a2a_timestamp_ms();
+        uint64_t now = airy_time_wall_ms();
         uint64_t age_sec = (now - sess->created_at) / 1000;
 
         if (age_sec > (uint64_t)g_a2a_auth.config.token_ttl_sec * 2) {

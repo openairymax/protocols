@@ -20,10 +20,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#ifdef _WIN32
-#include <windows.h>
-#endif
-#include <time.h>
 
 /* ============ Real TCP transport over commons network_common ============ */
 
@@ -152,7 +148,7 @@ int openjiuwen_net_connect(openjiuwen_adapter_t *adapter)
 
     adapter->connection_handle = conn;
     adapter->conn_state = OPENJIUWEN_CONN_CONNECTED;
-    adapter->last_heartbeat_sec = openjiuwen_get_timestamp();
+    adapter->last_heartbeat_sec = (uint32_t)(airy_time_wall_ms() / 1000);
     AIRY_LOG_INFO("OpenJiuwen: connected to %s:%u", cfg.host, port);
     return 0;
 }
@@ -186,12 +182,7 @@ static int openjiuwen_reconnect(openjiuwen_adapter_t *adapter)
         AIRY_LOG_WARN("OpenJiuwen: reconnect attempt %u/%u, waiting %ums", attempt + 1, max_attempts,
                  delay);
 
-#ifdef _WIN32
-        Sleep(delay);
-#else
-        struct timespec ts = {.tv_sec = delay / 1000, .tv_nsec = (delay % 1000) * 1000000LL};
-        nanosleep(&ts, NULL);
-#endif
+        airy_sleep_ms(delay);
 
         openjiuwen_net_disconnect(adapter);
         int rc = openjiuwen_net_connect(adapter);
@@ -242,7 +233,7 @@ int openjiuwen_send_with_retry(openjiuwen_adapter_t *adapter, const char *buffer
 
         adapter->consecutive_errors = 0;
         adapter->message_counter++;
-        adapter->last_activity_ms = openjiuwen_get_timestamp_ms();
+        adapter->last_activity_ms = airy_time_wall_ms();
         return buffer_len;
     }
 

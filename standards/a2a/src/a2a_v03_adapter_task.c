@@ -9,6 +9,7 @@
 #include "a2a_v03_adapter_internal.h"
 
 #include "airy_memory.h"
+#include "platform.h"
 #include "error.h"
 
 #include <inttypes.h>
@@ -349,13 +350,13 @@ int a2a_v03_create_task(a2a_v03_context_t *ctx, const char *agent_id, const char
         return AIRY_ERR_OUT_OF_MEMORY;
     }
     snprintf(t->id, A2A_TASK_ID_SIZE, "task_%zu_%u", adapter->task_count,
-             (unsigned int)(a2a_timestamp_ms() % 100000));
+             (unsigned int)(airy_time_wall_ms() % 100000));
     t->agent_id = agent_id ? AIRY_STRDUP(agent_id) : NULL;
     t->description = description ? AIRY_STRDUP(description) : NULL;
     t->input_json = input_json ? AIRY_STRDUP(input_json) : NULL;
     t->output_json = NULL;
     t->state = A2A_TASK_SUBMITTED;
-    t->created_at = a2a_timestamp_ms();
+    t->created_at = airy_time_wall_ms();
     t->updated_at = t->created_at;
     t->progress = 0.0;
 
@@ -400,7 +401,7 @@ int a2a_v03_update_task(a2a_v03_context_t *ctx, const char *task_id, a2a_task_st
                 t->output_json = AIRY_STRDUP(output_json);
             }
             t->progress = progress;
-            t->updated_at = a2a_timestamp_ms();
+            t->updated_at = airy_time_wall_ms();
             return 0;
         }
     }
@@ -425,7 +426,7 @@ int a2a_v03_cancel_task(a2a_v03_context_t *ctx, const char *task_id, const char 
     for (size_t i = 0; i < adapter->task_count; i++) {
         if (strcmp(adapter->tasks[i]->id, task_id) == 0) {
             adapter->tasks[i]->state = A2A_TASK_CANCELED;
-            adapter->tasks[i]->updated_at = a2a_timestamp_ms();
+            adapter->tasks[i]->updated_at = airy_time_wall_ms();
             if (reason) {
                 AIRY_FREE(adapter->tasks[i]->error_message);
                 adapter->tasks[i]->error_message = AIRY_STRDUP(reason);
