@@ -24,30 +24,31 @@ static void mcp_v1_extract_string_param(const char *params_json, const char *key
 
 static mcp_log_level_t mcp_v1_parse_log_level(const char *params_json)
 {
+    static const struct {
+        const char *name;
+        mcp_log_level_t level;
+    } table[] = {
+        { "debug", MCP_LOG_DEBUG },       { "notice", MCP_LOG_NOTICE },
+        { "warning", MCP_LOG_WARNING },   { "error", MCP_LOG_ERROR },
+        { "critical", MCP_LOG_CRITICAL }, { "alert", MCP_LOG_ALERT },
+        { "emergency", MCP_LOG_EMERGENCY },
+    };
     mcp_log_level_t level = MCP_LOG_INFO;
-    if (params_json) {
-        char *level_str = strstr(params_json, "\"level\"");
-        if (level_str) {
-            level_str = strchr(level_str + 7, '"');
-            if (level_str) {
-                level_str++;
-                if (strncmp(level_str, "debug", 5) == 0)
-                    level = MCP_LOG_DEBUG;
-                else if (strncmp(level_str, "notice", 6) == 0)
-                    level = MCP_LOG_NOTICE;
-                else if (strncmp(level_str, "warning", 7) == 0)
-                    level = MCP_LOG_WARNING;
-                else if (strncmp(level_str, "error", 5) == 0)
-                    level = MCP_LOG_ERROR;
-                else if (strncmp(level_str, "critical", 8) == 0)
-                    level = MCP_LOG_CRITICAL;
-                else if (strncmp(level_str, "alert", 5) == 0)
-                    level = MCP_LOG_ALERT;
-                else if (strncmp(level_str, "emergency", 9) == 0)
-                    level = MCP_LOG_EMERGENCY;
+
+    if (!params_json)
+        return level;
+    do {
+        CJSON_PARSE_GUARD(pj, params_json, { break; });
+        cJSON *item = cJSON_GetObjectItem(pj, "level");
+        if (!cJSON_IsString(item) || !item->valuestring)
+            break;
+        for (size_t i = 0; i < sizeof(table) / sizeof(table[0]); i++) {
+            if (strcmp(item->valuestring, table[i].name) == 0) {
+                level = table[i].level;
+                break;
             }
         }
-    }
+    } while (0);
     return level;
 }
 
