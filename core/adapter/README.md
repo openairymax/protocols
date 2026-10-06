@@ -12,7 +12,6 @@
 2. **可组合中间件管线** — 按优先级串联的消息处理链，最多 32 个中间件
 3. **能力声明与发现** — 协议能力注册与按能力查找，最多 128 种能力
 4. **版本协商** — 客户端-服务端协议版本协商回调
-5. **运行时热加载** — 从 JSON 配置批量加载扩展
 
 ## 目录结构
 
@@ -24,7 +23,6 @@ adapter/
 │   ├── protocol_extension_framework.c        # 框架生命周期与核心
 │   ├── protocol_extension_framework_registry.c  # 适配器注册表
 │   ├── protocol_extension_framework_route.c     # 自动路由
-│   ├── protocol_extension_framework_config.c    # JSON 配置加载
 │   └── protocol_extension_framework_middleware.c # 中间件链
 └── README.md                               # 本文件
 ```
@@ -70,7 +68,6 @@ adapter/
 | `proto_ext_find_by_capability()` | 按能力标志查找适配器 |
 | `proto_ext_get_state()` / `proto_ext_get_adapter_stats()` | 查询适配器状态 / 统计 |
 | `proto_ext_get_framework_adapter()` | 取扩展注册为的统一适配器（`const protocol_adapter_t *`） |
-| `proto_ext_load_from_config()` | 从 JSON 配置批量加载扩展 |
 
 ## 适配器生命周期
 

@@ -23,7 +23,6 @@ core/
 │       ├── protocol_extension_framework.c
 │       ├── protocol_extension_framework_registry.c
 │       ├── protocol_extension_framework_route.c
-│       ├── protocol_extension_framework_config.c
 │       └── protocol_extension_framework_middleware.c
 ├── registry/                    # 协议注册中心
 │   ├── include/protocol_registry.h
