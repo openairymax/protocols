@@ -9,6 +9,7 @@
 #include "a2a_v03_adapter_internal.h"
 
 #include "airy_memory.h"
+#include "platform.h"
 #include "error.h"
 
 #include <string.h>
@@ -133,7 +134,7 @@ int a2a_v03_stream_task_update(a2a_v03_context_t *ctx, const char *task_id, doub
     for (size_t i = 0; i < adapter->task_count; i++) {
         if (strcmp(adapter->tasks[i]->id, task_id) == 0) {
             adapter->tasks[i]->progress = progress;
-            adapter->tasks[i]->updated_at = a2a_timestamp_ms();
+            adapter->tasks[i]->updated_at = airy_time_wall_ms();
             if (is_final) {
                 adapter->tasks[i]->state = A2A_TASK_COMPLETED;
                 if (chunk_json) {

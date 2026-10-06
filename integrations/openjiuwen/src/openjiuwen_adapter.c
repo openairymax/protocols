@@ -26,7 +26,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
 
 /* ============ 工具：消息 ID/时间戳 ============ */
 
@@ -34,16 +33,6 @@ uint32_t openjiuwen_generate_message_id(void)
 {
     static uint32_t counter = 0;
     return ++counter;
-}
-
-uint32_t openjiuwen_get_timestamp(void)
-{
-    return (uint32_t)time(NULL);
-}
-
-uint64_t openjiuwen_get_timestamp_ms(void)
-{
-    return airy_time_ms();
 }
 
 /* ============================================================================
@@ -94,14 +83,14 @@ int openjiuwen_adapter_handle_request(void *context, const void *req, void **res
 
     response->protocol = AIRY_PROTOCOL_OPENJIUWEN;
     response->message_id = openjiuwen_generate_message_id();
-    response->timestamp = openjiuwen_get_timestamp();
+    response->timestamp = (uint32_t)(airy_time_wall_ms() / 1000);
     safe_strcpy(response->source_agent, "OpenJiuwen", sizeof(response->source_agent));
     safe_strcpy(response->target_agent, request->source_agent, sizeof(response->target_agent));
     response->payload = NULL;
     response->payload_size = 0;
 
     adapter->message_counter++;
-    adapter->last_activity_ms = openjiuwen_get_timestamp_ms();
+    adapter->last_activity_ms = airy_time_wall_ms();
     *resp = response;
     return 0;
 }
@@ -243,7 +232,7 @@ int openjiuwen_verify_connection(const protocol_adapter_t *adapter)
     }
 
     /* A live connection that has been idle too long must be re-established. */
-    uint32_t now = openjiuwen_get_timestamp();
+    uint32_t now = (uint32_t)(airy_time_wall_ms() / 1000);
     if (impl->conn_state == OPENJIUWEN_CONN_CONNECTED && impl->connection_handle &&
         now - impl->last_heartbeat_sec > OPENJIUWEN_HEARTBEAT_INTERVAL_SEC * 3) {
         AIRY_LOG_WARN("OpenJiuwen: connection stale (idle=%us), reconnecting", now - impl->last_heartbeat_sec);

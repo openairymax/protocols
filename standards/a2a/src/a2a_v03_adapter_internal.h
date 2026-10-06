@@ -71,9 +71,6 @@ struct a2a_v03_adapter_s {
     uint64_t messages_received;
 };
 
-/* Helpers shared across files (was static; now external linkage) **/
-uint64_t a2a_timestamp_ms(void);
-
 /* Compatibility defines shared across split files */
 #define A2A_VERSION "0.3"
 

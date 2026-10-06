@@ -14,6 +14,7 @@
 #include "openjiuwen_adapter_internal.h"
 
 #include "airy_memory.h"
+#include "platform.h"
 #include "error.h"
 #include "logging.h"
 #include "network_common.h"
@@ -86,7 +87,7 @@ int openjiuwen_send_message(void *context, const void *data, size_t size)
         return AIRY_ERR_OUT_OF_MEMORY;
     }
 
-    uint32_t now = openjiuwen_get_timestamp();
+    uint32_t now = (uint32_t)(airy_time_wall_ms() / 1000);
     if (now - adapter->last_heartbeat_sec >= OPENJIUWEN_HEARTBEAT_INTERVAL_SEC) {
         adapter->last_heartbeat_sec = now;
     }
@@ -182,9 +183,9 @@ int openjiuwen_receive_message(void *context, void **data, size_t *size, uint32_
     AIRY_FREE(frame);
 
     adapter->consecutive_errors = 0;
-    adapter->last_activity_ms = openjiuwen_get_timestamp_ms();
+    adapter->last_activity_ms = airy_time_wall_ms();
 
-    uint32_t now = openjiuwen_get_timestamp();
+    uint32_t now = (uint32_t)(airy_time_wall_ms() / 1000);
     if (now - adapter->last_heartbeat_sec >= OPENJIUWEN_HEARTBEAT_INTERVAL_SEC)
         adapter->last_heartbeat_sec = now;
 
