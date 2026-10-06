@@ -166,8 +166,6 @@ int proto_ext_find_by_capability(proto_ext_framework_t *fw, uint32_t capability,
 
 proto_ext_state_t proto_ext_get_state(proto_ext_framework_t *fw, const char *name);
 
-int proto_ext_load_from_config(proto_ext_framework_t *fw, const char *config_json);
-
 const protocol_adapter_t *proto_ext_get_framework_adapter(void);
 
 proto_ext_framework_t *proto_ext_get_global_instance(void);

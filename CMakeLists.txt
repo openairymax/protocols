@@ -120,7 +120,6 @@ set(PROTOCOLS_COMMON_SOURCES
 set(PROTOCOLS_CORE_SOURCES
     core/router/src/protocol_router.c
     core/adapter/src/protocol_extension_framework.c
-    core/adapter/src/protocol_extension_framework_config.c
     core/adapter/src/protocol_extension_framework_middleware.c
     core/adapter/src/protocol_extension_framework_registry.c
     core/adapter/src/protocol_extension_framework_route.c
