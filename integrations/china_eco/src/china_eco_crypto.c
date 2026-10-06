@@ -11,7 +11,7 @@
  * - SM4 block cipher: GB/T 32907-2016 standard (CBC mode, PKCS#7 padding)
  */
 
-#include "china_eco_crypto.h"
+#include "china_eco_adapter.h"
 
 #include "error.h"
 #include "airy_memory.h"

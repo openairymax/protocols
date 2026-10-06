@@ -18,7 +18,6 @@
 
 #include "china_eco_adapter.h"
 #include "china_eco_llm.h"
-#include "china_eco_crypto.h"
 
 #include "error.h"
 #include "airy_memory.h"
