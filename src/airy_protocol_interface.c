@@ -13,11 +13,16 @@
 #include "airy_protocol_interface.h"
 
 #include "../core/router/include/protocol_router.h"
+#include "a2a_v03_adapter.h"
 #include "error.h"
 #include "logging.h"
 #include "airy_memory.h"
 #include "protocol_registry.h"
 #include "types.h"
+
+#if defined(AIRY_HAS_MCP)
+#include "mcp_v1_adapter.h"
+#endif
 
 #include <errno.h>
 #include <stddef.h>
@@ -577,10 +582,12 @@ void proto_gateway_standard_destroy(proto_gateway_iface_t *gw)
 /*
  * Built-in protocol directory (assembly data).
  * The registry mechanism core carries no vendor knowledge; the concrete
- * protocol set is supplied here by the assembly layer per the
- * mechanism/strategy separation (see 0.1.19 architecture plan §4.7/§5.1).
+ * protocol set and its adapter bindings are supplied here by the assembly
+ * layer per the mechanism/strategy separation (see 0.1.19 architecture plan
+ * §4.7/§5.1). The adapter/context fields start NULL and are resolved at
+ * runtime by proto_bind_ops().
  */
-static const proto_builtin_def_t g_builtin_protocols[] = {
+static proto_builtin_def_t g_builtin_protocols[] = {
     {"JSON-RPC", "2.0", "原生JSON-RPC 2.0协议适配器", PROTO_CAT_CORE, PROTO_JSONRPC,
      PROTO_CAP_STREAMING | PROTO_CAP_BATCH},
     {"MCP", "1.0", "Model Context Protocol v1.0", PROTO_CAT_STANDARD, PROTO_MCP,
@@ -603,17 +610,45 @@ static const proto_builtin_def_t g_builtin_protocols[] = {
      PROTO_CAP_STREAMING | PROTO_CAP_TOOL_CALLING | PROTO_CAP_EMBEDDINGS},
 };
 
+/* Resolve the concrete adapter accessor for a built-in protocol type.
+ * Only protocols with a shipped adapter are bound; the rest stay NULL, so the
+ * registry still advertises the protocol without claiming an implementation. */
+static const protocol_adapter_t *proto_ops_of(proto_type_t type)
+{
+    switch (type) {
+    case PROTO_A2A:
+        return a2a_v03_get_adapter();
+#if defined(AIRY_HAS_MCP)
+    case PROTO_MCP:
+        return mcp_v1_get_adapter();
+#endif
+    default:
+        return NULL;
+    }
+}
+
+static void proto_bind_ops(void)
+{
+    for (size_t i = 0; i < AIRY_ARRAY_SIZE(g_builtin_protocols); i++) {
+        const protocol_adapter_t *adapter = proto_ops_of(g_builtin_protocols[i].type);
+        g_builtin_protocols[i].adapter = adapter;
+        g_builtin_protocols[i].context = adapter ? adapter->context : NULL;
+    }
+}
+
 int proto_interface_register_builtins(void)
 {
     static bool registered = false;
     if (registered)
         return 0;
 
-    protocol_registry_t *registry = proto_registry_create();
+    protocol_registry_t *registry = proto_registry_get();
     if (!registry)
         return AIRY_EINVAL;
 
-    size_t def_count = sizeof(g_builtin_protocols) / sizeof(g_builtin_protocols[0]);
+    proto_bind_ops();
+
+    size_t def_count = AIRY_ARRAY_SIZE(g_builtin_protocols);
     int count = proto_registry_register_builtins(registry, g_builtin_protocols, def_count);
     if (count > 0) {
         proto_registry_entry_t *entries = NULL;

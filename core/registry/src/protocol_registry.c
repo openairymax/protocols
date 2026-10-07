@@ -497,7 +497,7 @@ int proto_registry_register_builtins(protocol_registry_t *registry,
     for (size_t i = 0; i < count; i++) {
         int ret = proto_registry_register(registry, defs[i].name, defs[i].version,
                                           defs[i].description, defs[i].category, defs[i].type,
-                                          defs[i].capabilities, NULL, NULL);
+                                          defs[i].capabilities, defs[i].adapter, defs[i].context);
 
         if (ret == 0) {
             proto_registry_entry_t *entry = proto_registry_find(registry, defs[i].name);
