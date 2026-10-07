@@ -122,6 +122,10 @@ const char *proto_registry_version(void);
 /**
  * Descriptor for a built-in protocol entry supplied by the assembly layer.
  * Pure mechanism: no vendor names are embedded in the registry itself.
+ *
+ * adapter/context are optional injection seams owned by the assembly layer;
+ * the registry only stores the pointers it is handed, so it stays unaware of
+ * which concrete adapter (if any) backs an entry.
  */
 typedef struct {
     const char *name;
@@ -130,6 +134,8 @@ typedef struct {
     proto_category_t category;
     proto_type_t type;
     uint32_t capabilities;
+    const protocol_adapter_t *adapter;
+    void *context;
 } proto_builtin_def_t;
 
 int proto_registry_register(protocol_registry_t *registry, const char *name, const char *version,

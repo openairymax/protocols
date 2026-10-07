@@ -383,6 +383,10 @@ target_compile_definitions(airy_protocols PRIVATE
     PROTOCOLS_VERSION="${PROJECT_VERSION}"
     PROTO_REGISTRY_MAX_ADAPTERS=32
 )
+# The assembly layer binds the MCP adapter only when its sources are compiled.
+if(PROTOCOLS_ENABLE_MCP)
+    target_compile_definitions(airy_protocols PRIVATE AIRY_HAS_MCP=1)
+endif()
 if(MSVC)
     target_compile_options(airy_protocols PRIVATE /wd4100 /wd4189)
 endif()

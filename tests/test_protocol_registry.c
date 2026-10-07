@@ -116,6 +116,32 @@ static void test_destroy_resets_singleton(void)
     PASS();
 }
 
+static void test_builtins_preserve_injection(void)
+{
+    TEST("builtin defs carry their adapter and context into the entries");
+
+    protocol_registry_t *registry = proto_registry_create();
+    ASSERT_NOT_NULL(registry, "registry should be created");
+
+    static const protocol_adapter_t adapter = {0};
+    static int context_marker = 0;
+    static const proto_builtin_def_t defs[] = {
+        {"bind_probe", "1.0", "bind probe", PROTO_CAT_CUSTOM, AIRY_PROTOCOL_JSON_RPC, 0, &adapter,
+         &context_marker},
+    };
+
+    int count = proto_registry_register_builtins(registry, defs, sizeof(defs) / sizeof(defs[0]));
+    ASSERT_TRUE(count == 1, "one builtin should register");
+
+    proto_registry_entry_t *entry = proto_registry_find(registry, "bind_probe");
+    ASSERT_NOT_NULL(entry, "builtin entry should be findable");
+    ASSERT_TRUE(entry->adapter == &adapter, "builtin adapter pointer must be preserved");
+    ASSERT_TRUE(entry->context == &context_marker, "builtin context pointer must be preserved");
+
+    proto_registry_destroy(registry);
+    PASS();
+}
+
 int main(void)
 {
     AIRY_LOG_INFO("=== Protocol Registry Mechanism Unit Tests ===\n\n");
@@ -123,6 +149,7 @@ int main(void)
     test_get_is_singleton();
     test_create_does_not_pollute_singleton();
     test_register_preserves_injection();
+    test_builtins_preserve_injection();
     test_destroy_resets_singleton();
 
     AIRY_LOG_INFO("\n=== Results: %d passed, %d failed ===\n", tests_passed, tests_failed);
