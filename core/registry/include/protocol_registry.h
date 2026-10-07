@@ -107,6 +107,16 @@ typedef int (*proto_registry_event_fn)(const char *event_name, const char *entry
 protocol_registry_t *proto_registry_create(void);
 void proto_registry_destroy(protocol_registry_t *registry);
 
+/**
+ * @brief Get the process-wide registry, creating it on first use.
+ *
+ * Mechanism-level singleton accessor: lets independently linked modules share
+ * one registry instance without threading a handle through every layer. The
+ * instance is owned by the mechanism; destroy it only to reset the singleton.
+ * Call it during single-threaded startup before worker threads are spawned.
+ */
+protocol_registry_t *proto_registry_get(void);
+
 const char *proto_registry_version(void);
 
 /**
