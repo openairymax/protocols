@@ -18,6 +18,7 @@
 
 #include "china_eco_adapter.h"
 #include "china_eco_llm.h"
+#include "protocol_vendor_ids.h"
 
 #include "error.h"
 #include "airy_memory.h"

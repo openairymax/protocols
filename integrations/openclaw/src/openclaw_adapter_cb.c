@@ -8,6 +8,7 @@
  */
 
 #include "openclaw_adapter_internal.h"
+#include "protocol_vendor_ids.h"
 
 int openclaw_proto_init(void *context)
 {

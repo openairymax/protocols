@@ -17,6 +17,7 @@
 
 #include "openai_enterprise_adapter.h"
 #include "openai_enterprise_adapter_internal.h"
+#include "protocol_vendor_ids.h"
 
 #include "platform.h"
 

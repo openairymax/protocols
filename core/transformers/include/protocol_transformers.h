@@ -4,14 +4,17 @@
 /* @owner: team-B */
 /**
  * @file protocol_transformers.h
- * @brief Protocol message transformers (complete implementation).
+ * @brief Mechanism-core protocol message transformers.
  *
- * Implements bidirectional message conversion between all protocols
- * supported by AgentRT:
+ * Implements bidirectional conversion for the open-standard protocols carried
+ * by the mechanism core:
  * - JSON-RPC 2.0 <-> MCP v1.0
  * - JSON-RPC 2.0 <-> A2A v0.3
- * - JSON-RPC 2.0 <-> OpenAI API
- * - JSON-RPC 2.0 <-> OpenJiuwen
+ *
+ * Vendor/ecosystem protocol transforms are supplied by the assembly layer
+ * through the proto_catalog_transforms() port (see protocol_catalog.h); this
+ * header declares the neutral transform descriptor they are registered with.
+ * Mechanism/strategy separation per 0.1.19 architecture plan §4.7/§5.1.
  *
  * Conversion rules follow Capital_Specifications/airy_contract/protocol_contract.md
  *
@@ -32,7 +35,7 @@ extern "C" {
 #endif
 
 /* ============================================================================
-  * Conversion context - carries protocol-specific metadata to aid conversion
+ * Conversion context - carries protocol-specific metadata to aid conversion
  * ============================================================================ */
 
 typedef struct {
@@ -48,26 +51,44 @@ transform_context_t *transform_context_create(const char *src_proto, const char 
 void transform_context_destroy(transform_context_t *ctx);
 
 /* ============================================================================
+ * Neutral transform descriptor - the mechanism/strategy injection seam.
+ *
+ * The mechanism core ships the standard transforms in its own table; the
+ * assembly layer contributes vendor transforms as an array of these
+ * descriptors, keyed by (from_proto, to_proto). No vendor knowledge lives in
+ * the core (see 0.1.19 architecture plan §4.7/§5.1).
+ * ============================================================================ */
 
+typedef int (*proto_transform_fn_t)(const unified_message_t *source, unified_message_t *target,
+                                    void *context);
+
+typedef struct {
+    const char *from_proto;
+    const char *to_proto;
+    proto_transform_fn_t transform;
+} proto_transform_def_t;
+
+/* ============================================================================
+ * MCP transforms (open standard)
  * ============================================================================ */
 
 /**
   * @brief Convert a JSON-RPC tools/call request to MCP tools/call format
- *
+  *
   * Mapping rules:
- *   jsonrpc.method = "skill.execute" -> mcp.method = "tools/call"
- *   jsonrpc.params.name -> mcp.params.name
- *   jsonrpc.params.arguments -> mcp.params.arguments
+  *   jsonrpc.method = "skill.execute" -> mcp.method = "tools/call"
+  *   jsonrpc.params.name -> mcp.params.name
+  *   jsonrpc.params.arguments -> mcp.params.arguments
  */
 int transformer_jsonrpc_to_mcp_request(const unified_message_t *source, unified_message_t *target,
                                        void *context);
 
 /**
   * @brief Convert an MCP tools/call response to JSON-RPC format
- *
+  *
   * Mapping rules:
- *   mcp.result.content[] -> jsonrpc.result.output
- *   mcp.error -> jsonrpc.error
+  *   mcp.result.content[] -> jsonrpc.result.output
+  *   mcp.error -> jsonrpc.error
  */
 int transformer_mcp_to_jsonrpc_response(const unified_message_t *source, unified_message_t *target,
                                         void *context);
@@ -79,7 +100,7 @@ int transformer_mcp_tools_list_to_jsonrpc(const unified_message_t *source,
                                           unified_message_t *target, void *context);
 
 /* ============================================================================
-
+ * A2A transforms (open standard)
  * ============================================================================ */
 
 /**
@@ -107,76 +128,15 @@ int transformer_a2a_agents_to_jsonrpc(const unified_message_t *source, unified_m
                                       void *context);
 
 /* ============================================================================
-
- * ============================================================================ */
-
-/**
-  * @brief Convert a JSON-RPC llm.complete request to OpenAI /v1/chat/completions format
- *
-  * Mapping rules:
- *   jsonrpc.params.messages -> openai.messages (role/content)
- *   jsonrpc.params.model -> openai.model
- *   jsonrpc.params.temperature -> openai.temperature
- *   jsonrpc.params.max_tokens -> openai.max_tokens
- *   jsonrpc.params.tools -> openai.tools/functions[]
- */
-int transformer_jsonrpc_to_openai_chat(const unified_message_t *source, unified_message_t *target,
-                                       void *context);
-
-/**
-  * @brief Convert an OpenAI chat completions response to JSON-RPC format
- *
-  * Mapping rules:
- *   openai.choices[0].message.content -> jsonrpc.result.content
- *   openai.choices[0].finish_reason -> jsonrpc.result.finish_reason
- *   openai.usage -> jsonrpc.result.usage
- */
-int transformer_openai_chat_to_jsonrpc(const unified_message_t *source, unified_message_t *target,
-                                       void *context);
-
-/**
-  * @brief Convert an OpenAI streaming chunk to a JSON-RPC notification
- */
-int transformer_openai_stream_chunk_to_jsonrpc(const unified_message_t *source,
-                                               unified_message_t *target, void *context);
-
-/**
-  * @brief Convert a JSON-RPC embedding request to OpenAI /v1/embeddings format
- */
-int transformer_jsonrpc_to_openai_embedding(const unified_message_t *source,
-                                            unified_message_t *target, void *context);
-
-/* ============================================================================
-
- * ============================================================================ */
-
-/**
-  * @brief Convert a JSON-RPC request to the OpenJiuwen binary format
- *
-  * OpenJiuwen uses a custom binary protocol:
- *   Header(24B) + Payload(variable) + CRC32(4B)
- */
-int transformer_jsonrpc_to_openjiuwen(const unified_message_t *source, unified_message_t *target,
-                                      void *context);
-
-/**
-  * @brief Convert an OpenJiuwen response to JSON-RPC format
- */
-int transformer_openjiuwen_to_jsonrpc(const unified_message_t *source, unified_message_t *target,
-                                      void *context);
-
-/* ============================================================================
-
+ * Auto-transform dispatcher
  * ============================================================================ */
 
 /**
   * @brief Automatically select a converter by source and target protocol
- *
-  * Protocol mapping table:
- *   HTTP(JSON-RPC) + endpoint /mcp/(*)     -> MCP
- *   HTTP(JSON-RPC) + endpoint /a2a/(*)     -> A2A
- *   HTTP(JSON-RPC) + endpoint /v1/chat/(*) -> OpenAI
- *   HTTP(JSON-RPC) + endpoint /ojw/(*)     -> OpenJiuwen
+  *
+  * Looks up the core standard transform table first, then consults the
+  * assembly-layer port proto_catalog_transforms() for vendor transforms.
+  * Falls back to a direct copy when no transform matches.
  */
 int protocol_auto_transform(const unified_message_t *source, unified_message_t *target,
                             const char *target_protocol_name);
@@ -185,11 +145,6 @@ int protocol_auto_transform(const unified_message_t *source, unified_message_t *
   * @brief Validate the integrity of a converted message
  */
 int protocol_validate_transformed(const unified_message_t *msg);
-
-/**
-  * @brief List the names of all registered converters
- */
-const char **protocol_list_transformers(size_t *count);
 
 #ifdef __cplusplus
 }

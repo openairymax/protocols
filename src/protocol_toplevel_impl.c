@@ -102,18 +102,6 @@ const char *protocol_type_name(airy_protocol_type_t type)
         return "MCP";
     case AIRY_PROTOCOL_A2A:
         return "A2A";
-    case AIRY_PROTOCOL_OPENAI:
-        return "OpenAI";
-    case AIRY_PROTOCOL_OPENJIUWEN:
-        return "OpenJiuwen";
-    case AIRY_PROTOCOL_CLAUDE:
-        return "Claude";
-    case AIRY_PROTOCOL_AGNTCY:
-        return "AGNTCY";
-    case AIRY_PROTOCOL_CHINA_ECO:
-        return "ChinaEco";
-    case AIRY_PROTOCOL_OPENCLAW:
-        return "OpenClaw";
     default:
         return "Unknown";
     }

@@ -20,6 +20,7 @@
  */
 
 #include "claude_adapter_internal.h"
+#include "protocol_vendor_ids.h"
 
 #ifdef AIRY_HAS_CURL
 #include <cjson/cJSON.h>

@@ -8,6 +8,7 @@
  */
 
 #include "agntcy_acp_adapter.h"
+#include "protocol_vendor_ids.h"
 
 #include "airy_memory.h"
 #include "platform.h"

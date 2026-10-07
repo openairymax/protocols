@@ -49,6 +49,7 @@ set(PROTOCOLS_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/common/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/catalog/include
     ${CMAKE_CURRENT_SOURCE_DIR}/core/router/include
     ${CMAKE_CURRENT_SOURCE_DIR}/core/adapter/include
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transformers/include
@@ -186,11 +187,13 @@ set(PROTOCOLS_INTEGRATIONS_SOURCES
     integrations/openai/src/openai_enterprise_adapter_model.c
     integrations/openai/src/openai_enterprise_adapter_retry.c
     integrations/openai/src/openai_enterprise_adapter_utils.c
+    integrations/openai/src/openai_transform.c
     # OpenJiuwen 适配器按功能域拆分：门面/生命周期、网络传输、连接收发 ops、消息转换
     integrations/openjiuwen/src/openjiuwen_adapter.c        # 门面/生命周期/能力域（原主文件）
     integrations/openjiuwen/src/openjiuwen_adapter_net.c    # 网络传输域（endpoint 解析/连接/重连/发送原语）
     integrations/openjiuwen/src/openjiuwen_adapter_io.c     # 连接/收发 ops 域（connect/disconnect/send/receive）
     integrations/openjiuwen/src/openjiuwen_adapter_msg.c    # 消息转换域（unified<->native 互转/encode/decode）
+    integrations/openjiuwen/src/openjiuwen_transform.c
 )
 
 if(PROTOCOLS_ENABLE_OPENCLAW)
@@ -245,11 +248,20 @@ if(PROTOCOLS_ENABLE_AUTOGEN)
 endif()
 
 # ============================================================
+# 源文件 (Source Files) — Catalog Layer (装配数据)
+# ============================================================
+set(PROTOCOLS_CATALOG_SOURCES
+    catalog/src/protocol_catalog_default.c
+    catalog/src/protocol_catalog_transforms.c
+)
+
+# ============================================================
 # 合并所有源文件
 # ============================================================
 set(PROTOCOLS_ALL_SOURCES
     ${PROTOCOLS_COMMON_SOURCES}
     ${PROTOCOLS_CORE_SOURCES}
+    ${PROTOCOLS_CATALOG_SOURCES}
     ${PROTOCOLS_STANDARDS_SOURCES}
     ${PROTOCOLS_INTEGRATIONS_SOURCES}
     ${PROTOCOLS_FRAMEWORKS_SOURCES}
@@ -293,7 +305,9 @@ endif()
 # ============================================================
 set(PROTOCOLS_INTEGRATIONS_HEADERS
     integrations/openai/include/openai_enterprise_adapter.h
+    integrations/openai/include/openai_transform.h
     integrations/openjiuwen/include/openjiuwen_adapter.h
+    integrations/openjiuwen/include/openjiuwen_transform.h
 )
 
 if(PROTOCOLS_ENABLE_OPENCLAW)
