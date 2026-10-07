@@ -59,14 +59,14 @@ registry/
 | `proto_registry_get_statistics()` | 获取全局统计 |
 | `proto_registry_export_json()` | 导出注册信息为 JSON |
 | `proto_registry_set_event_callback()` | 设置状态变更事件回调 |
-| `proto_registry_initialize_builtins()` | 注册并激活 9 个内置协议条目 |
+| `proto_registry_register_builtins()` | 登记并激活由装配层注入的内置协议条目组 |
 | `proto_category_to_string()` / `proto_state_to_string()` | 枚举值转字符串 |
 
 ### 内置协议条目
 
-`proto_registry_initialize_builtins()` 登记以下 9 个条目（JSON-RPC 2.0、
-MCP 1.0、A2A 0.3、OpenAI、OpenJiuwen、OpenClaw、Claude、AGNTCY、
-ChinaEco 各 1.0），标注其分类与能力标志并逐一激活，返回登记数量。
+本注册中心为纯机制，不内嵌任何厂商知识。具体内置协议条目由装配层以
+`proto_builtin_def_t` 数组描述并通过 `proto_registry_register_builtins()`
+注入：机制核逐条登记、标注 `is_builtin` 并激活，返回成功登记的数量。
 
 ## 协议状态机
 
@@ -83,8 +83,8 @@ UNREGISTERED → REGISTERED → INITIALIZING → READY → ACTIVE
 
 protocol_registry_t *registry = proto_registry_create();
 
-/* 登记并激活 9 个内置协议 */
-int count = proto_registry_initialize_builtins(registry);
+/* 登记并激活装配层注入的内置协议条目组 */
+int count = proto_registry_register_builtins(registry, defs, def_count);
 
 /* 注册自定义协议 */
 proto_registry_register(registry, "my-proto", "1.0.0",
@@ -94,7 +94,7 @@ proto_registry_register(registry, "my-proto", "1.0.0",
 
 /* 查找与激活 */
 proto_registry_entry_t *entry = proto_registry_find(registry, "my-proto");
-proto_registry_add_dependency(registry, "my-proto", "JSON-RPC");
+proto_registry_add_dependency(registry, "my-proto", "my-dep");
 proto_registry_activate(registry, "my-proto");
 
 /* 记录请求并获取统计 */

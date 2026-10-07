@@ -48,7 +48,7 @@ JSON-RPC 2.0）与运行时服务消费，默认构建为静态库。
 | 协议转换器（JSON-RPC ⇄ MCP/A2A/OpenAI/OpenJiuwen） | `transformer_jsonrpc_to_mcp_request()` … `protocol_auto_transform()`、`protocol_validate_transformed()`、`protocol_list_transformers()` |
 | 第三方扩展框架（热加载、中间件链、版本协商） | `proto_ext_register/load/start/add_middleware/negotiate/...`（最多 64 适配器、32 中间件） |
 | 协议注册表（发现、依赖、统计、JSON 导出） | `proto_registry_register/find/list_all/activate/heartbeat/get_statistics/export_json`（最多 32 条目） |
-| 内置适配器：MCP v1、A2A v0.3、AGNTCY ACP、OpenAI、Claude、OpenClaw、国内生态、OpenJiuwen、LangChain、AutoGen | 各目录自有 API，如 `openjiuwen_adapter_create()`、`proto_registry_initialize_builtins()` |
+| 内置适配器：MCP v1、A2A v0.3、AGNTCY ACP、OpenAI、Claude、OpenClaw、国内生态、OpenJiuwen、LangChain、AutoGen | 各目录自有 API，如 `openjiuwen_adapter_create()`、`proto_registry_register_builtins()` |
 
 ## 构成
 

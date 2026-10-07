@@ -14,14 +14,9 @@
  * 5. runtime statistics and monitoring
  * 6. hot load/unload support
  *
- * Supported protocols (v0.1.0):
- * - JSON-RPC 2.0 (native)
- * - MCP v1.0 (Model Context Protocol)
- * - A2A v0.3 (Agent-to-Agent)
- * - OpenAI API (compatible)
- * - OpenJiuwen (custom binary)
- * - OpenClaw (Jiuwen platform)
- * - Claude API (Anthropic)
+ * The registry is a pure mechanism: it carries no vendor-specific
+ * knowledge. Concrete protocol entries are supplied by the assembly layer
+ * via proto_registry_register() or proto_registry_register_builtins().
  *
  * @since 2.1.0
  */
@@ -114,6 +109,19 @@ void proto_registry_destroy(protocol_registry_t *registry);
 
 const char *proto_registry_version(void);
 
+/**
+ * Descriptor for a built-in protocol entry supplied by the assembly layer.
+ * Pure mechanism: no vendor names are embedded in the registry itself.
+ */
+typedef struct {
+    const char *name;
+    const char *version;
+    const char *description;
+    proto_category_t category;
+    proto_type_t type;
+    uint32_t capabilities;
+} proto_builtin_def_t;
+
 int proto_registry_register(protocol_registry_t *registry, const char *name, const char *version,
                             const char *description, proto_category_t category, proto_type_t type,
                             uint32_t capabilities, const protocol_adapter_t *adapter,
@@ -160,7 +168,8 @@ int proto_registry_export_json(protocol_registry_t *registry, char *json_buffer,
 int proto_registry_set_event_callback(protocol_registry_t *registry,
                                       proto_registry_event_fn callback, void *user_data);
 
-int proto_registry_initialize_builtins(protocol_registry_t *registry);
+int proto_registry_register_builtins(protocol_registry_t *registry,
+                                     const proto_builtin_def_t *defs, size_t count);
 
 const char *proto_category_to_string(proto_category_t cat);
 const char *proto_state_to_string(proto_state_t state);

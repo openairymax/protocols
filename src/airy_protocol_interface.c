@@ -573,6 +573,36 @@ void proto_gateway_standard_destroy(proto_gateway_iface_t *gw)
 }
 
 /* Global Registration & Discovery API Implementation */
+
+/*
+ * Built-in protocol directory (assembly data).
+ * The registry mechanism core carries no vendor knowledge; the concrete
+ * protocol set is supplied here by the assembly layer per the
+ * mechanism/strategy separation (see 0.1.19 architecture plan §4.7/§5.1).
+ */
+static const proto_builtin_def_t g_builtin_protocols[] = {
+    {"JSON-RPC", "2.0", "原生JSON-RPC 2.0协议适配器", PROTO_CAT_CORE, PROTO_JSONRPC,
+     PROTO_CAP_STREAMING | PROTO_CAP_BATCH},
+    {"MCP", "1.0", "Model Context Protocol v1.0", PROTO_CAT_STANDARD, PROTO_MCP,
+     PROTO_CAP_TOOL_CALLING | PROTO_CAP_STREAMING | PROTO_CAP_RESOURCE_ACCESS},
+    {"A2A", "0.3", "Agent-to-Agent Protocol v0.3", PROTO_CAT_STANDARD, PROTO_A2A,
+     PROTO_CAP_AGENT_DISCOVERY | PROTO_CAP_STREAMING | PROTO_CAP_CONSENSUS},
+    {"打开AI", "1.0", "打开AI API兼容适配器", PROTO_CAT_INTEGRATION, PROTO_OPENAI,
+     PROTO_CAP_STREAMING | PROTO_CAP_TOOL_CALLING | PROTO_CAP_EMBEDDINGS},
+    {"打开Jiuwen", "1.0", "打开Jiuwen自定义二进制协议", PROTO_CAT_INTEGRATION, PROTO_OPENJIUWEN,
+     PROTO_CAP_BINARY | PROTO_CAP_LOW_LATENCY | PROTO_CAP_CRC_CHECKSUM},
+    {"打开Claw", "1.0", "打开Claw九问平台集成适配器", PROTO_CAT_INTEGRATION, PROTO_OPENCLAW,
+     PROTO_CAP_MULTIMODAL | PROTO_CAP_STREAMING | PROTO_CAP_AGENT_DISCOVERY |
+         PROTO_CAP_TOOL_CALLING},
+    {"Claude", "1.0", "Anthropic Claude API适配器", PROTO_CAT_INTEGRATION, PROTO_CLAUDE,
+     PROTO_CAP_STREAMING | PROTO_CAP_TOOL_CALLING | PROTO_CAP_VISION |
+         PROTO_CAP_EXTENDED_THINKING},
+    {"AGNTCY", "1.0", "AGNTCY Agent Connect Protocol", PROTO_CAT_STANDARD, PROTO_AGNTCY,
+     PROTO_CAP_AGENT_DISCOVERY | PROTO_CAP_STREAMING | PROTO_CAP_TOOL_CALLING},
+    {"ChinaEco", "1.0", "国内大模型生态统一兼容适配器", PROTO_CAT_INTEGRATION, PROTO_CHINA_ECO,
+     PROTO_CAP_STREAMING | PROTO_CAP_TOOL_CALLING | PROTO_CAP_EMBEDDINGS},
+};
+
 int proto_interface_register_builtins(void)
 {
     static bool registered = false;
@@ -583,7 +613,8 @@ int proto_interface_register_builtins(void)
     if (!registry)
         return AIRY_EINVAL;
 
-    int count = proto_registry_initialize_builtins(registry);
+    size_t def_count = sizeof(g_builtin_protocols) / sizeof(g_builtin_protocols[0]);
+    int count = proto_registry_register_builtins(registry, g_builtin_protocols, def_count);
     if (count > 0) {
         proto_registry_entry_t *entries = NULL;
         size_t total = proto_registry_list_active(registry, &entries);
