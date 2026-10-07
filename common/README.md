@@ -92,7 +92,7 @@ protocols_framework_cleanup();
 ```
 
 各协议的专用适配器不在门面中创建，而是经由各自目录的构造函数
-（如 `openjiuwen_adapter_create()`）或通过扩展框架与注册表注册，
+（如 `agntcy_acp_create()`）或通过扩展框架与注册表注册，
 见主文档[构成](../README_zh.md#构成)一节。
 
 ## 构建

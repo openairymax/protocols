@@ -40,7 +40,7 @@ core/
 | 组件 | 头文件 | 职责 | 详细说明 |
 |------|--------|------|----------|
 | Router | `protocol_router.h` | 基于规则的跨协议路由与即时转换，支持单条与批量 | [core/router](router/README.md) |
-| Transformers | `protocol_transformers.h` | JSON-RPC ⇄ MCP/A2A/OpenAI/OpenJiuwen 双向转换 | [core/transformers](transformers/README.md) |
+| Transformers | `protocol_transformers.h` | JSON-RPC ⇄ MCP/A2A 双向转换 | [core/transformers](transformers/README.md) |
 | Extension Framework | `protocol_extension_framework.h` | 第三方适配器注册、生命周期、中间件链、版本协商、热加载 | [core/adapter](adapter/README.md) |
 | Registry | `protocol_registry.h` | 协议条目注册 / 发现 / 分类 / 依赖 / 统计 / JSON 导出 | [core/registry](registry/README.md) |
 

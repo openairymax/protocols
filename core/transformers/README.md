@@ -5,10 +5,11 @@
 
 ## 概述
 
-协议消息转换器实现 JSON-RPC 2.0 与 MCP、A2A、OpenAI API、
-OpenJiuwen 之间的双向消息格式转换。JSON-RPC 2.0 是内部统一中间
-格式：任何两种外部协议之间的互通都经由 JSON-RPC 中转，转换时携带
-一份跨调用上下文（代理、会话、追踪与 JSON-RPC ID 计数）。
+协议消息转换器实现 JSON-RPC 2.0 与 MCP、A2A 之间的双向消息格式
+转换。JSON-RPC 2.0 是内部统一中间格式：两种外部协议之间的互通
+经由 JSON-RPC 中转，转换时携带一份跨调用上下文（代理、会话、
+追踪与 JSON-RPC ID 计数）。厂商协议转换不在机制核内，由装配层
+经 `proto_catalog_transforms()` 端口注入（见 §4.7/§5.1）。
 
 ## 目录结构
 
@@ -27,7 +28,7 @@ transformers/
 `agent_id[64]`、`session_id[64]`、`trace_id[64]`、`jsonrpc_id_counter`。
 经 `transform_context_create(src, tgt)` 创建、`transform_context_destroy()` 释放。
 
-## 转换器清单（13 个）
+## 转换器清单（7 个）
 
 ### JSON-RPC ⇄ MCP
 
@@ -49,42 +50,17 @@ transformers/
 | `transformer_jsonrpc_to_a2a_discover()` | JSON-RPC 代理发现 → A2A 发现 |
 | `transformer_a2a_agents_to_jsonrpc()` | A2A agent card 列表 → JSON-RPC |
 
-### JSON-RPC ⇄ OpenAI API
-
-| 函数 | 说明 |
-|------|------|
-| `transformer_jsonrpc_to_openai_chat()` | JSON-RPC LLM 补全 → `/v1/chat/completions` |
-| `transformer_openai_chat_to_jsonrpc()` | chat completions 响应 → JSON-RPC |
-| `transformer_openai_stream_chunk_to_jsonrpc()` | streaming chunk → JSON-RPC 通知 |
-| `transformer_jsonrpc_to_openai_embedding()` | JSON-RPC embedding 请求 → `/v1/embeddings` |
-
-字段映射：`params.messages` → `messages`（role/content）、
-`params.model` → `model`、`params.tools` → `tools[]`；回程
-`choices[0].message.content` → `result.content`、`usage` → `result.usage`。
-
-### JSON-RPC ⇄ OpenJiuwen
-
-| 函数 | 说明 |
-|------|------|
-| `transformer_jsonrpc_to_openjiuwen()` | JSON-RPC → OpenJiuwen 二进制格式（头部 + payload + CRC32 校验尾） |
-| `transformer_openjiuwen_to_jsonrpc()` | OpenJiuwen 响应 → JSON-RPC |
-
 ## 通用工具
 
 | 函数 | 说明 |
 |------|------|
-| `protocol_auto_transform(source, target, target_protocol_name)` | 按端点模式自动选择转换器 |
+| `protocol_auto_transform(source, target, target_protocol_name)` | 按源端点与目标协议名自动选择转换器 |
 | `protocol_validate_transformed(msg)` | 验证转换后消息完整性 |
-| `protocol_list_transformers(count)` | 获取全部转换器名称列表 |
 
-`protocol_auto_transform()` 的端点映射：
-
-| 端点模式 | 目标协议 |
-|----------|----------|
-| `/mcp/(*)` | MCP |
-| `/a2a/(*)` | A2A |
-| `/v1/chat/(*)` | OpenAI |
-| `/ojw/(*)` | OpenJiuwen |
+`protocol_auto_transform()` 以 `source->endpoint`（为空时取 `jsonrpc`）
+与 `target_protocol_name` 查询机制核内置的标准转换表；未命中再请教
+配层端口 `proto_catalog_transforms()`；仍未命中则直接复制源消息、
+不做格式转换。
 
 ## 用法
 
@@ -102,9 +78,6 @@ protocol_auto_transform(&source, &target, "mcp");
 if (protocol_validate_transformed(&target) == 0) {
     /* 转换成功，使用 target */
 }
-
-size_t count = 0;
-const char **names = protocol_list_transformers(&count);
 
 transform_context_destroy(ctx);
 ```

@@ -1,6 +1,6 @@
 # protocols — AgentRT Unified Protocol Layer
 
-> One message model, one adapter contract, many protocols: JSON-RPC 2.0, MCP, A2A, OpenAI-compatible APIs, Claude, OpenJiuwen, China-ecosystem services, AGNTCY ACP, and OpenClaw behind a single C API.
+> One message model, one adapter contract, open-standard protocols — JSON-RPC 2.0, MCP, A2A, AGNTCY ACP — behind a single C API, with vendor integrations and framework adapters injected from the ecosystem layer.
 
 **Language:** English | [简体中文](README_zh.md)
 
@@ -21,18 +21,23 @@ protocols, agent-to-agent protocols — behind one unified message model
 (`unified_message_t`) and one adapter contract (`proto_adapter_vtable_t`), so
 callers route, send, and receive without per-protocol code.
 
-Nine protocol types are defined in `airy_protocol_type_t`:
+The protocol type enum (`airy_protocol_type_t`) defines nine protocol types:
 
 `JSON_RPC`, `MCP`, `A2A`, `OPENAI`, `OPENJIUWEN`, `CLAUDE`, `CHINA_ECO`,
-`AGNTCY`, `OPENCLAW`.
+`AGNTCY`, `OPENCLAW`; the assembly catalog advertises all of them, while the
+mechanism core ships the open-standard adapters only.
 
 JSON-RPC 2.0 is the internal hub format: the built-in transformers convert
-messages between JSON-RPC and MCP, A2A, OpenAI, and OpenJiuwen, and the router
-applies rule-based conversion on the fly. Eleven concrete adapters ship in
-three families — open standards (`standards/`), vendor integrations
-(`integrations/`), and agent frameworks (`frameworks/`). The extension
-framework and the protocol registry let third-party adapters register,
-negotiate versions, and join the middleware pipeline at runtime.
+messages between JSON-RPC, MCP, and A2A, and the router applies rule-based
+conversion on the fly. Three concrete adapters ship in the mechanism core —
+open standards (`standards/`): MCP v1, A2A v0.3, and AGNTCY ACP. Vendor
+integrations (OpenAI, Claude, OpenJiuwen, China-ecosystem services, OpenClaw)
+and agent-framework adapters (LangChain, AutoGen) are **not** part of the
+mechanism core; per the mechanism/policy separation principle they live in the
+ecosystem layer and bind through the extension framework and the protocol
+registry at runtime. The extension framework and the protocol registry let
+third-party adapters register, negotiate versions, and join the middleware
+pipeline at runtime.
 
 The library is consumed by the [gateway](https://atomgit.com/openairymax/gateway)
 (external HTTP/WebSocket/SSE/MCP/A2A/OpenAI-compatible endpoints translated to
@@ -49,10 +54,10 @@ by default.
 | Rule-based routing, single & batch (I-L2) | `protocol_router_create/add_rule/remove_rule/route/route_batch/set_decision_func/get_stats` |
 | Gateway integration interface (I-L3) | `proto_gateway_iface_t`, `proto_gateway_standard_create/destroy` |
 | Extension manager interface (I-L4) | `proto_extension_mgr_iface_t` |
-| Protocol transformers (JSON-RPC ⇄ MCP/A2A/OpenAI/OpenJiuwen) | `transformer_jsonrpc_to_mcp_request()` … `protocol_auto_transform()`, `protocol_validate_transformed()`, `protocol_list_transformers()` |
+| Protocol transformers (JSON-RPC ⇄ MCP/A2A) | `transformer_jsonrpc_to_mcp_request()` … `protocol_auto_transform()`, `protocol_validate_transformed()` |
 | Third-party extension framework (hot load, middleware chain, version negotiation) | `proto_ext_register/load/start/add_middleware/negotiate/...` (up to 64 adapters, 32 middleware) |
 | Protocol registry (discovery, dependencies, stats, JSON export) | `proto_registry_register/find/list_all/activate/heartbeat/get_statistics/export_json` (up to 32 entries) |
-| Built-in adapters: MCP v1, A2A v0.3, AGNTCY ACP, OpenAI, Claude, OpenClaw, China eco, OpenJiuwen, LangChain, AutoGen | per-directory APIs, e.g. `openjiuwen_adapter_create()`, `proto_registry_register_builtins()` |
+| Built-in adapters: MCP v1, A2A v0.3, AGNTCY ACP (open standards) | per-directory APIs, e.g. `agntcy_acp_create()`, `proto_registry_register_builtins()` |
 
 ## Composition
 
@@ -60,28 +65,20 @@ Five layers, top of the stack first:
 
 ```
 protocols/
-├── include/            # unified_protocol.h, airy_protocol_interface.h, protocol_router.h
+├── include/            # unified_protocol.h, airy_protocol_interface.h, protocol_catalog.h
 ├── src/                # toplevel implementation + builtin interface registration
 ├── common/             # protocols.h facade: framework init, manager, stacks, HTTP adapter factory
 ├── core/
 │   ├── adapter/        # protocol extension framework (descriptors, middleware, lifecycle)
 │   ├── registry/       # protocol registry center (categories, states, dependencies, stats)
 │   ├── router/         # routing engine (rules, batch, custom decision functions)
-│   └── transformers/   # JSON-RPC ⇄ MCP/A2A/OpenAI/OpenJiuwen converters
+│   └── transformers/   # JSON-RPC ⇄ MCP/A2A converters
 ├── standards/
 │   ├── mcp/            # MCP v1 adapter + client + transport (STDIO, HTTP+SSE, Streamable HTTP)
 │   ├── a2a/            # A2A v0.3 (tasks, agent cards, negotiation, AES-256-GCM auth)
 │   └── agntcy/         # AGNTCY ACP (discovery, channels, broadcast, ack)
-├── integrations/
-│   ├── openai/         # OpenAI-compatible chat/embeddings/vision functions
-│   ├── claude/         # Claude messages API (models, thinking, caching)
-│   ├── openclaw/       # OpenClaw agent platform bridge
-│   ├── china_eco/      # China LLM platforms, OSS bridges, SM2/SM3/SM4 crypto
-│   └── openjiuwen/     # OpenJiuwen binary protocol
-├── frameworks/
-│   ├── langchain/      # chains, tools, agents, memory bridge
-│   └── autogen/        # conversable agents, group chats bridge
-└── tests/              # 10 adapter unit-test executables
+├── catalog/            # assembly data: protocol descriptors + vendor transform port
+└── tests/              # adapter unit-test executables (non-Windows)
 ```
 
 Each directory has its own README:
@@ -94,16 +91,7 @@ Each directory has its own README:
 [standards](standards/README.md) ·
 [standards/mcp](standards/mcp/README.md) ·
 [standards/a2a](standards/a2a/README.md) ·
-[standards/agntcy](standards/agntcy/README.md) ·
-[integrations](integrations/README.md) ·
-[integrations/openai](integrations/openai/README.md) ·
-[integrations/claude](integrations/claude/README.md) ·
-[integrations/openclaw](integrations/openclaw/README.md) ·
-[integrations/china_eco](integrations/china_eco/README.md) ·
-[integrations/openjiuwen](integrations/openjiuwen/README.md) ·
-[frameworks](frameworks/README.md) ·
-[frameworks/langchain](frameworks/langchain/README.md) ·
-[frameworks/autogen](frameworks/autogen/README.md)
+[standards/agntcy](standards/agntcy/README.md)
 
 ## Usage
 
@@ -130,11 +118,10 @@ protocols_framework_cleanup();
 
 `protocol_adapter_http()` is the only generic adapter factory in the facade;
 protocol-specific adapters are created through their own constructors (for
-example `openjiuwen_adapter_create()`) or registered via the extension
-framework and the registry. Messages carry protocol, direction
-(request/response/notification/error), endpoint, payload/body, correlation and
-trace metadata, and are encoded/decoded by whichever adapter the stack has
-registered.
+example `agntcy_acp_create()`) or registered via the extension framework and
+the registry. Messages carry protocol, direction (request/response/notification/
+error), endpoint, payload/body, correlation and trace metadata, and are
+encoded/decoded by whichever adapter the stack has registered.
 
 ## Build
 
@@ -156,26 +143,18 @@ cmake --install build --prefix /opt/airymax
 | `PROTOCOLS_ENABLE_MCP` | `ON` | MCP v1 adapter sources (8 files) |
 | `PROTOCOLS_ENABLE_MCP_TRANSPORT` | `ON` (forced `OFF` on Windows) | MCP transport layer (STDIO / HTTP+SSE / Streamable HTTP) |
 | `PROTOCOLS_ENABLE_A2A` | `ON` | flag for the A2A adapter |
-| `PROTOCOLS_ENABLE_OPENAI` | `ON` | flag for the OpenAI adapter |
-| `PROTOCOLS_ENABLE_OPENJIUWEN` | `ON` | flag for the OpenJiuwen adapter |
-| `PROTOCOLS_ENABLE_CLAUDE` | `ON` | Claude adapter sources |
 | `PROTOCOLS_ENABLE_AGNTCY` | `ON` | AGNTCY ACP adapter sources |
-| `PROTOCOLS_ENABLE_CHINA_ECO` | `ON` (forced `OFF` on Windows) | China-ecosystem adapter sources |
-| `PROTOCOLS_ENABLE_LANGCHAIN` | `ON` | LangChain adapter sources |
-| `PROTOCOLS_ENABLE_AUTOGEN` | `ON` | AutoGen adapter sources |
-| `PROTOCOLS_ENABLE_OPENCLAW` | `OFF` (forced `OFF` on Windows) | OpenClaw adapter sources |
 
 Notes measured against `CMakeLists.txt`:
 
-- Common, core, A2A, OpenAI, and OpenJiuwen sources are compiled
-  unconditionally; their options act as feature flags. The remaining adapter
-  families are source-gated by their option.
+- Common, core, A2A, and catalog sources are compiled unconditionally; the
+  A2A option acts as a feature flag. MCP and AGNTCY adapter sources are
+  source-gated by their option.
 - The MCP client sources build only on non-Windows platforms (POSIX
   subprocess/pipe model).
 - `airy_protocols` links `airy_common` and `svc_common`, and picks up cURL and
   cJSON when detected (`AIRY_HAS_CURL` / `AIRY_HAS_CJSON`).
-- Tests (10 executables) are built with `BUILD_TESTS=ON` on non-Windows
-  platforms only.
+- Tests are built with `BUILD_TESTS=ON` on non-Windows platforms only.
 
 **Artifacts:** `airy_protocols` (static by default; position-independent code
 enabled, C11); public headers install under `include/agentrt/protocols`.
