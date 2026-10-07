@@ -46,20 +46,14 @@ router/
 | `protocol_router_set_decision_func()` | 替换自定义决策函数 |
 | `protocol_router_get_stats()` | 获取路由统计（JSON 字符串，由调用方释放） |
 
-## 便捷转换器
+## 转换器绑定
 
-路由头文件同时声明 5 个可直接绑定给规则的转换器：
-
-| 转换器 | 说明 |
-|--------|------|
-| `protocol_transformer_jsonrpc_to_mcp()` | JSON-RPC → MCP |
-| `protocol_transformer_mcp_to_jsonrpc()` | MCP → JSON-RPC |
-| `protocol_transformer_openai_to_jsonrpc()` | OpenAI → JSON-RPC |
-| `protocol_transformer_a2a_to_jsonrpc()` | A2A → JSON-RPC |
-| `protocol_transformer_default()` | 默认转换器（直接复制，无格式转换） |
-
-更细粒度的字段级映射（如 `skill.execute` → `tools/call`）由
-[core/transformers](../transformers/README.md) 提供。
+路由引擎不内置具名转换器：`protocol_router_add_rule()` 接受任意
+`message_transformer_t` 回调，字段级映射由
+[core/transformers](../transformers/README.md) 提供的
+`transformer_jsonrpc_to_mcp_request()`、`transformer_a2a_to_jsonrpc_response()`
+等开放标准转换器承担；传入 `NULL` 时使用内置默认转换器
+（payload/body 直接复制，无格式转换）。
 
 ## 路由流程
 
@@ -85,7 +79,7 @@ protocol_rule_t rule = {
     .priority = 10,
     .transformer_context = NULL,
 };
-protocol_router_add_rule(router, &rule, protocol_transformer_jsonrpc_to_mcp);
+protocol_router_add_rule(router, &rule, transformer_jsonrpc_to_mcp_request);
 
 unified_message_t transformed;
 protocol_router_route(router, &input_msg, &transformed);

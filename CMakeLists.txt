@@ -5,34 +5,24 @@
 # SPDX-FileCopyrightText: 2026 SPHARX.
 # SPDX-License-Identifier: AGPL-3.0-or-later OR Apache-2.0
 #
-# 本模块提供统一的协议栈基础框架，包括：
+# 本模块提供统一的协议栈机制层，包括：
 # 1. 统一协议接口与消息类型 (Common Layer)
 # 2. 核心组件：路由器/转换器/扩展框架/注册中心 (Core Layer)
-# 3. 标准协议适配器：MCP/A2A (Standards Layer)
-# 4. 集成适配器：OpenAI/OpenJiuwen/OpenClaw/Claude (Integrations Layer)
-# 5. 框架适配器：LangChain/AutoGen (Frameworks Layer)
-# 6. 统一接口定义 (Interfaces Layer)
+# 3. 标准协议适配器：MCP/A2A/AGNTCY (Standards Layer)
+# 4. 装配数据面：协议描述与转换端口 (Catalog Layer)
+# 5. 统一接口定义 (Interfaces Layer)
+#
+# 厂商集成（OpenAI/OpenJiuwen/Claude/OpenClaw/ChinaEco）与框架适配
+# （LangChain/AutoGen）不属机制核，按机制与策略分离原则迁出本仓。
 # ========================================================================
 
 
 # 编译选项
-option(PROTOCOLS_ENABLE_OPENCLAW "Enable OpenClaw integration" OFF)
-option(PROTOCOLS_ENABLE_CLAUDE "Enable Claude API integration" ON)
-option(PROTOCOLS_ENABLE_LANGCHAIN "Enable LangChain framework adapter" ON)
-option(PROTOCOLS_ENABLE_AUTOGEN "Enable AutoGen framework adapter" ON)
 option(PROTOCOLS_ENABLE_AGNTCY "Enable AGNTCY ACP protocol adapter" ON)
-option(PROTOCOLS_ENABLE_CHINA_ECO "Enable China domestic ecosystem protocol adapter" ON)
 option(PROTOCOLS_ENABLE_A2A "Enable A2A protocol adapter" ON)
-option(PROTOCOLS_ENABLE_OPENAI "Enable OpenAI enterprise adapter" ON)
-option(PROTOCOLS_ENABLE_OPENJIUWEN "Enable OpenJiuwen adapter" ON)
-
-if(WIN32)
-    set(PROTOCOLS_ENABLE_OPENCLAW OFF CACHE BOOL "OpenClaw requires Unix sockets" FORCE)
-    set(PROTOCOLS_ENABLE_CHINA_ECO OFF CACHE BOOL "China Eco requires Unix" FORCE)
-endif()
 
 airy_print_info("[PROTOCOLS] Configuring protocols module (cJSON: ${AIRY_HAS_CJSON})")
-airy_print_info("[PROTOCOLS]   MCP: ${PROTOCOLS_ENABLE_MCP}, A2A: ON, Claude: ${PROTOCOLS_ENABLE_CLAUDE}")
+airy_print_info("[PROTOCOLS]   MCP: ${PROTOCOLS_ENABLE_MCP}, A2A: ${PROTOCOLS_ENABLE_A2A}, AGNTCY: ${PROTOCOLS_ENABLE_AGNTCY}")
 
 option(PROTOCOLS_ENABLE_MCP "Enable MCP protocol adapter" ON)
 # P2-24: MCP cJSON core is cross-platform; only Unix socket transport is POSIX-only
@@ -56,8 +46,6 @@ set(PROTOCOLS_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/core/registry/include
     ${CMAKE_CURRENT_SOURCE_DIR}/standards/a2a/include
     ${CMAKE_CURRENT_SOURCE_DIR}/standards/mcp/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/integrations/openai/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/integrations/openjiuwen/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../commons/platform/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../commons/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils
@@ -71,34 +59,9 @@ set(PROTOCOLS_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/../atoms/corekern/include
 )
 
-if(PROTOCOLS_ENABLE_OPENCLAW)
-    list(APPEND PROTOCOLS_INCLUDE_DIRS
-        ${CMAKE_CURRENT_SOURCE_DIR}/integrations/openclaw/include)
-endif()
-
-if(PROTOCOLS_ENABLE_CLAUDE)
-    list(APPEND PROTOCOLS_INCLUDE_DIRS
-        ${CMAKE_CURRENT_SOURCE_DIR}/integrations/claude/include)
-endif()
-
-if(PROTOCOLS_ENABLE_LANGCHAIN)
-    list(APPEND PROTOCOLS_INCLUDE_DIRS
-        ${CMAKE_CURRENT_SOURCE_DIR}/frameworks/langchain/include)
-endif()
-
-if(PROTOCOLS_ENABLE_AUTOGEN)
-    list(APPEND PROTOCOLS_INCLUDE_DIRS
-        ${CMAKE_CURRENT_SOURCE_DIR}/frameworks/autogen/include)
-endif()
-
 if(PROTOCOLS_ENABLE_AGNTCY)
     list(APPEND PROTOCOLS_INCLUDE_DIRS
         ${CMAKE_CURRENT_SOURCE_DIR}/standards/agntcy/include)
-endif()
-
-if(PROTOCOLS_ENABLE_CHINA_ECO)
-    list(APPEND PROTOCOLS_INCLUDE_DIRS
-        ${CMAKE_CURRENT_SOURCE_DIR}/integrations/china_eco/include)
 endif()
 
 # R-09-124: all includes moved to target_include_directories below
@@ -176,78 +139,6 @@ if(PROTOCOLS_ENABLE_AGNTCY)
 endif()
 
 # ============================================================
-# 源文件 (Source Files) — Integrations Layer
-# ============================================================
-set(PROTOCOLS_INTEGRATIONS_SOURCES
-    integrations/openai/src/openai_enterprise_adapter.c
-    integrations/openai/src/openai_enterprise_adapter_cb.c
-    integrations/openai/src/openai_enterprise_adapter_chat.c
-    integrations/openai/src/openai_enterprise_adapter_ctx.c
-    integrations/openai/src/openai_enterprise_adapter_embed.c
-    integrations/openai/src/openai_enterprise_adapter_model.c
-    integrations/openai/src/openai_enterprise_adapter_retry.c
-    integrations/openai/src/openai_enterprise_adapter_utils.c
-    integrations/openai/src/openai_transform.c
-    # OpenJiuwen 适配器按功能域拆分：门面/生命周期、网络传输、连接收发 ops、消息转换
-    integrations/openjiuwen/src/openjiuwen_adapter.c        # 门面/生命周期/能力域（原主文件）
-    integrations/openjiuwen/src/openjiuwen_adapter_net.c    # 网络传输域（endpoint 解析/连接/重连/发送原语）
-    integrations/openjiuwen/src/openjiuwen_adapter_io.c     # 连接/收发 ops 域（connect/disconnect/send/receive）
-    integrations/openjiuwen/src/openjiuwen_adapter_msg.c    # 消息转换域（unified<->native 互转/encode/decode）
-    integrations/openjiuwen/src/openjiuwen_transform.c
-)
-
-if(PROTOCOLS_ENABLE_OPENCLAW)
-    list(APPEND PROTOCOLS_INTEGRATIONS_SOURCES
-        integrations/openclaw/src/openclaw_adapter.c
-        integrations/openclaw/src/openclaw_adapter_cb.c
-        integrations/openclaw/src/openclaw_adapter_monitor.c
-        integrations/openclaw/src/openclaw_adapter_registry.c
-        integrations/openclaw/src/openclaw_adapter_session.c
-        integrations/openclaw/src/openclaw_adapter_socket.c
-        integrations/openclaw/src/openclaw_adapter_task.c)
-endif()
-
-if(PROTOCOLS_ENABLE_CLAUDE)
-    list(APPEND PROTOCOLS_INTEGRATIONS_SOURCES
-        integrations/claude/src/claude_adapter.c
-        integrations/claude/src/claude_adapter_cleanup.c
-        integrations/claude/src/claude_adapter_http.c
-        integrations/claude/src/claude_adapter_model.c
-        integrations/claude/src/claude_adapter_proto.c)
-endif()
-
-if(PROTOCOLS_ENABLE_CHINA_ECO)
-    list(APPEND PROTOCOLS_INTEGRATIONS_SOURCES
-        integrations/china_eco/src/china_eco_adapter.c
-        integrations/china_eco/src/china_eco_llm.c
-        integrations/china_eco/src/china_eco_crypto.c)
-endif()
-
-# ============================================================
-# 源文件 (Source Files) — Frameworks Layer
-# ============================================================
-set(PROTOCOLS_FRAMEWORKS_SOURCES
-)
-
-if(PROTOCOLS_ENABLE_LANGCHAIN)
-    list(APPEND PROTOCOLS_FRAMEWORKS_SOURCES
-        frameworks/langchain/src/langchain_adapter.c
-        frameworks/langchain/src/langchain_adapter_agent.c
-        frameworks/langchain/src/langchain_adapter_chain.c
-        frameworks/langchain/src/langchain_adapter_memory.c
-        frameworks/langchain/src/langchain_adapter_proto.c
-        frameworks/langchain/src/langchain_adapter_tool.c)
-endif()
-
-if(PROTOCOLS_ENABLE_AUTOGEN)
-    list(APPEND PROTOCOLS_FRAMEWORKS_SOURCES
-        frameworks/autogen/src/autogen_adapter.c
-        frameworks/autogen/src/autogen_adapter_agent.c
-        frameworks/autogen/src/autogen_adapter_msg.c
-        frameworks/autogen/src/autogen_adapter_proto.c)
-endif()
-
-# ============================================================
 # 源文件 (Source Files) — Catalog Layer (装配数据)
 # ============================================================
 set(PROTOCOLS_CATALOG_SOURCES
@@ -263,8 +154,6 @@ set(PROTOCOLS_ALL_SOURCES
     ${PROTOCOLS_CORE_SOURCES}
     ${PROTOCOLS_CATALOG_SOURCES}
     ${PROTOCOLS_STANDARDS_SOURCES}
-    ${PROTOCOLS_INTEGRATIONS_SOURCES}
-    ${PROTOCOLS_FRAMEWORKS_SOURCES}
 )
 
 # ============================================================
@@ -301,55 +190,12 @@ if(PROTOCOLS_ENABLE_AGNTCY)
 endif()
 
 # ============================================================
-# 头文件 (Header Files) — Integrations Layer
-# ============================================================
-set(PROTOCOLS_INTEGRATIONS_HEADERS
-    integrations/openai/include/openai_enterprise_adapter.h
-    integrations/openai/include/openai_transform.h
-    integrations/openjiuwen/include/openjiuwen_adapter.h
-    integrations/openjiuwen/include/openjiuwen_transform.h
-)
-
-if(PROTOCOLS_ENABLE_OPENCLAW)
-    list(APPEND PROTOCOLS_INTEGRATIONS_HEADERS
-        integrations/openclaw/include/openclaw_adapter.h)
-endif()
-
-if(PROTOCOLS_ENABLE_CLAUDE)
-    list(APPEND PROTOCOLS_INTEGRATIONS_HEADERS
-        integrations/claude/include/claude_adapter.h)
-endif()
-
-if(PROTOCOLS_ENABLE_CHINA_ECO)
-    list(APPEND PROTOCOLS_INTEGRATIONS_HEADERS
-        integrations/china_eco/include/china_eco_adapter.h)
-endif()
-
-# ============================================================
-# 头文件 (Header Files) — Frameworks Layer
-# ============================================================
-set(PROTOCOLS_FRAMEWORKS_HEADERS
-)
-
-if(PROTOCOLS_ENABLE_LANGCHAIN)
-    list(APPEND PROTOCOLS_FRAMEWORKS_HEADERS
-        frameworks/langchain/include/langchain_adapter.h)
-endif()
-
-if(PROTOCOLS_ENABLE_AUTOGEN)
-    list(APPEND PROTOCOLS_FRAMEWORKS_HEADERS
-        frameworks/autogen/include/autogen_adapter.h)
-endif()
-
-# ============================================================
 # 合并所有头文件
 # ============================================================
 set(PROTOCOLS_ALL_HEADERS
     ${PROTOCOLS_COMMON_HEADERS}
     ${PROTOCOLS_CORE_HEADERS}
     ${PROTOCOLS_STANDARDS_HEADERS}
-    ${PROTOCOLS_INTEGRATIONS_HEADERS}
-    ${PROTOCOLS_FRAMEWORKS_HEADERS}
 )
 
 # ============================================================
@@ -425,16 +271,9 @@ airy_print_info("=== AgentRT Protocols Module v${PROJECT_VERSION} ===")
 airy_print_info("  Common sources:   ${PROTOCOLS_COMMON_SOURCES}")
 airy_print_info("  Core sources:     ${PROTOCOLS_CORE_SOURCES}")
 airy_print_info("  Standard sources: ${PROTOCOLS_STANDARDS_SOURCES}")
-airy_print_info("  Integration src:  ${PROTOCOLS_INTEGRATIONS_SOURCES}")
-airy_print_info("  Framework sources:${PROTOCOLS_FRAMEWORKS_SOURCES}")
 airy_print_info("  Total source files: ${PROTOCOLS_ALL_SOURCES}")
 airy_print_info("  Total header files: ${PROTOCOLS_ALL_HEADERS}")
-airy_print_info("  OpenClaw:         ${PROTOCOLS_ENABLE_OPENCLAW}")
-airy_print_info("  Claude:           ${PROTOCOLS_ENABLE_CLAUDE}")
-airy_print_info("  LangChain:        ${PROTOCOLS_ENABLE_LANGCHAIN}")
-airy_print_info("  AutoGen:          ${PROTOCOLS_ENABLE_AUTOGEN}")
 airy_print_info("  AGNTCY ACP:       ${PROTOCOLS_ENABLE_AGNTCY}")
-airy_print_info("  China Eco:        ${PROTOCOLS_ENABLE_CHINA_ECO}")
 airy_print_info("==============================================")
 airy_print_info("")
 
@@ -448,20 +287,13 @@ airy_print_info("")
 if(BUILD_TESTS AND NOT WIN32)
     set(PROTOCOL_TEST_INCLUDE_DIRS
         ${CMAKE_CURRENT_SOURCE_DIR}/common/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/integrations/openclaw/include
         ${CMAKE_CURRENT_SOURCE_DIR}/standards/agntcy/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/integrations/china_eco/include
         ${CMAKE_CURRENT_SOURCE_DIR}/core/transformers/include
         ${CMAKE_CURRENT_SOURCE_DIR}/core/router/include
         ${CMAKE_CURRENT_SOURCE_DIR}/core/adapter/include
         ${CMAKE_CURRENT_SOURCE_DIR}/core/registry/include
         ${CMAKE_CURRENT_SOURCE_DIR}/standards/a2a/include
         ${CMAKE_CURRENT_SOURCE_DIR}/standards/mcp/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/integrations/openai/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/integrations/openjiuwen/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/integrations/claude/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/frameworks/langchain/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/frameworks/autogen/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../commons/platform/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/types
         ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/error
@@ -471,17 +303,6 @@ if(BUILD_TESTS AND NOT WIN32)
         ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/observability
         ${CMAKE_CURRENT_SOURCE_DIR}/../atoms/corekern/include
     )
-
-    if(PROTOCOLS_ENABLE_OPENCLAW)
-        add_executable(test_openclaw_adapter tests/test_openclaw_adapter.c)
-        target_compile_definitions(test_openclaw_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
-        target_include_directories(test_openclaw_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_openclaw_adapter PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
-        if(UNIX)
-            target_link_libraries(test_openclaw_adapter PRIVATE pthread)
-        endif()
-        add_test(NAME test_openclaw_adapter COMMAND test_openclaw_adapter)
-    endif()
 
     if(PROTOCOLS_ENABLE_AGNTCY)
         add_executable(test_agntcy_acp tests/test_agntcy_acp.c)
@@ -494,18 +315,7 @@ if(BUILD_TESTS AND NOT WIN32)
         add_test(NAME test_agntcy_acp COMMAND test_agntcy_acp)
     endif()
 
-    if(PROTOCOLS_ENABLE_CHINA_ECO)
-        add_executable(test_china_eco_crypto tests/test_china_eco_crypto.c)
-        target_compile_definitions(test_china_eco_crypto PRIVATE AIRY_COMPLIANCE_IMPL)
-        target_include_directories(test_china_eco_crypto PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_china_eco_crypto PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
-        if(UNIX)
-            target_link_libraries(test_china_eco_crypto PRIVATE pthread)
-        endif()
-        add_test(NAME test_china_eco_crypto COMMAND test_china_eco_crypto)
-    endif()
-
-    # P1-16: 10 adapter unit tests (mcp/a2a/openai/openjiuwen/langchain/autogen/claude/openclaw/china_eco/agntcy)
+    # Mechanism-level adapters: A2A / MCP are part of the standards layer.
     if(PROTOCOLS_ENABLE_A2A)
         add_executable(test_a2a_adapter tests/test_a2a_adapter.c)
         target_compile_definitions(test_a2a_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
@@ -526,61 +336,6 @@ if(BUILD_TESTS AND NOT WIN32)
             target_link_libraries(test_mcp_adapter PRIVATE pthread)
         endif()
         add_test(NAME test_mcp_adapter COMMAND test_mcp_adapter)
-    endif()
-
-    if(PROTOCOLS_ENABLE_OPENAI)
-        add_executable(test_openai_adapter tests/test_openai_adapter.c)
-        target_compile_definitions(test_openai_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
-        target_include_directories(test_openai_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_openai_adapter PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
-        if(UNIX)
-            target_link_libraries(test_openai_adapter PRIVATE pthread)
-        endif()
-        add_test(NAME test_openai_adapter COMMAND test_openai_adapter)
-    endif()
-
-    if(PROTOCOLS_ENABLE_OPENJIUWEN)
-        add_executable(test_openjiuwen_adapter tests/test_openjiuwen_adapter.c)
-        target_compile_definitions(test_openjiuwen_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
-        target_include_directories(test_openjiuwen_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_openjiuwen_adapter PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
-        if(UNIX)
-            target_link_libraries(test_openjiuwen_adapter PRIVATE pthread)
-        endif()
-        add_test(NAME test_openjiuwen_adapter COMMAND test_openjiuwen_adapter)
-    endif()
-
-    if(PROTOCOLS_ENABLE_CLAUDE)
-        add_executable(test_claude_adapter tests/test_claude_adapter.c)
-        target_compile_definitions(test_claude_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
-        target_include_directories(test_claude_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_claude_adapter PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
-        if(UNIX)
-            target_link_libraries(test_claude_adapter PRIVATE pthread)
-        endif()
-        add_test(NAME test_claude_adapter COMMAND test_claude_adapter)
-    endif()
-
-    if(PROTOCOLS_ENABLE_LANGCHAIN)
-        add_executable(test_langchain_adapter tests/test_langchain_adapter.c)
-        target_compile_definitions(test_langchain_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
-        target_include_directories(test_langchain_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_langchain_adapter PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
-        if(UNIX)
-            target_link_libraries(test_langchain_adapter PRIVATE pthread)
-        endif()
-        add_test(NAME test_langchain_adapter COMMAND test_langchain_adapter)
-    endif()
-
-    if(PROTOCOLS_ENABLE_AUTOGEN)
-        add_executable(test_autogen_adapter tests/test_autogen_adapter.c)
-        target_compile_definitions(test_autogen_adapter PRIVATE AIRY_COMPLIANCE_IMPL)
-        target_include_directories(test_autogen_adapter PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_autogen_adapter PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
-        if(UNIX)
-            target_link_libraries(test_autogen_adapter PRIVATE pthread)
-        endif()
-        add_test(NAME test_autogen_adapter COMMAND test_autogen_adapter)
     endif()
 
     # Mechanism-level tests: pure core, no adapter feature required.
