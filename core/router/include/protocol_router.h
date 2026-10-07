@@ -6,9 +6,9 @@
  * @file protocol_router.h
  * @brief Protocol routing and transformation engine.
  *
- * Adaptive routing and transformation for MCP/A2A/OpenAI API and other
- * protocols. Provides smart protocol routing, message transformation and
- * protocol compatibility handling.
+ * Adaptive routing and transformation over open-standard protocols. Provides
+ * smart protocol routing, message transformation and protocol compatibility
+ * handling; vendor protocol handling is injected by the assembly layer.
  */
 
 #ifndef AIRY_RT_PROTOCOL_ROUTER_H
@@ -142,59 +142,6 @@ int protocol_router_set_decision_func(protocol_router_handle_t router,
   * @return 0 on success, negative error codes on failure
  */
 int protocol_router_get_stats(protocol_router_handle_t router, char **stats_json);
-
-/* ============================================================================ */
-
-/* ============================================================================ */
-/**
-  * @brief JSON-RPC to MCP converter
-  * @param source Source message (JSON-RPC)
-  * @param target Target message (MCP)
-  * @param context Transformer context
-  * @return 0 on success, negative error codes on failure
- */
-int protocol_transformer_jsonrpc_to_mcp(const unified_message_t *source, unified_message_t *target,
-                                        void *context);
-
-/**
-  * @brief MCP to JSON-RPC converter
-  * @param source Source message (MCP)
-  * @param target Target message (JSON-RPC)
-  * @param context Transformer context
-  * @return 0 on success, negative error codes on failure
- */
-int protocol_transformer_mcp_to_jsonrpc(const unified_message_t *source, unified_message_t *target,
-                                        void *context);
-
-/**
-  * @brief OpenAI API to JSON-RPC converter
-  * @param source Source message (OpenAI API)
-  * @param target Target message (JSON-RPC)
-  * @param context Transformer context
-  * @return 0 on success, negative error codes on failure
- */
-int protocol_transformer_openai_to_jsonrpc(const unified_message_t *source,
-                                           unified_message_t *target, void *context);
-
-/**
-  * @brief A2A to JSON-RPC converter
-  * @param source Source message (A2A)
-  * @param target Target message (JSON-RPC)
-  * @param context Transformer context
-  * @return 0 on success, negative error codes on failure
- */
-int protocol_transformer_a2a_to_jsonrpc(const unified_message_t *source, unified_message_t *target,
-                                        void *context);
-
-/**
-  * @brief Default message converter (direct copy, no conversion)
-  * @param source Source message
- * @param target Target message
-  * @param context Transformer context (ignored)
-  * @return 0 on success, negative error codes on failure
- */
-int protocol_transformer_default(const unified_message_t *source, unified_message_t *target,
-                                 void *context);
 
 #ifdef __cplusplus
 }

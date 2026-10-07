@@ -5,8 +5,9 @@
  * AgentRT Unified Protocol - unified protocol interface.
  *
  * Defines the core interfaces of the AgentRT unified protocol system,
- * providing a unified abstraction over multiple communication protocols
- * (JSON-RPC, MCP, A2A, OpenAI, OpenJiuwen).
+ * providing a unified abstraction over the open standard protocols
+ * (JSON-RPC, MCP, A2A) and pluggable extension protocols resolved at
+ * runtime through the protocol registry.
  *
  * Moved from agentrt/include/agentrt/unified_protocol.h to
  * agentrt/protocols/include/ (2026-04-19 include consolidation refactor).
@@ -29,16 +30,17 @@ extern "C" {
  */
 typedef enum {
     AIRY_PROTOCOL_JSON_RPC = 0,
-    AIRY_PROTOCOL_MCP,
-    AIRY_PROTOCOL_A2A,
-    AIRY_PROTOCOL_OPENAI,
-    AIRY_PROTOCOL_OPENJIUWEN,
-    AIRY_PROTOCOL_CLAUDE,
-    AIRY_PROTOCOL_CHINA_ECO,
-    AIRY_PROTOCOL_AGNTCY,
-    AIRY_PROTOCOL_OPENCLAW,
-    AIRY_PROTOCOL_COUNT
+    AIRY_PROTOCOL_MCP = 1,
+    AIRY_PROTOCOL_A2A = 2,
+
+    /* Extension protocol ids are allocated at runtime by the protocol
+     * registry; the numeric range below is reserved for them. */
+    AIRY_PROTOCOL_VENDOR_BASE = 3,
+    AIRY_PROTOCOL_CUSTOM = 63,
+    AIRY_PROTOCOL_MAX = 64
 } airy_protocol_type_t;
+
+#define AIRY_PROTOCOL_COUNT AIRY_PROTOCOL_MAX
 
 /**
   * @brief Protocol adapter structure (shared interface definition)
@@ -90,7 +92,7 @@ typedef enum {
 #define MSG_TYPE_RESPONSE DIRECTION_RESPONSE
 #define MSG_TYPE_ERROR DIRECTION_ERROR
 
-#define PROTOCOL_CUSTOM AIRY_PROTOCOL_COUNT
+#define PROTOCOL_CUSTOM AIRY_PROTOCOL_CUSTOM
 #define PROTOCOL_HTTP AIRY_PROTOCOL_JSON_RPC
 
 #define ENCODING_UTF8_JSON 0
@@ -98,15 +100,6 @@ typedef enum {
 #define PROTO_JSONRPC AIRY_PROTOCOL_JSON_RPC
 #define PROTO_MCP AIRY_PROTOCOL_MCP
 #define PROTO_A2A AIRY_PROTOCOL_A2A
-#define PROTO_OPENAI AIRY_PROTOCOL_OPENAI
-#define PROTO_OPENJIUWEN AIRY_PROTOCOL_OPENJIUWEN
-/* P0-15 fix: PROTO_* macros used COUNT+N offsets (10-13), mismatching enums (5-8),
-  * so find_adapter_node() never found them by type.
-  * Fix: reference the enum values directly, like PROTO_JSONRPC/PROTO_MCP. */
-#define PROTO_OPENCLAW AIRY_PROTOCOL_OPENCLAW
-#define PROTO_CLAUDE AIRY_PROTOCOL_CLAUDE
-#define PROTO_AGNTCY AIRY_PROTOCOL_AGNTCY
-#define PROTO_CHINA_ECO AIRY_PROTOCOL_CHINA_ECO
 
 /* P0-15: removed legacy transport constants PROTOCOL_WEBSOCKET/GRPC/MQTT/AMQP/RAW_TCP/RAW_UDP/STDIO/IPC.
   * Legacy transport-type macros, incompatible with the current app-layer protocol enums.

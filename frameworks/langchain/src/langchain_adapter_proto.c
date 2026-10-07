@@ -12,6 +12,7 @@
  */
 
 #include "langchain_adapter_internal.h"
+#include "protocol_vendor_ids.h"
 
 int langchain_proto_encode(void *context, const void *msg, void **out_data, size_t *out_size)
 {

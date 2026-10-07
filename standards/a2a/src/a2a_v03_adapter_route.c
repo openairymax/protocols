@@ -449,6 +449,38 @@ static int a2a_route_sta(a2a_v03_context_t *ctx, const char *params_json, char *
     return a2a_route_stats(ctx, response_json, 1);
 }
 
+static int a2a_route_card(a2a_v03_context_t *ctx, const char *params_json, char **response_json)
+{
+    int rc = AIRY_ERR_INVALID_PARAM;
+    do {
+        CJSON_PARSE_GUARD(root, params_json && params_json[0] ? params_json : "{}", { break; });
+        cJSON *agent_id = cJSON_GetObjectItem(root, "agent_id");
+        if (!cJSON_IsString(agent_id))
+            break;
+
+        const a2a_agent_card_t *card = a2a_v03_get_agent_card(ctx, agent_id->valuestring);
+        if (!card) {
+            rc = AIRY_ERR_NOT_FOUND;
+            break;
+        }
+        cJSON *obj = a2a_card_json(card);
+        if (!obj) {
+            rc = AIRY_ERR_OUT_OF_MEMORY;
+            break;
+        }
+
+        cJSON *result = cJSON_CreateObject();
+        if (!result) {
+            cJSON_Delete(obj);
+            rc = AIRY_ERR_OUT_OF_MEMORY;
+            break;
+        }
+        cJSON_AddItemToObject(result, "agent", obj);
+        rc = a2a_json_out(result, response_json);
+    } while (0);
+    return rc;
+}
+
 static const struct {
     const char *name;
     a2a_route_fn fn;
@@ -456,6 +488,7 @@ static const struct {
     { "register_agent", a2a_route_reg },
     { "unregister_agent", a2a_route_unreg },
     { "discover_agents", a2a_route_disc },
+    { "get_agent_card", a2a_route_card },
     { "create_task", a2a_route_new },
     { "update_task", a2a_route_upd },
     { "cancel_task", a2a_route_cncl },

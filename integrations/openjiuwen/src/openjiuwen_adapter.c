@@ -15,6 +15,7 @@
 
 #include "openjiuwen_adapter.h"
 #include "openjiuwen_adapter_internal.h"
+#include "protocol_vendor_ids.h"
 
 #include "airy_memory.h"
 #include "error.h"

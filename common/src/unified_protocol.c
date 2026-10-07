@@ -475,27 +475,18 @@ int ullm_round(ullm_invoke_fn cb, void *cb_data, const char *model, const char *
 
 const char *protocol_type_to_string(protocol_type_t type)
 {
-    /* P0-15 fix: name array aligned with airy_protocol_type_t (9 values 0-8).
-      * Historical bug: the array had only 8 legacy transport names (HTTP/WebSocket/gRPC/...),
-      * mismatching the current 9 app-layer enums. protocol_type_to_string(MCP)
-      * wrongly returned "WebSocket" (index 1 = old WebSocket slot). */
-    static const char *names[] = {
-        "JSON-RPC", /* 0: AIRY_PROTOCOL_JSON_RPC */
-        "MCP", /* 1: AIRY_PROTOCOL_MCP */
-        "A2A", /* 2: AIRY_PROTOCOL_A2A */
-        "OpenAI", /* 3: AIRY_PROTOCOL_OPENAI */
-        "OpenJiuwen", /* 4: AIRY_PROTOCOL_OPENJIUWEN */
-        "Claude", /* 5: AIRY_PROTOCOL_CLAUDE */
-        "ChinaEco", /* 6: AIRY_PROTOCOL_CHINA_ECO */
-        "AGNTCY", /* 7: AIRY_PROTOCOL_AGNTCY */
-        "OpenClaw" /* 8: AIRY_PROTOCOL_OPENCLAW */
-    };
-
-    if (type < 0 || type >= AIRY_PROTOCOL_COUNT) {
+    switch (type) {
+    case AIRY_PROTOCOL_JSON_RPC:
+        return "JSON-RPC";
+    case AIRY_PROTOCOL_MCP:
+        return "MCP";
+    case AIRY_PROTOCOL_A2A:
+        return "A2A";
+    default:
+        /* Vendor ids carry no name in the mechanism core; callers resolve
+         * them through the registry (proto_interface_type_name). */
         return "Unknown";
     }
-
-    return names[type];
 }
 
 protocol_type_t protocol_type_from_string(const char *str)
@@ -503,28 +494,14 @@ protocol_type_t protocol_type_from_string(const char *str)
     if (!str)
         return PROTOCOL_CUSTOM;
 
-    /* P0-15 fix: added the full 9-entry string->enum mapping for app-layer protocols.
-      * Historical bug: from_string only knew legacy transport names;
-      * protocol_type_from_string("mcp") returned PROTOCOL_CUSTOM instead of PROTO_MCP. */
     if (strcasecmp(str, "json-rpc") == 0 || strcasecmp(str, "http") == 0)
         return AIRY_PROTOCOL_JSON_RPC;
     if (strcasecmp(str, "mcp") == 0 || strcasecmp(str, "mcp_v1") == 0)
         return AIRY_PROTOCOL_MCP;
     if (strcasecmp(str, "a2a") == 0 || strcasecmp(str, "a2a_v03") == 0)
         return AIRY_PROTOCOL_A2A;
-    if (strcasecmp(str, "openai") == 0)
-        return AIRY_PROTOCOL_OPENAI;
-    if (strcasecmp(str, "openjiuwen") == 0)
-        return AIRY_PROTOCOL_OPENJIUWEN;
-    if (strcasecmp(str, "claude") == 0)
-        return AIRY_PROTOCOL_CLAUDE;
-    if (strcasecmp(str, "china-eco") == 0 || strcasecmp(str, "china_eco") == 0)
-        return AIRY_PROTOCOL_CHINA_ECO;
-    if (strcasecmp(str, "agntcy") == 0 || strcasecmp(str, "acp") == 0)
-        return AIRY_PROTOCOL_AGNTCY;
-    if (strcasecmp(str, "openclaw") == 0)
-        return AIRY_PROTOCOL_OPENCLAW;
 
+    /* Vendor names are resolved by name through the registry, not here. */
     return PROTOCOL_CUSTOM;
 }
 

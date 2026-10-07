@@ -6,14 +6,14 @@
  * @file protocol_router.c
  * @brief Protocol routing and transformation engine implementation.
  *
- * Adaptive routing and transformation for MCP/A2A/OpenAI API and other protocols.
+ * Adaptive routing and transformation over open-standard protocols; vendor
+ * protocol handling is injected by the assembly layer.
  */
 
 #include "../include/protocol_router.h"
 
 #include "airy_memory.h"
 #include "platform.h"
-#include "protocol_transformers.h"
 #include "safe_string_utils.h"
 #include "types.h"
 
@@ -25,6 +25,8 @@
 #include "error.h"
 
 #define INDEX_NOT_FOUND (-1)
+
+static int default_xform(const unified_message_t *source, unified_message_t *target, void *context);
 
 // ============================================================================
 // ============================================================================
@@ -228,7 +230,7 @@ int protocol_router_route(protocol_router_handle_t router, const unified_message
 
     message_transformer_t transformer = matched_node->transformer;
     if (!transformer) {
-        transformer = protocol_transformer_default;
+        transformer = default_xform;
     }
 
     int result = transformer(message, transformed, matched_node->rule.transformer_context);
@@ -342,36 +344,11 @@ int protocol_router_get_stats(protocol_router_handle_t router, char **stats_json
 // ============================================================================
 // ============================================================================
 
-int protocol_transformer_jsonrpc_to_mcp(const unified_message_t *source, unified_message_t *target,
-                                        void *context)
-{
-    return transformer_jsonrpc_to_mcp_request(source, target, context);
-}
-
-int protocol_transformer_mcp_to_jsonrpc(const unified_message_t *source, unified_message_t *target,
-                                        void *context)
-{
-    return transformer_mcp_to_jsonrpc_response(source, target, context);
-}
-
-int protocol_transformer_openai_to_jsonrpc(const unified_message_t *source,
-                                           unified_message_t *target, void *context)
-{
-    return transformer_openai_chat_to_jsonrpc(source, target, context);
-}
-
-int protocol_transformer_a2a_to_jsonrpc(const unified_message_t *source, unified_message_t *target,
-                                        void *context)
-{
-    return transformer_a2a_to_jsonrpc_response(source, target, context);
-}
-
-int protocol_transformer_default(const unified_message_t *source, unified_message_t *target,
-                                 void *context)
+static int default_xform(const unified_message_t *source, unified_message_t *target, void *context)
 {
     if (!source || !target) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "protocol_transformer_default: failed");
+                         "default_xform: failed");
         return AIRY_ERR_UNKNOWN;
     }
 
@@ -384,7 +361,7 @@ int protocol_transformer_default(const unified_message_t *source, unified_messag
             target->payload = NULL;
             target->payload_size = 0;
             airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
-                             "protocol_transformer_default: payload allocation failed");
+                             "default_xform: payload allocation failed");
             return AIRY_ERR_OUT_OF_MEMORY;
         }
         __builtin_memcpy(new_payload, source->payload, source->payload_size);
@@ -399,7 +376,7 @@ int protocol_transformer_default(const unified_message_t *source, unified_messag
             target->body = NULL;
             target->body_length = 0;
             airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
-                             "protocol_transformer_default: body allocation failed");
+                             "default_xform: body allocation failed");
             return AIRY_ERR_OUT_OF_MEMORY;
         }
         __builtin_memcpy(new_body, source->body, source->body_length);
