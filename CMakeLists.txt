@@ -102,6 +102,9 @@ set(PROTOCOLS_STANDARDS_SOURCES
     standards/a2a/src/a2a_v03_adapter_msg.c
     standards/a2a/src/a2a_v03_adapter_route.c
     standards/a2a/src/a2a_v03_adapter_task.c
+    # 标准层适配器提供商表：把协议类型绑定到随核发布的标准适配器，经
+    # proto_std_providers() 供装配层查询（机制与策略分离接缝）。
+    standards/src/protocol_std_providers.c
 )
 if(PROTOCOLS_ENABLE_MCP)
     list(APPEND PROTOCOLS_STANDARDS_SOURCES

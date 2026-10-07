@@ -47,7 +47,7 @@ int a2a_adapter_destroy_cb(void *context)
     /* Release internal heap members but never the shell: the adapter context
      * may be the static s_a2a_default_context bound at link time, and freeing
      * a non-heap address is an ASan bad-free. The holder owns the shell. */
-    a2a_v03_context_clear((a2a_v03_context_t *)context);
+    a2a_v03_ctx_clear((a2a_v03_context_t *)context);
     __builtin_memset(context, 0, sizeof(struct a2a_v03_adapter_s));
     return 0;
 }

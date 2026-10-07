@@ -57,7 +57,7 @@ int a2a_v03_create(a2a_config_t config, a2a_handle_t *out_handle)
     return 0;
 }
 
-void a2a_v03_context_clear(a2a_v03_context_t *ctx)
+void a2a_v03_ctx_clear(a2a_v03_context_t *ctx)
 {
     if (!ctx)
         return;
@@ -85,7 +85,7 @@ void a2a_v03_destroy(a2a_handle_t handle)
     if (!handle)
         return;
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)handle;
-    a2a_v03_context_clear((a2a_v03_context_t *)adapter);
+    a2a_v03_ctx_clear((a2a_v03_context_t *)adapter);
     AIRY_FREE(adapter);
 }
 

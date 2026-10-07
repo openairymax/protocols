@@ -9,7 +9,7 @@
 转换。JSON-RPC 2.0 是内部统一中间格式：两种外部协议之间的互通
 经由 JSON-RPC 中转，转换时携带一份跨调用上下文（代理、会话、
 追踪与 JSON-RPC ID 计数）。厂商协议转换不在机制核内，由装配层
-经 `proto_catalog_transforms()` 端口注入（见 §4.7/§5.1）。
+经 `proto_xform_defs()` 端口注入（见 §4.7/§5.1）。
 
 ## 目录结构
 
@@ -59,7 +59,7 @@ transformers/
 
 `protocol_auto_transform()` 以 `source->endpoint`（为空时取 `jsonrpc`）
 与 `target_protocol_name` 查询机制核内置的标准转换表；未命中再请教
-配层端口 `proto_catalog_transforms()`；仍未命中则直接复制源消息、
+配层端口 `proto_xform_defs()`；仍未命中则直接复制源消息、
 不做格式转换。
 
 ## 用法

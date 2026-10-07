@@ -57,7 +57,7 @@ by default.
 | Protocol transformers (JSON-RPC ⇄ MCP/A2A) | `transformer_jsonrpc_to_mcp_request()` … `protocol_auto_transform()`, `protocol_validate_transformed()` |
 | Third-party extension framework (hot load, middleware chain, version negotiation) | `proto_ext_register/load/start/add_middleware/negotiate/...` (up to 64 adapters, 32 middleware) |
 | Protocol registry (discovery, dependencies, stats, JSON export) | `proto_registry_register/find/list_all/activate/heartbeat/get_statistics/export_json` (up to 32 entries) |
-| Built-in adapters: MCP v1, A2A v0.3, AGNTCY ACP (open standards) | per-directory APIs, e.g. `agntcy_acp_create()`, `proto_registry_register_builtins()` |
+| Open-standard protocols shipped with the core (mechanism): MCP v1 & A2A v0.3 adapters, AGNTCY ACP handle API | MCP/A2A bound via `proto_std_providers()` (`mcp_v1_get_adapter()`, `a2a_v03_get_adapter()`); AGNTCY via its standalone `agntcy_acp_create()`; assembly via `proto_reg_builtins()` |
 
 ## Composition
 

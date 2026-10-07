@@ -486,7 +486,7 @@ int proto_registry_set_event_callback(protocol_registry_t *registry,
     return 0;
 }
 
-int proto_registry_register_builtins(protocol_registry_t *registry,
+int proto_reg_builtins(protocol_registry_t *registry,
                                      const proto_builtin_def_t *defs, size_t count)
 {
     AIRY_CHECK(registry != NULL, AIRY_ERR_NULL_POINTER, "registry is NULL");
