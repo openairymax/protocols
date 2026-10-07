@@ -130,7 +130,7 @@ static void test_builtins_preserve_injection(void)
          &context_marker},
     };
 
-    int count = proto_registry_register_builtins(registry, defs, sizeof(defs) / sizeof(defs[0]));
+    int count = proto_reg_builtins(registry, defs, sizeof(defs) / sizeof(defs[0]));
     ASSERT_TRUE(count == 1, "one builtin should register");
 
     proto_registry_entry_t *entry = proto_registry_find(registry, "bind_probe");

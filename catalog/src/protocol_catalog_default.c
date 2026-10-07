@@ -7,8 +7,9 @@
  * @brief 默认协议目录实现（装配数据）。
  *
  * 机制核（protocols/include、protocols/src、protocols/core）不携带任何厂商
- * 知识；具体协议集合及其适配器绑定由装配层在此提供，经端口
- * proto_catalog_defs() 注入注册表，遵循机制与策略分离
+ * 知识；具体协议集合在此以纯数据提供，经端口 proto_catalog_defs() 注入注册
+ * 表。类型到适配器的绑定不在本文件硬编码，而由标准层经端口
+ * proto_std_providers() 提供，遵循机制与策略分离
  * （见 0.1.19 架构方案 §4.7/§5.1）。厂商类型 ID 见 protocol_vendor_ids.h，
  * 其数值为统一消息线上契约，保持稳定。
  */
@@ -17,27 +18,20 @@
 
 #include "protocol_vendor_ids.h"
 
-#include "a2a_v03_adapter.h"
 #include "types.h"
 
-#if defined(AIRY_HAS_MCP)
-#include "mcp_v1_adapter.h"
-#endif
-
-/* 仅解析随核发布的适配器访问器；其余条目保持 NULL，注册表仍对外通告协议，
- * 但不冒充实现（无桩、无演示实现）。 */
+/* 仅解析标准层登记为提供商的标准适配器访问器；未登记条目保持 NULL，注册表
+ * 仍对外通告协议，但不冒充实现（无桩、无演示实现）。 */
 static const protocol_adapter_t *catalog_adapter_of(proto_type_t type)
 {
-    switch (type) {
-    case PROTO_A2A:
-        return a2a_v03_get_adapter();
-#if defined(AIRY_HAS_MCP)
-    case PROTO_MCP:
-        return mcp_v1_get_adapter();
-#endif
-    default:
-        return NULL;
+    size_t count = 0;
+    const proto_adapter_provider_t *providers = proto_std_providers(&count);
+
+    for (size_t i = 0; i < count; i++) {
+        if (providers[i].type == type && providers[i].get_adapter)
+            return providers[i].get_adapter();
     }
+    return NULL;
 }
 
 static proto_builtin_def_t g_catalog_defs[] = {

@@ -59,13 +59,13 @@ registry/
 | `proto_registry_get_statistics()` | 获取全局统计 |
 | `proto_registry_export_json()` | 导出注册信息为 JSON |
 | `proto_registry_set_event_callback()` | 设置状态变更事件回调 |
-| `proto_registry_register_builtins()` | 登记并激活由装配层注入的内置协议条目组 |
+| `proto_reg_builtins()` | 登记并激活由装配层注入的内置协议条目组 |
 | `proto_category_to_string()` / `proto_state_to_string()` | 枚举值转字符串 |
 
 ### 内置协议条目
 
 本注册中心为纯机制，不内嵌任何厂商知识。具体内置协议条目由装配层以
-`proto_builtin_def_t` 数组描述并通过 `proto_registry_register_builtins()`
+`proto_builtin_def_t` 数组描述并通过 `proto_reg_builtins()`
 注入：机制核逐条登记、标注 `is_builtin` 并激活，返回成功登记的数量。
 
 ## 协议状态机
@@ -84,7 +84,7 @@ UNREGISTERED → REGISTERED → INITIALIZING → READY → ACTIVE
 protocol_registry_t *registry = proto_registry_create();
 
 /* 登记并激活装配层注入的内置协议条目组 */
-int count = proto_registry_register_builtins(registry, defs, def_count);
+int count = proto_reg_builtins(registry, defs, def_count);
 
 /* 注册自定义协议 */
 proto_registry_register(registry, "my-proto", "1.0.0",

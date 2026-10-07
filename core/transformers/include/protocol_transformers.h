@@ -12,7 +12,7 @@
  * - JSON-RPC 2.0 <-> A2A v0.3
  *
  * Vendor/ecosystem protocol transforms are supplied by the assembly layer
- * through the proto_catalog_transforms() port (see protocol_catalog.h); this
+ * through the proto_xform_defs() port (see protocol_catalog.h); this
  * header declares the neutral transform descriptor they are registered with.
  * Mechanism/strategy separation per 0.1.19 architecture plan §4.7/§5.1.
  *
@@ -135,7 +135,7 @@ int transformer_a2a_agents_to_jsonrpc(const unified_message_t *source, unified_m
   * @brief Automatically select a converter by source and target protocol
   *
   * Looks up the core standard transform table first, then consults the
-  * assembly-layer port proto_catalog_transforms() for vendor transforms.
+  * assembly-layer port proto_xform_defs() for vendor transforms.
   * Falls back to a direct copy when no transform matches.
  */
 int protocol_auto_transform(const unified_message_t *source, unified_message_t *target,

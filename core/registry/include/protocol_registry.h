@@ -16,7 +16,7 @@
  *
  * The registry is a pure mechanism: it carries no vendor-specific
  * knowledge. Concrete protocol entries are supplied by the assembly layer
- * via proto_registry_register() or proto_registry_register_builtins().
+ * via proto_registry_register() or proto_reg_builtins().
  *
  * @since 2.1.0
  */
@@ -184,7 +184,7 @@ int proto_registry_export_json(protocol_registry_t *registry, char *json_buffer,
 int proto_registry_set_event_callback(protocol_registry_t *registry,
                                       proto_registry_event_fn callback, void *user_data);
 
-int proto_registry_register_builtins(protocol_registry_t *registry,
+int proto_reg_builtins(protocol_registry_t *registry,
                                      const proto_builtin_def_t *defs, size_t count);
 
 const char *proto_category_to_string(proto_category_t cat);

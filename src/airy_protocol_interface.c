@@ -47,7 +47,7 @@ int proto_interface_register_builtins(void)
     if (!defs || def_count == 0)
         return AIRY_EINVAL;
 
-    int count = proto_registry_register_builtins(registry, defs, def_count);
+    int count = proto_reg_builtins(registry, defs, def_count);
     if (count > 0) {
         proto_registry_entry_t *entries = NULL;
         size_t total = proto_registry_list_active(registry, &entries);

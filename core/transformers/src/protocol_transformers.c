@@ -7,7 +7,7 @@
  * @brief 开放标准消息转换机制（JSON-RPC / MCP / A2A）。
  *
  * 机制核仅内置开放标准转换器；厂商面转换器由装配层经端口
- * proto_catalog_transforms() 注入，遵循机制与策略分离
+ * proto_xform_defs() 注入，遵循机制与策略分离
  * （见 0.1.19 架构方案 §4.7/§5.1）。
  */
 
@@ -317,7 +317,7 @@ int protocol_auto_transform(const unified_message_t *source, unified_message_t *
     int ret = dispatch_table(g_transform_table, from, target_protocol_name, source, target);
     if (ret == AIRY_ERR_NOT_FOUND) {
         size_t count = 0;
-        const proto_transform_def_t *vendor = proto_catalog_transforms(&count);
+        const proto_transform_def_t *vendor = proto_xform_defs(&count);
         (void)count;
         ret = dispatch_table(vendor, from, target_protocol_name, source, target);
     }

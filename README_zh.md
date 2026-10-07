@@ -50,7 +50,7 @@ JSON-RPC 2.0）与运行时服务消费，默认构建为静态库。
 | 协议转换器（JSON-RPC ⇄ MCP/A2A） | `transformer_jsonrpc_to_mcp_request()` … `protocol_auto_transform()`、`protocol_validate_transformed()` |
 | 第三方扩展框架（热加载、中间件链、版本协商） | `proto_ext_register/load/start/add_middleware/negotiate/...`（最多 64 适配器、32 中间件） |
 | 协议注册表（发现、依赖、统计、JSON 导出） | `proto_registry_register/find/list_all/activate/heartbeat/get_statistics/export_json`（最多 32 条目） |
-| 内置适配器：MCP v1、A2A v0.3、AGNTCY ACP（开放标准） | 各目录自有 API，如 `agntcy_acp_create()`、`proto_registry_register_builtins()` |
+| 随核发布的开放标准协议（机制核）：MCP v1、A2A v0.3 适配器，AGNTCY ACP 句柄 API | MCP/A2A 经 `proto_std_providers()` 绑定（`mcp_v1_get_adapter()`、`a2a_v03_get_adapter()`）；AGNTCY 走独立句柄 API `agntcy_acp_create()`；装配经 `proto_reg_builtins()` |
 
 ## 构成
 
