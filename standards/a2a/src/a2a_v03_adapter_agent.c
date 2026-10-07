@@ -223,15 +223,13 @@ int a2a_v03_unregister_agent(a2a_v03_context_t *ctx, const char *agent_id)
     }
     for (size_t i = 0; i < adapter->agent_count; i++) {
         if (strcmp(adapter->agents[i].id, agent_id) == 0) {
-            adapter->agents[i].name[0] = '\0';
-            adapter->agents[i].url[0] = '\0';
-            if (i < adapter->agent_count - 1) {
+            if (i < adapter->agent_count - 1)
                 adapter->agents[i] = adapter->agents[adapter->agent_count - 1];
-            }
             adapter->agent_count--;
             return 0;
         }
     }
-    airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "operation failed");
-    return AIRY_ERR_UNKNOWN;
+    airy_err_push_ex(AIRY_ERR_NOT_FOUND, __FILE__, __LINE__, __func__,
+                     "a2a_v03_unregister_agent: agent not found");
+    return AIRY_ERR_NOT_FOUND;
 }
