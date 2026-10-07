@@ -71,6 +71,11 @@ struct a2a_v03_adapter_s {
     uint64_t messages_received;
 };
 
+/* Reset a context in place: release every owned heap member (agents, tasks,
+ * the static agent card) but keep the shell struct itself. Callers that own
+ * the shell may free it afterwards; callers bound to a static shell must not. */
+void a2a_v03_context_clear(a2a_v03_context_t *ctx);
+
 /* Compatibility defines shared across split files */
 #define A2A_VERSION "0.3"
 

@@ -24,13 +24,31 @@
 
 int a2a_adapter_init_cb(void *context)
 {
-    if (!context)
-        return AIRY_ENOMEM;
+    if (!context) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_adapter_init_cb: failed");
+        return AIRY_ERR_UNKNOWN;
+    }
+    a2a_v03_config_t config = a2a_v03_config_default();
+    a2a_v03_context_t *new_ctx = a2a_v03_context_create(&config);
+    if (!new_ctx) {
+        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
+                         "a2a_v03_context_create: failed");
+        return AIRY_ERR_INVALID_PARAM;
+    }
+    __builtin_memcpy(context, new_ctx, sizeof(struct a2a_v03_adapter_s));
+    AIRY_FREE(new_ctx);
     return 0;
 }
 int a2a_adapter_destroy_cb(void *context)
 {
-    a2a_v03_context_destroy((a2a_v03_context_t *)context);
+    if (!context)
+        return 0;
+    /* Release internal heap members but never the shell: the adapter context
+     * may be the static s_a2a_default_context bound at link time, and freeing
+     * a non-heap address is an ASan bad-free. The holder owns the shell. */
+    a2a_v03_context_clear((a2a_v03_context_t *)context);
+    __builtin_memset(context, 0, sizeof(struct a2a_v03_adapter_s));
     return 0;
 }
 int a2a_adapter_encode_cb(void *c, const void *m, void **o, size_t *s)
@@ -192,19 +210,37 @@ int a2a_adapter_receive_cb(void *c, void **d, size_t *s, uint32_t t)
 }
 int a2a_adapter_handle_request_cb(void *c, const void *r, void **rp)
 {
-    if (!c || !r) {
+    if (!c || !r || !rp) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
                          "a2a_adapter_handle_request_cb: failed");
         return AIRY_ERR_UNKNOWN;
     }
-    if (rp)
-        *rp = NULL;
-    return a2a_v03_route_request((a2a_v03_context_t *)c, (const char *)r, NULL, (char **)rp);
+    a2a_v03_context_t *ctx = (a2a_v03_context_t *)c;
+    const unified_message_t *msg = (const unified_message_t *)r;
+
+    const char *method = msg->method[0] ? msg->method : "stats";
+    const char *params = (const char *)(msg->payload ? msg->payload : "{}");
+
+    char *response_json = NULL;
+    int result = a2a_v03_route_request(ctx, method, params, &response_json);
+
+    if (result == AIRY_SUCCESS && response_json) {
+        *rp = response_json;
+        return AIRY_SUCCESS;
+    }
+    AIRY_FREE(response_json);
+    *rp = AIRY_STRDUP("{\"error\":\"request failed\"}");
+    return result == AIRY_SUCCESS ? AIRY_ERR_UNKNOWN : result;
 }
 int a2a_adapter_get_version_cb(void *c, char *b, size_t s)
 {
     (void)c;
-    snprintf(b, s, "0.3.0");
+    if (!b || s == 0) {
+        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
+                         "a2a_adapter_get_version_cb: failed");
+        return AIRY_ERR_UNKNOWN;
+    }
+    snprintf(b, s, "%s", A2A_V03_VERSION);
     return 0;
 }
 uint32_t a2a_adapter_capabilities_cb(void *c)

@@ -3,7 +3,7 @@
 
 /**
  * @file a2a_v03_adapter_task.c
- * @brief A2A v0.3 task operation domain (delegate/negotiate/consensus/streaming/lifecycle/routing).
+ * @brief A2A v0.3 task operation domain (delegate/negotiate/consensus/streaming/lifecycle).
  */
 
 #include "a2a_v03_adapter_internal.h"
@@ -16,8 +16,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "logging.h"
 
 /* Internal types needed only in this translation unit */
 typedef struct {
@@ -434,9 +432,9 @@ int a2a_v03_cancel_task(a2a_v03_context_t *ctx, const char *task_id, const char 
             return 0;
         }
     }
-    airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
-                     "AIRY_STRDUP: error AIRY_ERR_OUT_OF_MEMORY");
-    return AIRY_ERR_OUT_OF_MEMORY;
+    airy_err_push_ex(AIRY_ERR_NOT_FOUND, __FILE__, __LINE__, __func__,
+                     "a2a_v03_cancel_task: task not found");
+    return AIRY_ERR_NOT_FOUND;
 }
 
 int a2a_v03_get_task(a2a_v03_context_t *ctx, const char *task_id, a2a_task_t **task)
@@ -458,93 +456,7 @@ int a2a_v03_get_task(a2a_v03_context_t *ctx, const char *task_id, a2a_task_t **t
             return 0;
         }
     }
-    airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "operation failed");
-    return AIRY_ERR_UNKNOWN;
-}
-
-int a2a_v03_route_request(a2a_v03_context_t *ctx, const char *method, const char *params_json,
-                          char **response_json)
-{
-    if (!ctx || !method || !response_json) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_route_request: failed");
-        return AIRY_ERR_UNKNOWN;
-    }
-    struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
-        return AIRY_ERR_STATE_ERROR;
-    }
-    *response_json = NULL;
-
-    if (strcmp(method, "agent/discover") == 0) {
-        size_t buf_size = 256 + adapter->agent_count * 128;
-        char *buf = (char *)AIRY_MALLOC(buf_size);
-        if (!buf) {
-            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
-                             "allocation failed");
-            return AIRY_ERR_OUT_OF_MEMORY;
-        }
-        int pos = snprintf(buf, buf_size, "{\"agents\":[");
-        for (size_t i = 0; i < adapter->agent_count; i++) {
-            pos += snprintf(buf + pos, buf_size - (size_t)pos, "%s{\"id\":\"%s\",\"name\":\"%s\"}",
-                            i > 0 ? "," : "", adapter->agents[i].id,
-                            adapter->agents[i].name[0] ? adapter->agents[i].name : "");
-        }
-        snprintf(buf + pos, buf_size - (size_t)pos, "]}");
-        *response_json = buf;
-        return 0;
-    }
-
-    if (strcmp(method, "task/create") == 0) {
-        a2a_task_t *task = NULL;
-        int rc = a2a_v03_create_task(ctx, NULL, params_json, NULL, &task);
-        if (rc == 0 && task) {
-            size_t buf_size = 256;
-            char *buf = (char *)AIRY_MALLOC(buf_size);
-            if (buf) {
-                snprintf(buf, buf_size, "{\"task_id\":\"%s\",\"state\":\"submitted\"}", task->id);
-                *response_json = buf;
-            }
-        }
-        return rc;
-    }
-
-    if (strcmp(method, "task/list") == 0) {
-        size_t buf_size = 256 + adapter->task_count * 128;
-        char *buf = (char *)AIRY_MALLOC(buf_size);
-        if (!buf) {
-            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
-                             "allocation failed");
-            return AIRY_ERR_OUT_OF_MEMORY;
-        }
-        int pos = snprintf(buf, buf_size, "{\"tasks\":[");
-        for (size_t i = 0; i < adapter->task_count; i++) {
-            pos += snprintf(buf + pos, buf_size - (size_t)pos, "%s{\"id\":\"%s\",\"state\":%d}",
-                            i > 0 ? "," : "", adapter->tasks[i]->id, (int)adapter->tasks[i]->state);
-        }
-        snprintf(buf + pos, buf_size - (size_t)pos, "]}");
-        *response_json = buf;
-        return 0;
-    }
-
-    if (strcmp(method, "stats") == 0) {
-        size_t buf_size = 256;
-        char *buf = (char *)AIRY_MALLOC(buf_size);
-        if (!buf) {
-            airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
-                             "allocation failed");
-            return AIRY_ERR_OUT_OF_MEMORY;
-        }
-        snprintf(buf, buf_size, "{\"agent_count\":%zu,\"task_count\":%zu,\"capabilities\":%u}",
-                 adapter->agent_count, adapter->task_count, adapter->config.capabilities);
-        *response_json = buf;
-        return 0;
-    }
-
-    *response_json = AIRY_STRDUP("{\"error\":\"unknown method\"}");
-    AIRY_LOG_WARN("unknown method in route_request: method=%s", method);
-    airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__,
-                     "AIRY_STRDUP: error AIRY_ERR_OUT_OF_MEMORY");
-    return AIRY_ERR_OUT_OF_MEMORY;
+    airy_err_push_ex(AIRY_ERR_NOT_FOUND, __FILE__, __LINE__, __func__,
+                     "a2a_v03_get_task: task not found");
+    return AIRY_ERR_NOT_FOUND;
 }

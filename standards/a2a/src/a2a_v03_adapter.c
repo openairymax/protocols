@@ -29,10 +29,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "logging.h"
-
-static struct a2a_v03_adapter_s *g_a2a_instance = NULL;
-
 /* ============================================================================
  * Lifecycle
  * ============================================================================ */
@@ -57,9 +53,31 @@ int a2a_v03_create(a2a_config_t config, a2a_handle_t *out_handle)
     adapter->task_counter = 1;
     adapter->initialized = true;
 
-    g_a2a_instance = adapter;
     *out_handle = (a2a_handle_t)adapter;
     return 0;
+}
+
+void a2a_v03_context_clear(a2a_v03_context_t *ctx)
+{
+    if (!ctx)
+        return;
+    struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
+    adapter->initialized = false;
+
+    for (size_t i = 0; i < adapter->agent_count; i++) {
+        AIRY_FREE(adapter->agents[i].capabilities_json);
+        adapter->agents[i].capabilities_json = NULL;
+    }
+    adapter->agent_count = 0;
+
+    for (size_t i = 0; i < adapter->task_count; i++)
+        a2a_task_destroy(adapter->tasks[i]);
+    adapter->task_count = 0;
+
+    /* Releasing agents above may have dropped the entry the static agent card
+     * was mirrored from; a2a_v03_get_agent_card(NULL, NULL) frees the cached
+     * card's strings so no stale pointer is left behind. */
+    a2a_v03_get_agent_card(NULL, NULL);
 }
 
 void a2a_v03_destroy(a2a_handle_t handle)
@@ -67,33 +85,7 @@ void a2a_v03_destroy(a2a_handle_t handle)
     if (!handle)
         return;
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)handle;
-    adapter->initialized = false;
-    if (g_a2a_instance == adapter)
-        g_a2a_instance = NULL;
-
-    /* P0-06 fix: free each task in the tasks array.
-     *
-      * Historical issue: a2a_v03_create_task() AIRY_CALLOC'd a2a_task_t and STRDUP'd
-      * id/agent_id/description/input_json, but a2a_v03_destroy() only freed the adapter,
-      * leaking all tasks: ASAN found 96B(struct) + 40B(?) + 14B+10B+13B strings.
-     *
-      * Fix: free each task via a2a_task_destroy() (all string fields + the task itself). */
-    for (size_t i = 0; i < adapter->task_count; i++)
-        a2a_task_destroy(adapter->tasks[i]);
-    adapter->task_count = 0;
-
-    /* P0-07 fix: free the static card buffer in a2a_v03_get_agent_card().
-     *
-       * Historical issue: a2a_v03_get_agent_card() used a static card and STRDUP'd
-      * id/name/url/capabilities_json，
-      * each time, so: (1) repeated calls leaked (the previous string was never freed)
-      *      (2) at exit the static card held the last STRDUP, and ASAN flagged a leak.
-     *
-      * Fix: call a2a_agent_card_destroy() in context_destroy to free the static card's strings.
-      * Note: the static card lives in a function, but a2a_agent_card_destroy() takes a card pointer;
-      * we trigger cleanup via a2a_v03_get_agent_card(NULL, NULL) (see its implementation). */
-    a2a_v03_get_agent_card(NULL, NULL);
-
+    a2a_v03_context_clear((a2a_v03_context_t *)adapter);
     AIRY_FREE(adapter);
 }
 
@@ -154,32 +146,35 @@ void a2a_v03_context_destroy(a2a_v03_context_t *ctx)
         a2a_v03_destroy((a2a_handle_t)ctx);
 }
 
+/* The default context is a module-level static so the adapter table can bind
+ * it at link time; destroying the adapter must not free a static shell. */
+static struct a2a_v03_adapter_s s_a2a_default_context = {0};
+
+static protocol_adapter_t a2a_v03_adapter_internal = {
+    .type = AIRY_PROTOCOL_A2A,
+    .name = "A2A v0.3 Protocol Adapter",
+    .version = A2A_V03_VERSION,
+    .description = "Agent-to-Agent Protocol v0.3 adapter",
+    .init = a2a_adapter_init_cb,
+    .destroy = a2a_adapter_destroy_cb,
+    .encode = a2a_adapter_encode_cb,
+    .decode = a2a_adapter_decode_cb,
+    .connect = a2a_adapter_connect_cb,
+    .disconnect = a2a_adapter_disconnect_cb,
+    .is_connected = a2a_adapter_is_connected_cb,
+    .send = a2a_adapter_send_cb,
+    .receive = a2a_adapter_receive_cb,
+    .handle_request = a2a_adapter_handle_request_cb,
+    .get_version = a2a_adapter_get_version_cb,
+    .capabilities = a2a_adapter_capabilities_cb,
+    .get_stats = a2a_adapter_get_stats_cb,
+    .context = &s_a2a_default_context,
+    .user_data = NULL,
+};
+
 const protocol_adapter_t *a2a_v03_get_adapter(void)
 {
-    static protocol_adapter_t s_adapter;
-    static bool s_init = false;
-    if (!s_init) {
-        AIRY_MEMSET(&s_adapter, 0, sizeof(s_adapter));
-        s_adapter.type = AIRY_PROTOCOL_A2A;
-        s_adapter.name = "a2a-v0.3";
-        s_adapter.version = "0.3.0";
-        s_adapter.description = "A2A v0.3 Protocol Adapter";
-        s_adapter.init = a2a_adapter_init_cb;
-        s_adapter.destroy = a2a_adapter_destroy_cb;
-        s_adapter.encode = a2a_adapter_encode_cb;
-        s_adapter.decode = a2a_adapter_decode_cb;
-        s_adapter.connect = a2a_adapter_connect_cb;
-        s_adapter.disconnect = a2a_adapter_disconnect_cb;
-        s_adapter.is_connected = a2a_adapter_is_connected_cb;
-        s_adapter.send = a2a_adapter_send_cb;
-        s_adapter.receive = a2a_adapter_receive_cb;
-        s_adapter.handle_request = a2a_adapter_handle_request_cb;
-        s_adapter.get_version = a2a_adapter_get_version_cb;
-        s_adapter.capabilities = a2a_adapter_capabilities_cb;
-        s_adapter.get_stats = a2a_adapter_get_stats_cb;
-        s_init = true;
-    }
-    return &s_adapter;
+    return &a2a_v03_adapter_internal;
 }
 
 size_t a2a_v03_get_agent_count(a2a_v03_context_t *ctx)

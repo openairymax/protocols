@@ -136,6 +136,7 @@ set(PROTOCOLS_STANDARDS_SOURCES
     standards/a2a/src/a2a_v03_adapter_auth.c
     standards/a2a/src/a2a_v03_adapter_cb.c
     standards/a2a/src/a2a_v03_adapter_msg.c
+    standards/a2a/src/a2a_v03_adapter_route.c
     standards/a2a/src/a2a_v03_adapter_task.c
 )
 if(PROTOCOLS_ENABLE_MCP)
