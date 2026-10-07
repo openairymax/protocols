@@ -58,8 +58,14 @@ protocol_registry_t *proto_registry_create(void)
     registry->event_callback_data = NULL;
     registry->initialized = true;
 
-    g_registry = registry;
     return registry;
+}
+
+protocol_registry_t *proto_registry_get(void)
+{
+    if (!g_registry)
+        g_registry = proto_registry_create();
+    return g_registry;
 }
 
 void proto_registry_destroy(protocol_registry_t *registry)
