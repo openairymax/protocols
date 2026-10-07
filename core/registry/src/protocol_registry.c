@@ -480,57 +480,28 @@ int proto_registry_set_event_callback(protocol_registry_t *registry,
     return 0;
 }
 
-int proto_registry_initialize_builtins(protocol_registry_t *registry)
+int proto_registry_register_builtins(protocol_registry_t *registry,
+                                     const proto_builtin_def_t *defs, size_t count)
 {
     AIRY_CHECK(registry != NULL, AIRY_ERR_NULL_POINTER, "registry is NULL");
+    AIRY_CHECK(defs != NULL, AIRY_ERR_NULL_POINTER, "defs is NULL");
 
-    struct builtin_def {
-        const char *name;
-        const char *version;
-        const char *desc;
-        proto_category_t cat;
-        proto_type_t type;
-        uint32_t caps;
-    };
+    int registered = 0;
 
-    static const struct builtin_def builtins[] = {
-        {"JSON-RPC", "2.0", "原生JSON-RPC 2.0协议适配器", PROTO_CAT_CORE, PROTO_JSONRPC,
-         PROTO_CAP_STREAMING | PROTO_CAP_BATCH},
-        {"MCP", "1.0", "Model Context Protocol v1.0", PROTO_CAT_STANDARD, PROTO_MCP,
-         PROTO_CAP_TOOL_CALLING | PROTO_CAP_STREAMING | PROTO_CAP_RESOURCE_ACCESS},
-        {"A2A", "0.3", "Agent-to-Agent Protocol v0.3", PROTO_CAT_STANDARD, PROTO_A2A,
-         PROTO_CAP_AGENT_DISCOVERY | PROTO_CAP_STREAMING | PROTO_CAP_CONSENSUS},
-        {"打开AI", "1.0", "打开AI API兼容适配器", PROTO_CAT_INTEGRATION, PROTO_OPENAI,
-         PROTO_CAP_STREAMING | PROTO_CAP_TOOL_CALLING | PROTO_CAP_EMBEDDINGS},
-        {"打开Jiuwen", "1.0", "打开Jiuwen自定义二进制协议", PROTO_CAT_INTEGRATION, PROTO_OPENJIUWEN,
-         PROTO_CAP_BINARY | PROTO_CAP_LOW_LATENCY | PROTO_CAP_CRC_CHECKSUM},
-        {"打开Claw", "1.0", "打开Claw九问平台集成适配器", PROTO_CAT_INTEGRATION, PROTO_OPENCLAW,
-         PROTO_CAP_MULTIMODAL | PROTO_CAP_STREAMING | PROTO_CAP_AGENT_DISCOVERY |
-             PROTO_CAP_TOOL_CALLING},
-        {"Claude", "1.0", "Anthropic Claude API适配器", PROTO_CAT_INTEGRATION, PROTO_CLAUDE,
-         PROTO_CAP_STREAMING | PROTO_CAP_TOOL_CALLING | PROTO_CAP_VISION |
-             PROTO_CAP_EXTENDED_THINKING},
-        {"AGNTCY", "1.0", "AGNTCY Agent Connect Protocol", PROTO_CAT_STANDARD, PROTO_AGNTCY,
-         PROTO_CAP_AGENT_DISCOVERY | PROTO_CAP_STREAMING | PROTO_CAP_TOOL_CALLING},
-        {"ChinaEco", "1.0", "国内大模型生态统一兼容适配器", PROTO_CAT_INTEGRATION, PROTO_CHINA_ECO,
-         PROTO_CAP_STREAMING | PROTO_CAP_TOOL_CALLING | PROTO_CAP_EMBEDDINGS},
-    };
-
-    static const int builtin_count = (int)(sizeof(builtins) / sizeof(builtins[0]));
-
-    for (int i = 0; i < builtin_count; i++) {
-        int ret = proto_registry_register(registry, builtins[i].name, builtins[i].version,
-                                          builtins[i].desc, builtins[i].cat, builtins[i].type,
-                                          builtins[i].caps, NULL, NULL);
+    for (size_t i = 0; i < count; i++) {
+        int ret = proto_registry_register(registry, defs[i].name, defs[i].version,
+                                          defs[i].description, defs[i].category, defs[i].type,
+                                          defs[i].capabilities, NULL, NULL);
 
         if (ret == 0) {
-            proto_registry_entry_t *entry = proto_registry_find(registry, builtins[i].name);
+            proto_registry_entry_t *entry = proto_registry_find(registry, defs[i].name);
             if (entry) {
                 entry->is_builtin = true;
-                proto_registry_activate(registry, builtins[i].name);
+                proto_registry_activate(registry, defs[i].name);
             }
+            registered++;
         }
     }
 
-    return builtin_count;
+    return registered;
 }

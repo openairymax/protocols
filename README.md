@@ -52,7 +52,7 @@ by default.
 | Protocol transformers (JSON-RPC ⇄ MCP/A2A/OpenAI/OpenJiuwen) | `transformer_jsonrpc_to_mcp_request()` … `protocol_auto_transform()`, `protocol_validate_transformed()`, `protocol_list_transformers()` |
 | Third-party extension framework (hot load, middleware chain, version negotiation) | `proto_ext_register/load/start/add_middleware/negotiate/...` (up to 64 adapters, 32 middleware) |
 | Protocol registry (discovery, dependencies, stats, JSON export) | `proto_registry_register/find/list_all/activate/heartbeat/get_statistics/export_json` (up to 32 entries) |
-| Built-in adapters: MCP v1, A2A v0.3, AGNTCY ACP, OpenAI, Claude, OpenClaw, China eco, OpenJiuwen, LangChain, AutoGen | per-directory APIs, e.g. `openjiuwen_adapter_create()`, `proto_registry_initialize_builtins()` |
+| Built-in adapters: MCP v1, A2A v0.3, AGNTCY ACP, OpenAI, Claude, OpenClaw, China eco, OpenJiuwen, LangChain, AutoGen | per-directory APIs, e.g. `openjiuwen_adapter_create()`, `proto_registry_register_builtins()` |
 
 ## Composition
 
