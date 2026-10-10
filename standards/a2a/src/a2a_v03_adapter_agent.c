@@ -28,10 +28,8 @@ int a2a_v03_register_agent(a2a_v03_context_t *ctx, const a2a_agent_card_t *card)
         return AIRY_ERR_UNKNOWN;
     }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+    if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
-    }
 
     /* Duplicate-registration check: update the existing entry and merge the capabilities
       * bitmask without bumping agent_count (test contract: "duplicate should not increase count"). */
@@ -97,10 +95,8 @@ int a2a_v03_discover_agents(a2a_v03_context_t *ctx, const char *capability, cons
         return AIRY_ERR_UNKNOWN;
     }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+    if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
-    }
 
     *result_count = 0;
     *results = NULL;
@@ -217,10 +213,8 @@ int a2a_v03_unregister_agent(a2a_v03_context_t *ctx, const char *agent_id)
         return AIRY_ERR_UNKNOWN;
     }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+    if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
-    }
     for (size_t i = 0; i < adapter->agent_count; i++) {
         if (strcmp(adapter->agents[i].id, agent_id) == 0) {
             if (i < adapter->agent_count - 1)

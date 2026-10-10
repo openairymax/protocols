@@ -110,10 +110,8 @@ int a2a_v03_delegate_task(a2a_handle_t handle, const a2a_task_request_internal_t
         return AIRY_ERR_UNKNOWN;
     }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)handle;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+    if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
-    }
 
     AIRY_MEMSET(out_response, 0, sizeof(*out_response));
 
@@ -149,10 +147,8 @@ int a2a_v03_negotiate_task(a2a_handle_t handle, const char *task_id,
         return AIRY_ERR_UNKNOWN;
     }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)handle;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+    if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
-    }
 
     AIRY_MEMSET(out_result, 0, sizeof(*out_result));
     AIRY_STRNCPY_TERM(out_result->task_id, task_id, sizeof(out_result->task_id));
@@ -188,10 +184,8 @@ int a2a_v03_achieve_consensus(a2a_handle_t handle, const a2a_consensus_request_i
         return AIRY_ERR_UNKNOWN;
     }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)handle;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+    if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
-    }
 
     AIRY_MEMSET(out_result, 0, sizeof(*out_result));
 
@@ -237,10 +231,8 @@ int a2a_v03_stream_task(a2a_handle_t handle, const a2a_task_request_internal_t *
         return AIRY_ERR_UNKNOWN;
     }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)handle;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+    if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
-    }
 
     snprintf(final_response->task_id, sizeof(final_response->task_id), "stream_task_%" PRIu64,
              adapter->task_counter++);
@@ -294,10 +286,8 @@ int a2a_v03_get_stats(a2a_handle_t handle, a2a_stats_internal_t *out_stats)
         return AIRY_ERR_UNKNOWN;
     }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)handle;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+    if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
-    }
 
     AIRY_MEMSET(out_stats, 0, sizeof(*out_stats));
     out_stats->registered_agents = (uint32_t)adapter->agent_count;
@@ -324,10 +314,8 @@ int a2a_v03_create_task(a2a_v03_context_t *ctx, const char *agent_id, const char
         return AIRY_ERR_UNKNOWN;
     }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+    if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
-    }
     if (adapter->task_count >= A2A_V03_MAX_TASKS) {
         airy_err_push_ex(AIRY_ERR_BUFFER_TOO_SMALL, __FILE__, __LINE__, __func__,
                          "capacity exceeded");
@@ -385,10 +373,8 @@ int a2a_v03_update_task(a2a_v03_context_t *ctx, const char *task_id, a2a_task_st
         return AIRY_ERR_UNKNOWN;
     }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+    if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
-    }
 
     for (size_t i = 0; i < adapter->task_count; i++) {
         if (strcmp(adapter->tasks[i]->id, task_id) == 0) {
@@ -416,10 +402,8 @@ int a2a_v03_cancel_task(a2a_v03_context_t *ctx, const char *task_id, const char 
         return AIRY_ERR_UNKNOWN;
     }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+    if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
-    }
 
     for (size_t i = 0; i < adapter->task_count; i++) {
         if (strcmp(adapter->tasks[i]->id, task_id) == 0) {
@@ -445,10 +429,8 @@ int a2a_v03_get_task(a2a_v03_context_t *ctx, const char *task_id, a2a_task_t **t
         return AIRY_ERR_UNKNOWN;
     }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+    if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
-    }
 
     for (size_t i = 0; i < adapter->task_count; i++) {
         if (strcmp(adapter->tasks[i]->id, task_id) == 0) {

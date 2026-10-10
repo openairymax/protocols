@@ -24,10 +24,8 @@ int a2a_v03_send_message(a2a_v03_context_t *ctx, const char *target_agent_id,
         return AIRY_ERR_UNKNOWN;
     }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+    if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
-    }
 
     if (adapter->message_handler) {
         return adapter->message_handler(ctx, target_agent_id, message, response, response_count,
@@ -57,10 +55,8 @@ int a2a_v03_negotiate(a2a_v03_context_t *ctx, const a2a_negotiation_t *proposal,
         return AIRY_ERR_UNKNOWN;
     }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+    if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
-    }
 
     if (adapter->negotiation_handler) {
         return adapter->negotiation_handler(ctx, proposal, response_action, response_terms,
@@ -126,10 +122,8 @@ int a2a_v03_stream_task_update(a2a_v03_context_t *ctx, const char *task_id, doub
         return AIRY_ERR_UNKNOWN;
     }
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+    if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
-    }
 
     for (size_t i = 0; i < adapter->task_count; i++) {
         if (strcmp(adapter->tasks[i]->id, task_id) == 0) {
