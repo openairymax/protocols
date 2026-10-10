@@ -122,10 +122,8 @@ int a2a_adapter_send_cb(void *c, const void *d, size_t s)
     }
 
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)c;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+    if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
-    }
 
     if (!adapter->connected || !adapter->transport_write) {
         AIRY_LOG_WARN("send failed: not connected or no transport, connected=%d, transport_write=%p",
@@ -190,10 +188,8 @@ int a2a_adapter_receive_cb(void *c, void **d, size_t *s, uint32_t t)
     *d = NULL;
     *s = 0;
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)c;
-    if (!adapter->initialized) {
-        airy_err_push_ex(AIRY_ERR_STATE_ERROR, __FILE__, __LINE__, __func__, "not initialized");
+    if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
-    }
     if (!adapter->transport_read) {
         airy_err_push_ex(AIRY_ERR_NOT_SUPPORTED, __FILE__, __LINE__, __func__,
                          "no read transport configured");

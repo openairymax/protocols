@@ -10,6 +10,7 @@
 #define A2A_V03_ADAPTER_INTERNAL_H
 
 #include "a2a_v03_adapter.h"
+#include "error.h"
 
 /* Forward declarations for types defined in header */
 typedef struct a2a_v03_adapter_s a2a_v03_adapter_t;
@@ -70,6 +71,21 @@ struct a2a_v03_adapter_s {
     uint64_t bytes_received;
     uint64_t messages_received;
 };
+
+/* Readiness mechanism (SSoT): every domain entry point funnels its
+ * "adapter must be initialized" guard through here, so the error code, the
+ * message text and the push site stay single-sourced. Callers forward their
+ * own __func__/__FILE__/__LINE__ to keep the pushed error pointing at the real
+ * call site; a NULL context is treated as not ready. Returns true when the
+ * adapter may proceed. */
+static inline bool a2a_v03_ctx_ready(const a2a_v03_adapter_t *a2a, const char *fn,
+                                     const char *file, int line)
+{
+    if (a2a && a2a->initialized)
+        return true;
+    airy_err_push_ex(AIRY_ERR_STATE_ERROR, file, line, fn, "not initialized");
+    return false;
+}
 
 /* Reset a context in place: release every owned heap member (agents, tasks,
  * the static agent card) but keep the shell struct itself. Callers that own
