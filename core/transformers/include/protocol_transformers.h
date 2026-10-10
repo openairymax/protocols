@@ -26,13 +26,9 @@
 
 #include "unified_protocol.h"
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "airy_abi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+AIRY_ABI_BEGIN
 
 /* ============================================================================
  * Conversion context - carries protocol-specific metadata to aid conversion
@@ -146,8 +142,6 @@ int protocol_auto_transform(const unified_message_t *source, unified_message_t *
  */
 int protocol_validate_transformed(const unified_message_t *msg);
 
-#ifdef __cplusplus
-}
-#endif
+AIRY_ABI_END
 
 #endif /* AIRY_RT_PROTOCOL_TRANSFORMERS_H */

@@ -27,13 +27,9 @@
 
 #include "unified_protocol.h"
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "airy_abi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+AIRY_ABI_BEGIN
 
 #define A2A_V03_VERSION "0.3.0"
 #define A2A_V03_PROTOCOL_NAME "a2a"
@@ -371,8 +367,6 @@ void a2a_task_destroy(a2a_task_t *task);
 void a2a_message_destroy(a2a_message_t *msg);
 void a2a_negotiation_destroy(a2a_negotiation_t *neg);
 
-#ifdef __cplusplus
-}
-#endif
+AIRY_ABI_END
 
 #endif /* AIRY_A2A_V03_ADAPTER_H */

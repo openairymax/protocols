@@ -28,13 +28,9 @@
 
 #include "unified_protocol.h"
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "airy_abi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+AIRY_ABI_BEGIN
 
 #define MCP_V1_VERSION "1.0.0"
 #define MCP_V1_PROTOCOL_NAME "mcp"
@@ -307,8 +303,6 @@ void mcp_completion_result_destroy(mcp_completion_result_t *result);
 int mcp_v1_set_transport(mcp_v1_context_t *ctx, mcp_transport_t *transport);
 mcp_transport_t *mcp_v1_get_transport(mcp_v1_context_t *ctx);
 
-#ifdef __cplusplus
-}
-#endif
+AIRY_ABI_END
 
 #endif /* AIRY_MCP_V1_ADAPTER_H */

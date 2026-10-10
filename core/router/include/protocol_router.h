@@ -16,13 +16,9 @@
 
 #include "unified_protocol.h"
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "airy_abi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+AIRY_ABI_BEGIN
 
 /* ============================================================================ */
 
@@ -143,8 +139,6 @@ int protocol_router_set_decision_func(protocol_router_handle_t router,
  */
 int protocol_router_get_stats(protocol_router_handle_t router, char **stats_json);
 
-#ifdef __cplusplus
-}
-#endif
+AIRY_ABI_END
 
 #endif /* AIRY_RT_PROTOCOL_ROUTER_H */
