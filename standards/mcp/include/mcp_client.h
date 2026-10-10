@@ -28,13 +28,9 @@
 #ifndef AIRY_RT_MCP_CLIENT_H
 #define AIRY_RT_MCP_CLIENT_H
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "airy_abi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+AIRY_ABI_BEGIN
 
 #define MCP_CLIENT_DEFAULT_TIMEOUT_MS 60000
 #define MCP_CLIENT_MAX_MESSAGE_SIZE (10 * 1024 * 1024)
@@ -132,8 +128,6 @@ void mcp_client_tool_list_free(mcp_client_tool_list_t *list);
 
 const char *mcp_client_transport_string(mcp_client_transport_t t);
 
-#ifdef __cplusplus
-}
-#endif
+AIRY_ABI_END
 
 #endif /* AIRY_RT_MCP_CLIENT_H */

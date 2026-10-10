@@ -22,13 +22,9 @@
 
 #include "unified_protocol.h"
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "airy_abi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+AIRY_ABI_BEGIN
 
 #define AGNTCY_ACP_VERSION "0.1.0"
 #define AGNTCY_ACP_PROTOCOL_NAME "agntcy"
@@ -156,8 +152,6 @@ int agntcy_task_get_state(agntcy_handle_t *h, const char *task_id, agntcy_task_s
 int agntcy_ack_negotiate(agntcy_handle_t *h, const char *agent_id, const agntcy_ack_t *ack_request,
                          agntcy_ack_t *ack_response);
 
-#ifdef __cplusplus
-}
-#endif
+AIRY_ABI_END
 
 #endif /* AIRY_RT_AGNTCY_ACP_ADAPTER_H */

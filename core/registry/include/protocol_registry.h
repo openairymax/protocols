@@ -27,13 +27,9 @@
 #include "airy_protocol_interface.h"
 #include "unified_protocol.h"
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "airy_abi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+AIRY_ABI_BEGIN
 
 #define PROTO_REGISTRY_VERSION "2.1.0"
 #define PROTO_REGISTRY_MAX_ADAPTERS 32
@@ -190,8 +186,6 @@ int proto_reg_builtins(protocol_registry_t *registry,
 const char *proto_category_to_string(proto_category_t cat);
 const char *proto_state_to_string(proto_state_t state);
 
-#ifdef __cplusplus
-}
-#endif
+AIRY_ABI_END
 
 #endif /* AIRY_RT_PROTOCOL_REGISTRY_H */

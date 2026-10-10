@@ -17,13 +17,9 @@
 #ifndef AIRY_RT_UNIFIED_PROTOCOL_H
 #define AIRY_RT_UNIFIED_PROTOCOL_H
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "airy_abi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+AIRY_ABI_BEGIN
 
 /**
   * @brief Supported protocol types
@@ -216,8 +212,6 @@ int protocol_auto_transform(const unified_message_t *source, unified_message_t *
 
 const char *protocol_type_name(airy_protocol_type_t type);
 
-#ifdef __cplusplus
-}
-#endif
+AIRY_ABI_END
 
 #endif /* AIRY_RT_UNIFIED_PROTOCOL_H */

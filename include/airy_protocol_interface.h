@@ -18,13 +18,9 @@
 
 #include "unified_protocol.h"
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "airy_abi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+AIRY_ABI_BEGIN
 
 /* unified_message_t and protocol_type_t now defined in unified_protocol.h */
 /* ============================================================================
@@ -122,8 +118,6 @@ int proto_interface_list_all(char **json_output);
 const char *proto_interface_type_name(protocol_type_t type);
 protocol_type_t proto_interface_parse_type(const char *name);
 
-#ifdef __cplusplus
-}
-#endif
+AIRY_ABI_END
 
 #endif /* AIRY_RT_PROTOCOL_INTERFACE_H */

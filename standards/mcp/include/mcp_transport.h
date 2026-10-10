@@ -13,13 +13,9 @@
 #ifndef AIRY_RT_MCP_TRANSPORT_H
 #define AIRY_RT_MCP_TRANSPORT_H
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "airy_abi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+AIRY_ABI_BEGIN
 
 typedef enum {
     MCP_TRANSPORT_STDIO = 0,
@@ -92,8 +88,6 @@ const char *mcp_trans_state_str(mcp_transport_state_t state);
 
 const char *mcp_trans_type_str(mcp_transport_type_t type);
 
-#ifdef __cplusplus
-}
-#endif
+AIRY_ABI_END
 
 #endif /* AIRY_RT_MCP_TRANSPORT_H */
