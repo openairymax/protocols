@@ -41,7 +41,6 @@ set(PROTOCOLS_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/catalog/include
     ${CMAKE_CURRENT_SOURCE_DIR}/core/router/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/core/adapter/include
     ${CMAKE_CURRENT_SOURCE_DIR}/core/transformers/include
     ${CMAKE_CURRENT_SOURCE_DIR}/core/registry/include
     ${CMAKE_CURRENT_SOURCE_DIR}/standards/a2a/include
@@ -83,10 +82,6 @@ set(PROTOCOLS_COMMON_SOURCES
 # ============================================================
 set(PROTOCOLS_CORE_SOURCES
     core/router/src/protocol_router.c
-    core/adapter/src/protocol_extension_framework.c
-    core/adapter/src/protocol_extension_framework_middleware.c
-    core/adapter/src/protocol_extension_framework_registry.c
-    core/adapter/src/protocol_extension_framework_route.c
     core/transformers/src/protocol_transformers.c
     core/registry/src/protocol_registry.c
 )
@@ -172,7 +167,6 @@ set(PROTOCOLS_COMMON_HEADERS
 # ============================================================
 set(PROTOCOLS_CORE_HEADERS
     core/router/include/protocol_router.h
-    core/adapter/include/protocol_extension_framework.h
     core/transformers/include/protocol_transformers.h
     core/registry/include/protocol_registry.h
 )
@@ -293,7 +287,6 @@ if(BUILD_TESTS AND NOT WIN32)
         ${CMAKE_CURRENT_SOURCE_DIR}/standards/agntcy/include
         ${CMAKE_CURRENT_SOURCE_DIR}/core/transformers/include
         ${CMAKE_CURRENT_SOURCE_DIR}/core/router/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/core/adapter/include
         ${CMAKE_CURRENT_SOURCE_DIR}/core/registry/include
         ${CMAKE_CURRENT_SOURCE_DIR}/standards/a2a/include
         ${CMAKE_CURRENT_SOURCE_DIR}/standards/mcp/include
