@@ -473,22 +473,6 @@ int ullm_round(ullm_invoke_fn cb, void *cb_data, const char *model, const char *
     return AIRY_ERR_NULL_POINTER;
 }
 
-const char *protocol_type_to_string(protocol_type_t type)
-{
-    switch (type) {
-    case AIRY_PROTOCOL_JSON_RPC:
-        return "JSON-RPC";
-    case AIRY_PROTOCOL_MCP:
-        return "MCP";
-    case AIRY_PROTOCOL_A2A:
-        return "A2A";
-    default:
-        /* Vendor ids carry no name in the mechanism core; callers resolve
-         * them through the registry (proto_interface_type_name). */
-        return "Unknown";
-    }
-}
-
 protocol_type_t protocol_type_from_string(const char *str)
 {
     if (!str)

@@ -126,20 +126,6 @@ typedef struct {
 } a2a_discovery_filter_t;
 
 typedef struct {
-    uint32_t capabilities;
-    uint32_t default_timeout_ms;
-    size_t max_agents;
-    size_t max_tasks;
-    size_t max_message_size;
-    bool enable_negotiation;
-    bool enable_streaming;
-    bool enable_push_notifications;
-    bool require_authentication;
-    char *default_authentication;
-    void *custom_config;
-} a2a_config_t;
-
-typedef struct {
     char *id;
     char *session_id;
     char *agent_id;

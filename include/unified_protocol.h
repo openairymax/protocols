@@ -204,7 +204,6 @@ typedef int (*ullm_invoke_fn)(const char *prompt, const char *model, char **resp
  */
 int ullm_round(ullm_invoke_fn cb, void *cb_data, const char *model, const char *prompt,
                char *out_buf, size_t buf_len);
-const char *protocol_type_to_string(protocol_type_t type);
 protocol_type_t protocol_type_from_string(const char *str);
 
 int protocol_auto_transform(const unified_message_t *source, unified_message_t *target,

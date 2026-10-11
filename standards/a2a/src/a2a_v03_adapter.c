@@ -33,7 +33,10 @@
  * Lifecycle
  * ============================================================================ */
 
-int a2a_v03_create(a2a_config_t config, a2a_handle_t *out_handle)
+/**
+ * @brief 适配器实例创建（内部）：仅消费 default_timeout_ms 覆盖默认配置。
+ */
+static int a2a_v03_create(uint32_t default_timeout_ms, a2a_handle_t *out_handle)
 {
     if (!out_handle) {
         airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__, "a2a_v03_create: failed");
@@ -45,8 +48,8 @@ int a2a_v03_create(a2a_config_t config, a2a_handle_t *out_handle)
         airy_err_push_ex(AIRY_ERR_OUT_OF_MEMORY, __FILE__, __LINE__, __func__, "allocation failed");
         return AIRY_ERR_OUT_OF_MEMORY;
     }
-    if (config.default_timeout_ms > 0) {
-        adapter->config.default_timeout_ms = config.default_timeout_ms;
+    if (default_timeout_ms > 0) {
+        adapter->config.default_timeout_ms = default_timeout_ms;
     }
 
     adapter->agent_count = 0;
@@ -128,14 +131,8 @@ a2a_v03_context_t *a2a_v03_context_create(const a2a_v03_config_t *config)
 
     if (!config)
         return NULL;
-    a2a_v03_config_t cfg = *config;
     a2a_handle_t handle = NULL;
-    a2a_config_t legacy_cfg;
-    AIRY_MEMSET(&legacy_cfg, 0, sizeof(legacy_cfg));
-    legacy_cfg.max_agents = (uint32_t)cfg.max_agents;
-    legacy_cfg.max_tasks = (uint32_t)cfg.max_tasks;
-    legacy_cfg.default_timeout_ms = cfg.default_timeout_ms;
-    if (a2a_v03_create(legacy_cfg, &handle) != 0)
+    if (a2a_v03_create(config->default_timeout_ms, &handle) != 0)
         return NULL;
     return (a2a_v03_context_t *)handle;
 }

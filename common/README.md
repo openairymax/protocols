@@ -52,7 +52,7 @@ common/
 | `protocol_stack_set_callback()` | 设置消息到达回调 |
 | `protocol_stack_get_stats()` | 获取发送 / 接收 / 字节统计 |
 | `unified_message_create()` / `unified_message_destroy()` | 创建统一消息（自动分配消息 ID 与时间戳）/ 销毁（payload 由调用方管理） |
-| `protocol_type_to_string()` / `protocol_type_from_string()` | 协议类型与字符串互转 |
+| `protocol_type_from_string()` | 字符串转协议类型（名称解析经注册表） |
 
 ## 错误码
 
