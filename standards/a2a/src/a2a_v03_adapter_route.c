@@ -107,6 +107,21 @@ static int a2a_json_out(cJSON *obj, char **response_json)
     return *response_json ? AIRY_SUCCESS : AIRY_ERR_OUT_OF_MEMORY;
 }
 
+static int a2a_obj_out(cJSON *obj, const char *key, char **response_json)
+{
+    if (!obj)
+        return AIRY_ERR_OUT_OF_MEMORY;
+
+    cJSON *result = cJSON_CreateObject();
+    if (!result) {
+        cJSON_Delete(obj);
+        return AIRY_ERR_OUT_OF_MEMORY;
+    }
+
+    cJSON_AddItemToObject(result, key, obj);
+    return a2a_json_out(result, response_json);
+}
+
 static void a2a_cards_free(a2a_agent_card_t **results, size_t count)
 {
     if (!results)
@@ -262,19 +277,7 @@ static int a2a_route_new(a2a_v03_context_t *ctx, const char *params_json, char *
         if (rc != AIRY_SUCCESS || !task)
             break;
 
-        cJSON *obj = a2a_task_json(task);
-        if (!obj) {
-            rc = AIRY_ERR_OUT_OF_MEMORY;
-            break;
-        }
-        cJSON *result = cJSON_CreateObject();
-        if (!result) {
-            cJSON_Delete(obj);
-            rc = AIRY_ERR_OUT_OF_MEMORY;
-            break;
-        }
-        cJSON_AddItemToObject(result, "task", obj);
-        rc = a2a_json_out(result, response_json);
+        rc = a2a_obj_out(a2a_task_json(task), "task", response_json);
     } while (0);
     return rc;
 }
@@ -353,19 +356,7 @@ static int a2a_route_get(a2a_v03_context_t *ctx, const char *params_json, char *
         if (rc != AIRY_SUCCESS || !task)
             break;
 
-        cJSON *obj = a2a_task_json(task);
-        if (!obj) {
-            rc = AIRY_ERR_OUT_OF_MEMORY;
-            break;
-        }
-        cJSON *result = cJSON_CreateObject();
-        if (!result) {
-            cJSON_Delete(obj);
-            rc = AIRY_ERR_OUT_OF_MEMORY;
-            break;
-        }
-        cJSON_AddItemToObject(result, "task", obj);
-        rc = a2a_json_out(result, response_json);
+        rc = a2a_obj_out(a2a_task_json(task), "task", response_json);
     } while (0);
     return rc;
 }
@@ -463,20 +454,8 @@ static int a2a_route_card(a2a_v03_context_t *ctx, const char *params_json, char 
             rc = AIRY_ERR_NOT_FOUND;
             break;
         }
-        cJSON *obj = a2a_card_json(card);
-        if (!obj) {
-            rc = AIRY_ERR_OUT_OF_MEMORY;
-            break;
-        }
 
-        cJSON *result = cJSON_CreateObject();
-        if (!result) {
-            cJSON_Delete(obj);
-            rc = AIRY_ERR_OUT_OF_MEMORY;
-            break;
-        }
-        cJSON_AddItemToObject(result, "agent", obj);
-        rc = a2a_json_out(result, response_json);
+        rc = a2a_obj_out(a2a_card_json(card), "agent", response_json);
     } while (0);
     return rc;
 }
