@@ -216,15 +216,33 @@ size_t proto_registry_list_all(protocol_registry_t *registry, proto_registry_ent
     return registry->entry_count;
 }
 
-size_t proto_registry_list_by_category(protocol_registry_t *registry, proto_category_t category,
-                                       proto_registry_entry_t **entries)
+typedef bool (*proto_match_fn)(const proto_registry_entry_t *entry, const void *arg);
+
+static bool match_category(const proto_registry_entry_t *entry, const void *arg)
+{
+    return entry->category == *(const proto_category_t *)arg;
+}
+
+static bool match_active(const proto_registry_entry_t *entry, const void *arg)
+{
+    (void)arg;
+    return entry->state == PROTO_STATE_ACTIVE || entry->state == PROTO_STATE_READY;
+}
+
+/**
+ * @brief 条目筛选管道单源：计数 -> 分配 -> 复制，两遍扫描语义。
+ * @param match 谓词；arg 谓词参数（值谓词传指针，无参谓词传 NULL）
+ * @return 命中数；无命中时 *entries 置 NULL；分配失败返回 0
+ */
+static size_t registry_select(protocol_registry_t *registry, proto_registry_entry_t **entries,
+                              proto_match_fn match, const void *arg)
 {
     if (!registry || !entries)
         return 0;
 
     size_t count = 0;
     for (size_t i = 0; i < registry->entry_count; i++) {
-        if (registry->entries[i].category == category)
+        if (match(&registry->entries[i], arg))
             count++;
     }
 
@@ -239,42 +257,21 @@ size_t proto_registry_list_by_category(protocol_registry_t *registry, proto_cate
 
     size_t idx = 0;
     for (size_t i = 0; i < registry->entry_count && idx < count; i++) {
-        if (registry->entries[i].category == category) {
+        if (match(&registry->entries[i], arg))
             (*entries)[idx++] = registry->entries[i];
-        }
     }
     return idx;
 }
 
+size_t proto_registry_list_by_category(protocol_registry_t *registry, proto_category_t category,
+                                       proto_registry_entry_t **entries)
+{
+    return registry_select(registry, entries, match_category, &category);
+}
+
 size_t proto_registry_list_active(protocol_registry_t *registry, proto_registry_entry_t **entries)
 {
-    if (!registry || !entries)
-        return 0;
-
-    size_t count = 0;
-    for (size_t i = 0; i < registry->entry_count; i++) {
-        if (registry->entries[i].state == PROTO_STATE_ACTIVE ||
-            registry->entries[i].state == PROTO_STATE_READY)
-            count++;
-    }
-
-    if (count == 0) {
-        *entries = NULL;
-        return 0;
-    }
-
-    *entries = (proto_registry_entry_t *)AIRY_CALLOC(count, sizeof(proto_registry_entry_t));
-    if (!*entries)
-        return 0;
-
-    size_t idx = 0;
-    for (size_t i = 0; i < registry->entry_count && idx < count; i++) {
-        if (registry->entries[i].state == PROTO_STATE_ACTIVE ||
-            registry->entries[i].state == PROTO_STATE_READY) {
-            (*entries)[idx++] = registry->entries[i];
-        }
-    }
-    return idx;
+    return registry_select(registry, entries, match_active, NULL);
 }
 
 int proto_registry_set_state(protocol_registry_t *registry, const char *name, proto_state_t state)

@@ -52,33 +52,30 @@ static mcp_log_level_t mcp_v1_parse_log_level(const char *params_json)
     return level;
 }
 
+/**
+ * @brief initialize 握手响应渲染：buf 为 NULL 时测长（snprintf 语义）。
+ */
+static int init_resp_fill(char *buf, size_t buf_len, const mcp_v1_config_t *cfg)
+{
+    return snprintf(buf, buf_len,
+                    "{\"protocolVersion\":\"%s\",\"capabilities\":{\"tools\":%s,\"resources\":%s,"
+                    "\"prompts\":%s,\"sampling\":%s,\"logging\":%s},\"serverInfo\":{\"name\":\"%"
+                    "s\",\"version\":\"%s\"}}",
+                    MCP_V1_VERSION, (cfg->capabilities & MCP_CAP_TOOLS) ? "true" : "false",
+                    (cfg->capabilities & MCP_CAP_RESOURCES) ? "true" : "false",
+                    (cfg->capabilities & MCP_CAP_PROMPTS) ? "true" : "false",
+                    (cfg->capabilities & MCP_CAP_SAMPLING) ? "true" : "false",
+                    (cfg->capabilities & MCP_CAP_LOGGING) ? "true" : "false",
+                    cfg->server_name ? cfg->server_name : "AgentRT",
+                    cfg->server_version ? cfg->server_version : MCP_V1_VERSION);
+}
+
 static int mcp_v1_build_initialize_response(mcp_v1_context_t *ctx, char **response_json)
 {
-    size_t len =
-        snprintf(NULL, 0,
-                 "{\"protocolVersion\":\"%s\",\"capabilities\":{\"tools\":%s,\"resources\":%s,"
-                 "\"prompts\":%s,\"sampling\":%s,\"logging\":%s},\"serverInfo\":{\"name\":\"%"
-                 "s\",\"version\":\"%s\"}}",
-                 MCP_V1_VERSION, (ctx->config.capabilities & MCP_CAP_TOOLS) ? "true" : "false",
-                 (ctx->config.capabilities & MCP_CAP_RESOURCES) ? "true" : "false",
-                 (ctx->config.capabilities & MCP_CAP_PROMPTS) ? "true" : "false",
-                 (ctx->config.capabilities & MCP_CAP_SAMPLING) ? "true" : "false",
-                 (ctx->config.capabilities & MCP_CAP_LOGGING) ? "true" : "false",
-                 ctx->config.server_name ? ctx->config.server_name : "AgentRT",
-                 ctx->config.server_version ? ctx->config.server_version : MCP_V1_VERSION);
+    size_t len = (size_t)init_resp_fill(NULL, 0, &ctx->config);
     char *resp = AIRY_MALLOC(len + 1);
     if (resp)
-        snprintf(resp, len + 1,
-                 "{\"protocolVersion\":\"%s\",\"capabilities\":{\"tools\":%s,\"resources\":%s,"
-                 "\"prompts\":%s,\"sampling\":%s,\"logging\":%s},\"serverInfo\":{\"name\":\"%"
-                 "s\",\"version\":\"%s\"}}",
-                 MCP_V1_VERSION, (ctx->config.capabilities & MCP_CAP_TOOLS) ? "true" : "false",
-                 (ctx->config.capabilities & MCP_CAP_RESOURCES) ? "true" : "false",
-                 (ctx->config.capabilities & MCP_CAP_PROMPTS) ? "true" : "false",
-                 (ctx->config.capabilities & MCP_CAP_SAMPLING) ? "true" : "false",
-                 (ctx->config.capabilities & MCP_CAP_LOGGING) ? "true" : "false",
-                 ctx->config.server_name ? ctx->config.server_name : "AgentRT",
-                 ctx->config.server_version ? ctx->config.server_version : MCP_V1_VERSION);
+        init_resp_fill(resp, len + 1, &ctx->config);
     *response_json = resp;
     return 0;
 }
