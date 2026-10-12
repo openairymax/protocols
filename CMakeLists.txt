@@ -76,6 +76,7 @@ set(PROTOCOLS_COMMON_SOURCES
 # ============================================================
 set(PROTOCOLS_CORE_SOURCES
     core/router/src/protocol_router.c
+    core/router/src/protocol_detect.c
     core/transformers/src/protocol_transformers.c
     core/registry/src/protocol_registry.c
 )
@@ -156,6 +157,7 @@ set(PROTOCOLS_COMMON_HEADERS
 # ============================================================
 set(PROTOCOLS_CORE_HEADERS
     core/router/include/protocol_router.h
+    core/router/include/protocol_detect.h
     core/transformers/include/protocol_transformers.h
     core/registry/include/protocol_registry.h
 )
@@ -314,4 +316,13 @@ if(BUILD_TESTS AND NOT WIN32)
         target_link_libraries(test_protocol_registry PRIVATE pthread)
     endif()
     add_test(NAME test_protocol_registry COMMAND test_protocol_registry)
+
+    add_executable(test_protocol_detect tests/test_protocol_detect.c)
+    target_compile_definitions(test_protocol_detect PRIVATE AIRY_COMPLIANCE_IMPL)
+    target_include_directories(test_protocol_detect PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
+    target_link_libraries(test_protocol_detect PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
+    if(UNIX)
+        target_link_libraries(test_protocol_detect PRIVATE pthread)
+    endif()
+    add_test(NAME test_protocol_detect COMMAND test_protocol_detect)
 endif()
