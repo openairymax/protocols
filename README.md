@@ -1,6 +1,6 @@
 # protocols — AgentRT Unified Protocol Layer
 
-> One message model, one adapter contract, open-standard protocols — JSON-RPC 2.0, MCP, A2A, AGNTCY ACP — behind a single C API, with vendor integrations and framework adapters injected from the ecosystem layer.
+> One message model, one adapter contract, open-standard protocols — JSON-RPC 2.0, MCP, A2A — behind a single C API, with vendor integrations and framework adapters injected from the ecosystem layer.
 
 **Language:** English | [简体中文](README_zh.md)
 
@@ -21,16 +21,16 @@ protocols, agent-to-agent protocols — behind one unified message model
 (`unified_message_t`) and one adapter contract (`proto_adapter_vtable_t`), so
 callers route, send, and receive without per-protocol code.
 
-The protocol type enum (`airy_protocol_type_t`) defines nine protocol types:
+The protocol type enum (`airy_protocol_type_t`) defines eight protocol types:
 
 `JSON_RPC`, `MCP`, `A2A`, `OPENAI`, `OPENJIUWEN`, `CLAUDE`, `CHINA_ECO`,
-`AGNTCY`, `OPENCLAW`; the assembly catalog advertises all of them, while the
+`OPENCLAW`; the assembly catalog advertises all of them, while the
 mechanism core ships the open-standard adapters only.
 
 JSON-RPC 2.0 is the internal hub format: the built-in transformers convert
 messages between JSON-RPC, MCP, and A2A, and the router applies rule-based
-conversion on the fly. Three concrete adapters ship in the mechanism core —
-open standards (`standards/`): MCP v1, A2A v0.3, and AGNTCY ACP. Vendor
+conversion on the fly. Two concrete adapters ship in the mechanism core —
+open standards (`standards/`): MCP v1 and A2A v0.3. Vendor
 integrations (OpenAI, Claude, OpenJiuwen, China-ecosystem services, OpenClaw)
 and agent-framework adapters (LangChain, AutoGen) are **not** part of the
 mechanism core; per the mechanism/policy separation principle they live in the
@@ -57,7 +57,7 @@ by default.
 | Protocol transformers (JSON-RPC ⇄ MCP/A2A) | `transformer_jsonrpc_to_mcp_request()` … `protocol_auto_transform()`, `protocol_validate_transformed()` |
 | Third-party extension framework (hot load, middleware chain, version negotiation) | `proto_ext_register/load/start/add_middleware/negotiate/...` (up to 64 adapters, 32 middleware) |
 | Protocol registry (discovery, dependencies, stats, JSON export) | `proto_registry_register/find/list_all/activate/heartbeat/get_statistics/export_json` (up to 32 entries) |
-| Open-standard protocols shipped with the core (mechanism): MCP v1 & A2A v0.3 adapters, AGNTCY ACP handle API | MCP/A2A bound via `proto_std_providers()` (`mcp_v1_get_adapter()`, `a2a_v03_get_adapter()`); AGNTCY via its standalone `agntcy_acp_create()`; assembly via `proto_reg_builtins()` |
+| Open-standard protocols shipped with the core (mechanism): MCP v1 & A2A v0.3 adapters | Bound via `proto_std_providers()` (`mcp_v1_get_adapter()`, `a2a_v03_get_adapter()`); assembly via `proto_reg_builtins()` |
 
 ## Composition
 
@@ -75,8 +75,7 @@ protocols/
 │   └── transformers/   # JSON-RPC ⇄ MCP/A2A converters
 ├── standards/
 │   ├── mcp/            # MCP v1 adapter + client + transport (STDIO, HTTP+SSE, Streamable HTTP)
-│   ├── a2a/            # A2A v0.3 (tasks, agent cards, negotiation, AES-256-GCM auth)
-│   └── agntcy/         # AGNTCY ACP (discovery, channels, broadcast, ack)
+│   └── a2a/            # A2A v0.3 (tasks, agent cards, negotiation, AES-256-GCM auth)
 ├── catalog/            # assembly data: protocol descriptors + vendor transform port
 └── tests/              # adapter unit-test executables (non-Windows)
 ```
@@ -90,8 +89,7 @@ Each directory has its own README:
 [core/transformers](core/transformers/README.md) ·
 [standards](standards/README.md) ·
 [standards/mcp](standards/mcp/README.md) ·
-[standards/a2a](standards/a2a/README.md) ·
-[standards/agntcy](standards/agntcy/README.md)
+[standards/a2a](standards/a2a/README.md)
 
 ## Usage
 
@@ -117,8 +115,8 @@ protocols_framework_cleanup();
 ```
 
 `protocol_adapter_http()` is the only generic adapter factory in the facade;
-protocol-specific adapters are created through their own constructors (for
-example `agntcy_acp_create()`) or registered via the extension framework and
+protocol-specific adapters are created through their own constructors or
+registered via the extension framework and
 the registry. Messages carry protocol, direction (request/response/notification/
 error), endpoint, payload/body, correlation and trace metadata, and are
 encoded/decoded by whichever adapter the stack has registered.
@@ -143,12 +141,11 @@ cmake --install build --prefix /opt/airymax
 | `PROTOCOLS_ENABLE_MCP` | `ON` | MCP v1 adapter sources (8 files) |
 | `PROTOCOLS_ENABLE_MCP_TRANSPORT` | `ON` (forced `OFF` on Windows) | MCP transport layer (STDIO / HTTP+SSE / Streamable HTTP) |
 | `PROTOCOLS_ENABLE_A2A` | `ON` | flag for the A2A adapter |
-| `PROTOCOLS_ENABLE_AGNTCY` | `ON` | AGNTCY ACP adapter sources |
 
 Notes measured against `CMakeLists.txt`:
 
 - Common, core, A2A, and catalog sources are compiled unconditionally; the
-  A2A option acts as a feature flag. MCP and AGNTCY adapter sources are
+  A2A option acts as a feature flag. MCP adapter sources are
   source-gated by their option.
 - The MCP client sources build only on non-Windows platforms (POSIX
   subprocess/pipe model).

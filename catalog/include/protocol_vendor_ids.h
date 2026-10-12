@@ -24,7 +24,7 @@ extern "C" {
 #define AIRY_PROTOCOL_OPENJIUWEN ((protocol_type_t)(AIRY_PROTOCOL_VENDOR_BASE + 1))
 #define AIRY_PROTOCOL_CLAUDE ((protocol_type_t)(AIRY_PROTOCOL_VENDOR_BASE + 2))
 #define AIRY_PROTOCOL_CHINA_ECO ((protocol_type_t)(AIRY_PROTOCOL_VENDOR_BASE + 3))
-#define AIRY_PROTOCOL_AGNTCY ((protocol_type_t)(AIRY_PROTOCOL_VENDOR_BASE + 4))
+/* VENDOR_BASE + 4（前 AGNTCY）已清退；数值永不重用，保持线上契约连续可追溯。 */
 #define AIRY_PROTOCOL_OPENCLAW ((protocol_type_t)(AIRY_PROTOCOL_VENDOR_BASE + 5))
 
 #ifdef __cplusplus

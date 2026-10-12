@@ -1,6 +1,6 @@
 # protocols — AgentRT 统一协议层
 
-> 一套消息模型、一份适配器契约、开放标准协议——JSON-RPC 2.0、MCP、A2A、AGNTCY ACP——统一在一个 C API 之后；厂商集成与框架适配器由生态层注入。
+> 一套消息模型、一份适配器契约、开放标准协议——JSON-RPC 2.0、MCP、A2A——统一在一个 C API 之后；厂商集成与框架适配器由生态层注入。
 
 **语言：** [English](README.md) | 简体中文
 
@@ -20,14 +20,14 @@
 （`unified_message_t`）和一份适配器契约（`proto_adapter_vtable_t`）之后，
 调用方无需为每种协议写各自的收发与路由代码。
 
-`airy_protocol_type_t` 定义了九种协议类型：
+`airy_protocol_type_t` 定义了八种协议类型：
 
 `JSON_RPC`、`MCP`、`A2A`、`OPENAI`、`OPENJIUWEN`、`CLAUDE`、`CHINA_ECO`、
-`AGNTCY`、`OPENCLAW`；装配目录通告全部类型，而机制核仅自带开放标准适配器。
+`OPENCLAW`；装配目录通告全部类型，而机制核仅自带开放标准适配器。
 
 JSON-RPC 2.0 是内部枢纽格式：内置转换器在 JSON-RPC 与 MCP、A2A 之间互转
-消息，路由器按规则即时套用转换。机制核自带 3 个具体适配器，均属开放标准
-（`standards/`）：MCP v1、A2A v0.3、AGNTCY ACP。厂商集成（OpenAI、Claude、
+消息，路由器按规则即时套用转换。机制核自带 2 个具体适配器，均属开放标准
+（`standards/`）：MCP v1、A2A v0.3。厂商集成（OpenAI、Claude、
 OpenJiuwen、国内生态服务、OpenClaw）与智能体框架适配器（LangChain、AutoGen）
 **不属**机制核；按机制与策略分离原则，它们位于生态层，在运行时通过扩展
 框架与协议注册表注入。扩展框架与协议注册表支持第三方适配器在运行时注册、
@@ -50,7 +50,7 @@ JSON-RPC 2.0）与运行时服务消费，默认构建为静态库。
 | 协议转换器（JSON-RPC ⇄ MCP/A2A） | `transformer_jsonrpc_to_mcp_request()` … `protocol_auto_transform()`、`protocol_validate_transformed()` |
 | 第三方扩展框架（热加载、中间件链、版本协商） | `proto_ext_register/load/start/add_middleware/negotiate/...`（最多 64 适配器、32 中间件） |
 | 协议注册表（发现、依赖、统计、JSON 导出） | `proto_registry_register/find/list_all/activate/heartbeat/get_statistics/export_json`（最多 32 条目） |
-| 随核发布的开放标准协议（机制核）：MCP v1、A2A v0.3 适配器，AGNTCY ACP 句柄 API | MCP/A2A 经 `proto_std_providers()` 绑定（`mcp_v1_get_adapter()`、`a2a_v03_get_adapter()`）；AGNTCY 走独立句柄 API `agntcy_acp_create()`；装配经 `proto_reg_builtins()` |
+| 随核发布的开放标准协议（机制核）：MCP v1、A2A v0.3 适配器 | 经 `proto_std_providers()` 绑定（`mcp_v1_get_adapter()`、`a2a_v03_get_adapter()`）；装配经 `proto_reg_builtins()` |
 
 ## 构成
 
@@ -68,8 +68,7 @@ protocols/
 │   └── transformers/   # JSON-RPC ⇄ MCP/A2A 转换器
 ├── standards/
 │   ├── mcp/            # MCP v1 适配器 + 客户端 + 传输层（STDIO、HTTP+SSE、Streamable HTTP）
-│   ├── a2a/            # A2A v0.3（任务、Agent Card、协商、AES-256-GCM 认证）
-│   └── agntcy/         # AGNTCY ACP（发现、频道、广播、确认）
+│   └── a2a/            # A2A v0.3（任务、Agent Card、协商、AES-256-GCM 认证）
 ├── catalog/            # 装配数据：协议描述表 + 厂商转换端口
 └── tests/              # 适配器单元测试可执行文件（仅非 Windows）
 ```
@@ -83,8 +82,7 @@ protocols/
 [core/transformers](core/transformers/README.md) ·
 [standards](standards/README.md) ·
 [standards/mcp](standards/mcp/README.md) ·
-[standards/a2a](standards/a2a/README.md) ·
-[standards/agntcy](standards/agntcy/README.md)
+[standards/a2a](standards/a2a/README.md)
 
 ## 用法
 
@@ -110,9 +108,9 @@ protocols_framework_cleanup();
 ```
 
 `protocol_adapter_http()` 是门面中唯一的通用适配器工厂；各协议专用适配器
-经由自己的构造函数创建（如 `agntcy_acp_create()`），或通过扩展框架与注册表
-注册。消息携带协议、方向（请求/响应/通知/错误）、端点、payload/body、
-关联与追踪元数据，由协议栈注册的适配器负责编解码。
+经由自己的构造函数创建，或通过扩展框架与注册表注册。消息携带协议、方向
+（请求/响应/通知/错误）、端点、payload/body、关联与追踪元数据，由协议栈
+注册的适配器负责编解码。
 
 ## 构建
 
@@ -134,12 +132,11 @@ cmake --install build --prefix /opt/airymax
 | `PROTOCOLS_ENABLE_MCP` | `ON` | MCP v1 适配器源码（8 文件） |
 | `PROTOCOLS_ENABLE_MCP_TRANSPORT` | `ON`（Windows 强制 `OFF`） | MCP 传输层（STDIO / HTTP+SSE / Streamable HTTP） |
 | `PROTOCOLS_ENABLE_A2A` | `ON` | A2A 适配器功能标记 |
-| `PROTOCOLS_ENABLE_AGNTCY` | `ON` | AGNTCY ACP 适配器源码 |
 
 对照 `CMakeLists.txt` 实测的说明：
 
 - Common、core、A2A、catalog 的源码无条件编译，A2A 选项为功能标记；
-  MCP 与 AGNTCY 适配器源码由各自选项门控。
+  MCP 适配器源码由选项门控。
 - MCP 客户端源码仅在非 Windows 平台编译（POSIX 子进程/管道模型）。
 - `airy_protocols` 链接 `airy_common` 与 `svc_common`，并在配置期检测到
   cURL、cJSON 时启用（`AIRY_HAS_CURL` / `AIRY_HAS_CJSON`）。
