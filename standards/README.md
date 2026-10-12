@@ -5,16 +5,14 @@
 
 ## 概述
 
-`standards/` 收录三个随核发布的开放标准协议实现，把行业标准协议映射到
-AgentRT 统一协议体系。其中 MCP v1、A2A v0.3 提供适配器虚表，经端口
-`proto_std_providers()` 供装配层绑定；AGNTCY ACP 为独立句柄 API
-（`agntcy_acp_create()`），不经适配器虚表注册。
+`standards/` 收录两个随核发布的开放标准协议实现，把行业标准协议映射到
+AgentRT 统一协议体系。MCP v1、A2A v0.3 均提供适配器虚表，经端口
+`proto_std_providers()` 供装配层绑定。
 
 | 协议 | 目录 | 适配版本 | 定位 | 说明 |
 |------|------|----------|------|------|
 | MCP | [`mcp/`](mcp/README.md) | v1.0.0 | Agent ↔ Tool/数据 | Model Context Protocol：工具、资源、提示、采样 |
 | A2A | [`a2a/`](a2a/README.md) | v0.3.0 | Agent ↔ Agent | 智能体互访：Agent Card、任务、消息、协商 |
-| AGNTCY ACP | [`agntcy/`](agntcy/README.md) | v0.1.0 | Agent ↔ Agent | 智能体连接协议：发现、频道、广播、编排、确认 |
 
 ## 目录结构
 
@@ -23,24 +21,21 @@ standards/
 ├── a2a/
 │   ├── include/a2a_v03_adapter.h
 │   └── src/  a2a_v03_adapter.c · _task.c · _auth.c · _cb.c · _agent.c · _msg.c
-├── mcp/
-│   ├── include/  mcp_v1_adapter.h · mcp_client.h · mcp_transport.h
-│   └── src/  适配器 8 文件 · 客户端 6 文件 · 传输层 1 文件
-└── agntcy/
-    ├── include/agntcy_acp_adapter.h
-    └── src/agntcy_acp_adapter.c
+└── mcp/
+    ├── include/  mcp_v1_adapter.h · mcp_client.h · mcp_transport.h
+    └── src/  适配器 8 文件 · 客户端 6 文件 · 传输层 1 文件
 ```
 
 完整文件清单见各子目录 README。
 
 ## 规模与默认参数对比
 
-| 维度 | MCP v1 | A2A v0.3 | AGNTCY ACP |
-|------|--------|----------|------------|
-| 默认超时 | 30s | 60s | 30s |
-| 消息上限 | 10 MB | 16 MB | 8 MB |
-| 容量 | 工具 1024 / 资源 512 / 提示 256 | Agent 256 / 任务 4096 | Agent 512 / 任务 2048 / 频道 256 |
-| 安全 | 由承载传输决定 | Token 认证 + AES-256-GCM 签名 | 能力标志 + ACK 协商 |
+| 维度 | MCP v1 | A2A v0.3 |
+|------|--------|----------|
+| 默认超时 | 30s | 60s |
+| 消息上限 | 10 MB | 16 MB |
+| 容量 | 工具 1024 / 资源 512 / 提示 256 | Agent 256 / 任务 4096 |
+| 安全 | 由承载传输决定 | Token 认证 + AES-256-GCM 签名 |
 
 ## 依赖与消费者
 
@@ -57,7 +52,6 @@ cURL、cJSON 时启用。下游主要为 [gateway](https://atomgit.com/openairym
 | MCP v1 适配器 | `PROTOCOLS_ENABLE_MCP`（默认 `ON`） |
 | MCP 客户端 | 仅非 Windows 平台编译（POSIX 子进程/管道模型） |
 | MCP 传输层 | `PROTOCOLS_ENABLE_MCP_TRANSPORT`（Windows 强制 `OFF`） |
-| AGNTCY ACP | `PROTOCOLS_ENABLE_AGNTCY`（默认 `ON`） |
 
 详见[主文档「构建」一节](../README_zh.md#构建)。
 

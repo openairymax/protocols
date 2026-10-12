@@ -8,7 +8,7 @@
 # 本模块提供统一的协议栈机制层，包括：
 # 1. 统一协议接口与消息类型 (Common Layer)
 # 2. 核心组件：路由器/转换器/扩展框架/注册中心 (Core Layer)
-# 3. 标准协议适配器：MCP/A2A/AGNTCY (Standards Layer)
+# 3. 标准协议适配器：MCP/A2A (Standards Layer)
 # 4. 装配数据面：协议描述与转换端口 (Catalog Layer)
 # 5. 统一接口定义 (Interfaces Layer)
 #
@@ -18,11 +18,10 @@
 
 
 # 编译选项
-option(PROTOCOLS_ENABLE_AGNTCY "Enable AGNTCY ACP protocol adapter" ON)
 option(PROTOCOLS_ENABLE_A2A "Enable A2A protocol adapter" ON)
 
 airy_print_info("[PROTOCOLS] Configuring protocols module (cJSON: ${AIRY_HAS_CJSON})")
-airy_print_info("[PROTOCOLS]   MCP: ${PROTOCOLS_ENABLE_MCP}, A2A: ${PROTOCOLS_ENABLE_A2A}, AGNTCY: ${PROTOCOLS_ENABLE_AGNTCY}")
+airy_print_info("[PROTOCOLS]   MCP: ${PROTOCOLS_ENABLE_MCP}, A2A: ${PROTOCOLS_ENABLE_A2A}")
 
 option(PROTOCOLS_ENABLE_MCP "Enable MCP protocol adapter" ON)
 # P2-24: MCP cJSON core is cross-platform; only Unix socket transport is POSIX-only
@@ -57,11 +56,6 @@ set(PROTOCOLS_INCLUDE_DIRS
     # R-09-124: migrated from root global include_directories
     ${CMAKE_CURRENT_SOURCE_DIR}/../atoms/corekern/include
 )
-
-if(PROTOCOLS_ENABLE_AGNTCY)
-    list(APPEND PROTOCOLS_INCLUDE_DIRS
-        ${CMAKE_CURRENT_SOURCE_DIR}/standards/agntcy/include)
-endif()
 
 # R-09-124: all includes moved to target_include_directories below
 
@@ -131,11 +125,6 @@ if(PROTOCOLS_ENABLE_MCP)
     endif()
 endif()
 
-if(PROTOCOLS_ENABLE_AGNTCY)
-    list(APPEND PROTOCOLS_STANDARDS_SOURCES
-        standards/agntcy/src/agntcy_acp_adapter.c)
-endif()
-
 # ============================================================
 # 源文件 (Source Files) — Catalog Layer (装配数据)
 # ============================================================
@@ -180,11 +169,6 @@ set(PROTOCOLS_STANDARDS_HEADERS
     standards/mcp/include/mcp_client.h
     standards/mcp/include/mcp_transport.h
 )
-
-if(PROTOCOLS_ENABLE_AGNTCY)
-    list(APPEND PROTOCOLS_STANDARDS_HEADERS
-        standards/agntcy/include/agntcy_acp_adapter.h)
-endif()
 
 # ============================================================
 # 合并所有头文件
@@ -270,7 +254,6 @@ airy_print_info("  Core sources:     ${PROTOCOLS_CORE_SOURCES}")
 airy_print_info("  Standard sources: ${PROTOCOLS_STANDARDS_SOURCES}")
 airy_print_info("  Total source files: ${PROTOCOLS_ALL_SOURCES}")
 airy_print_info("  Total header files: ${PROTOCOLS_ALL_HEADERS}")
-airy_print_info("  AGNTCY ACP:       ${PROTOCOLS_ENABLE_AGNTCY}")
 airy_print_info("==============================================")
 airy_print_info("")
 
@@ -284,7 +267,6 @@ airy_print_info("")
 if(BUILD_TESTS AND NOT WIN32)
     set(PROTOCOL_TEST_INCLUDE_DIRS
         ${CMAKE_CURRENT_SOURCE_DIR}/common/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/standards/agntcy/include
         ${CMAKE_CURRENT_SOURCE_DIR}/core/transformers/include
         ${CMAKE_CURRENT_SOURCE_DIR}/core/router/include
         ${CMAKE_CURRENT_SOURCE_DIR}/core/registry/include
@@ -299,17 +281,6 @@ if(BUILD_TESTS AND NOT WIN32)
         ${CMAKE_CURRENT_SOURCE_DIR}/../commons/utils/observability
         ${CMAKE_CURRENT_SOURCE_DIR}/../atoms/corekern/include
     )
-
-    if(PROTOCOLS_ENABLE_AGNTCY)
-        add_executable(test_agntcy_acp tests/test_agntcy_acp.c)
-        target_compile_definitions(test_agntcy_acp PRIVATE AIRY_COMPLIANCE_IMPL)
-        target_include_directories(test_agntcy_acp PRIVATE ${PROTOCOL_TEST_INCLUDE_DIRS})
-        target_link_libraries(test_agntcy_acp PRIVATE airy_protocols airy_common svc_common airy_platform_libs)
-        if(UNIX)
-            target_link_libraries(test_agntcy_acp PRIVATE pthread)
-        endif()
-        add_test(NAME test_agntcy_acp COMMAND test_agntcy_acp)
-    endif()
 
     # Mechanism-level adapters: A2A / MCP are part of the standards layer.
     if(PROTOCOLS_ENABLE_A2A)
