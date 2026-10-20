@@ -77,6 +77,16 @@ typedef struct {
 typedef airy_protocol_type_t protocol_type_t;
 typedef airy_protocol_type_t proto_type_t;
 
+/* LLM API 族：chat / embeddings 线格式。具体厂商 id 由协议注册表在
+ * [AIRY_PROTOCOL_VENDOR_BASE, AIRY_PROTOCOL_CUSTOM) 内分配，线格式检测只产出
+ * 本族规范值，消费者一律按族判定，不对某家厂商的取值做假设。 */
+#define AIRY_PROTOCOL_LLM AIRY_PROTOCOL_VENDOR_BASE
+
+static inline bool proto_is_llm(protocol_type_t type)
+{
+    return type >= AIRY_PROTOCOL_VENDOR_BASE && type < AIRY_PROTOCOL_CUSTOM;
+}
+
 typedef enum {
     DIRECTION_REQUEST = 0,
     DIRECTION_RESPONSE,

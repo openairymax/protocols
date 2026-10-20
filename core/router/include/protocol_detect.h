@@ -7,7 +7,7 @@
  * @brief Payload-level protocol detection.
  *
  * Single JSON signature probe shared by every gateway front end: classifies
- * a raw request body as JSON-RPC / MCP / A2A / OpenAI chat-completions.
+ * a raw request body as JSON-RPC / MCP / A2A / LLM chat-completions.
  * Transport-level hints (HTTP Content-Type, URL path) stay with the caller;
  * this probe reads the payload bytes only. Unknown payloads resolve to
  * AIRY_PROTOCOL_COUNT, the established "unknown, auto-detect" sentinel.
@@ -34,7 +34,7 @@ AIRY_ABI_BEGIN
  *
  * Judgment order follows the wire facts: a JSON-RPC 2.0 envelope first, then
  * MCP/A2A method namespaces inside that envelope ("tools/call", "tasks/send",
- * ...), then the OpenAI chat shape, then A2A structural and keyword
+ * ...), then the LLM API chat shape, then A2A structural and keyword
  * fallbacks.
  */
 protocol_type_t proto_detect_body(const char *data, size_t size);
