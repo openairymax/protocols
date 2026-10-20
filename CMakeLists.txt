@@ -75,7 +75,6 @@ set(PROTOCOLS_COMMON_SOURCES
 # 源文件 (Source Files) — Core Layer
 # ============================================================
 set(PROTOCOLS_CORE_SOURCES
-    core/router/src/protocol_router.c
     core/router/src/protocol_detect.c
     core/transformers/src/protocol_transformers.c
     core/registry/src/protocol_registry.c
@@ -156,7 +155,6 @@ set(PROTOCOLS_COMMON_HEADERS
 # 头文件 (Header Files) — Core Layer
 # ============================================================
 set(PROTOCOLS_CORE_HEADERS
-    core/router/include/protocol_router.h
     core/router/include/protocol_detect.h
     core/transformers/include/protocol_transformers.h
     core/registry/include/protocol_registry.h
