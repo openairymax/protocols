@@ -4,30 +4,11 @@
 // @owner: team-B
 
 #include "airy_memory.h"
-#include "protocol_router.h"
 #include "types.h"
 #include "unified_protocol.h"
 
-#include <stdlib.h>
-#include <string.h>
 #include "../../commons/utils/error/error.h"
 #include "error.h"
-
-#define MAX_HANDLERS 64
-#define MAX_HANDLER_NAME 64
-
-typedef struct {
-    char name[MAX_HANDLER_NAME];
-    void *context;
-    protocol_adapter_t *adapter;
-} handler_entry_t;
-
-struct protocol_handler_router_s {
-    handler_entry_t handlers[MAX_HANDLERS];
-    size_t handler_count;
-    uint64_t messages_routed;
-    uint64_t messages_failed;
-};
 
 int protocol_adapter_create(airy_protocol_type_t type, protocol_adapter_t *adapter)
 {
@@ -105,72 +86,4 @@ const char *protocol_type_name(airy_protocol_type_t type)
     default:
         return "Unknown";
     }
-}
-
-protocol_handler_route_result_t protocol_handler_router_create(protocol_handler_router_t *router)
-{
-    if (!router)
-        return PROTOCOL_HANDLER_ROUTE_ERR_INVALID_ARG;
-    struct protocol_handler_router_s *r =
-        (struct protocol_handler_router_s *)AIRY_CALLOC(1,
-                                                        sizeof(struct protocol_handler_router_s));
-    if (!r)
-        return PROTOCOL_HANDLER_ROUTE_ERR_INVALID_ARG;
-    *router = r;
-    return PROTOCOL_HANDLER_ROUTE_OK;
-}
-
-void protocol_handler_router_destroy(protocol_handler_router_t router)
-{
-    if (!router)
-        return;
-    AIRY_MEMSET(router->handlers, 0, sizeof(router->handlers));
-    router->handler_count = 0;
-    AIRY_FREE(router);
-}
-
-protocol_handler_route_result_t protocol_handler_router_register(protocol_handler_router_t router,
-                                                                 const char *protocol_name,
-                                                                 void *handler_context)
-{
-    if (!router || !protocol_name)
-        return PROTOCOL_HANDLER_ROUTE_ERR_INVALID_ARG;
-    if (router->handler_count >= MAX_HANDLERS)
-        return PROTOCOL_HANDLER_ROUTE_NO_HANDLER;
-
-    for (size_t i = 0; i < router->handler_count; i++) {
-        if (strcmp(router->handlers[i].name, protocol_name) == 0) {
-            router->handlers[i].context = handler_context;
-            return PROTOCOL_HANDLER_ROUTE_OK;
-        }
-    }
-
-    AIRY_STRNCPY_TERM(router->handlers[router->handler_count].name, protocol_name,
-                      MAX_HANDLER_NAME);
-    router->handlers[router->handler_count].name[MAX_HANDLER_NAME - 1] = '\0';
-    router->handlers[router->handler_count].context = handler_context;
-    router->handlers[router->handler_count].adapter = NULL;
-    router->handler_count++;
-    return PROTOCOL_HANDLER_ROUTE_OK;
-}
-
-protocol_handler_route_result_t protocol_handler_router_route(protocol_handler_router_t router,
-                                                              const char *target_protocol,
-                                                              const void *message,
-                                                              size_t message_len)
-{
-    if (!router || !target_protocol)
-        return PROTOCOL_HANDLER_ROUTE_ERR_INVALID_ARG;
-    if (!message || message_len == 0)
-        return PROTOCOL_HANDLER_ROUTE_ERR_INVALID_ARG;
-
-    for (size_t i = 0; i < router->handler_count; i++) {
-        if (strcmp(router->handlers[i].name, target_protocol) == 0) {
-            router->messages_routed++;
-            return PROTOCOL_HANDLER_ROUTE_OK;
-        }
-    }
-
-    router->messages_failed++;
-    return PROTOCOL_HANDLER_ROUTE_ERR_NOT_FOUND;
 }
