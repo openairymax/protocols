@@ -6,15 +6,13 @@
  * @file protocol_detect.c
  * @brief Payload-level protocol detection implementation.
  *
- * One structured (cJSON) signature probe for JSON-RPC / MCP / A2A / OpenAI.
+ * One structured (cJSON) signature probe for JSON-RPC / MCP / A2A / LLM API.
  * MCP and A2A requests ride inside JSON-RPC envelopes with namespaced
  * method names, so the envelope is classified by method prefix rather than
  * by scanning the whole body for substrings.
  */
 
 #include "../include/protocol_detect.h"
-
-#include "airy_protocol_interface.h"
 
 #include <cjson/cJSON.h>
 
@@ -60,7 +58,7 @@ protocol_type_t proto_detect_body(const char *data, size_t size)
             type = AIRY_PROTOCOL_JSON_RPC;
     } else if (has_key(json, "model") &&
                (has_key(json, "messages") || has_key(json, "prompt"))) {
-        type = proto_interface_parse_type("openai");
+        type = AIRY_PROTOCOL_LLM;
     } else if (has_key(json, "agent_id") &&
                (has_key(json, "task_id") || has_key(json, "message"))) {
         type = AIRY_PROTOCOL_A2A;

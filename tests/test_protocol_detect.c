@@ -9,7 +9,6 @@
 
 #include "protocol_detect.h"
 
-#include "airy_protocol_interface.h"
 #include "unified_protocol.h"
 
 #include <stdio.h>
@@ -101,19 +100,18 @@ static void test_a2a_inside_jsonrpc(void)
     PASS();
 }
 
-static void test_openai_shape(void)
+static void test_llm_shape(void)
 {
-    TEST("OpenAI detection via model+messages and legacy prompt");
+    TEST("LLM API detection via model+messages and legacy prompt");
 
     const char *chat =
         "{\"model\":\"m\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}";
     const char *legacy = "{\"model\":\"m\",\"prompt\":\"hi\"}";
-    protocol_type_t openai = proto_interface_parse_type("openai");
 
-    ASSERT_TRUE(proto_detect_body(chat, strlen(chat)) == openai,
-                "model+messages must be OpenAI");
-    ASSERT_TRUE(proto_detect_body(legacy, strlen(legacy)) == openai,
-                "model+prompt must be OpenAI");
+    ASSERT_TRUE(proto_detect_body(chat, strlen(chat)) == AIRY_PROTOCOL_LLM,
+                "model+messages must be LLM API");
+    ASSERT_TRUE(proto_detect_body(legacy, strlen(legacy)) == AIRY_PROTOCOL_LLM,
+                "model+prompt must be LLM API");
 
     PASS();
 }
@@ -124,7 +122,7 @@ static void test_non_chat_model_bodies_stay_unknown(void)
 
     const char *embed = "{\"model\":\"test-embed\",\"input\":[\"hello\"]}";
     ASSERT_TRUE(proto_detect_body(embed, strlen(embed)) == AIRY_PROTOCOL_COUNT,
-                "model+input alone must not be OpenAI");
+                "model+input alone must not be LLM API");
 
     PASS();
 }
@@ -172,7 +170,7 @@ int main(void)
     test_jsonrpc_envelope();
     test_mcp_method_namespaces();
     test_a2a_inside_jsonrpc();
-    test_openai_shape();
+    test_llm_shape();
     test_non_chat_model_bodies_stay_unknown();
     test_a2a_structural_fallbacks();
     test_legacy_mcp_key_is_not_mcp();
