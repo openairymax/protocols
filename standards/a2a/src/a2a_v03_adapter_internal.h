@@ -92,6 +92,15 @@ static inline bool a2a_v03_ctx_ready(const a2a_v03_adapter_t *a2a, const char *f
  * the shell may free it afterwards; callers bound to a static shell must not. */
 void a2a_v03_ctx_clear(a2a_v03_context_t *ctx);
 
+/* 参数门禁：条件不成立即在调用点上报同一错误码并返回 */
+#define A2A_REQ(cond, code, msg)                                                     \
+    do {                                                                             \
+        if (!(cond)) {                                                               \
+            airy_err_push_ex(code, __FILE__, __LINE__, __func__, msg);               \
+            return code;                                                             \
+        }                                                                            \
+    } while (0)
+
 /* Compatibility defines shared across split files */
 #define A2A_VERSION "0.3"
 

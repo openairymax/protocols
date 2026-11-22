@@ -18,11 +18,7 @@ int a2a_v03_send_message(a2a_v03_context_t *ctx, const char *target_agent_id,
                          const a2a_message_t *message, a2a_message_t **response,
                          size_t *response_count)
 {
-    if (!ctx || !target_agent_id || !message) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_send_message: IO error");
-        return AIRY_ERR_UNKNOWN;
-    }
+    A2A_REQ(ctx && target_agent_id && message, AIRY_ERR_UNKNOWN, "a2a_v03_send_message: IO error");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
@@ -49,11 +45,7 @@ int a2a_v03_send_message(a2a_v03_context_t *ctx, const char *target_agent_id,
 int a2a_v03_negotiate(a2a_v03_context_t *ctx, const a2a_negotiation_t *proposal,
                       a2a_negotiation_action_t *response_action, char **response_terms)
 {
-    if (!ctx || !proposal) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_negotiate: failed");
-        return AIRY_ERR_UNKNOWN;
-    }
+    A2A_REQ(ctx && proposal, AIRY_ERR_UNKNOWN, "a2a_v03_negotiate: failed");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
@@ -73,11 +65,7 @@ int a2a_v03_negotiate(a2a_v03_context_t *ctx, const a2a_negotiation_t *proposal,
 int a2a_v03_subscribe_notifications(a2a_v03_context_t *ctx, a2a_notification_handler_t handler,
                                     void *user_data)
 {
-    if (!ctx || !handler) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_subscribe_notifications: failed");
-        return AIRY_ERR_UNKNOWN;
-    }
+    A2A_REQ(ctx && handler, AIRY_ERR_UNKNOWN, "a2a_v03_subscribe_notifications: failed");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     adapter->notification_handler = handler;
     adapter->notification_handler_user_data = user_data;
@@ -86,11 +74,7 @@ int a2a_v03_subscribe_notifications(a2a_v03_context_t *ctx, a2a_notification_han
 
 int a2a_v03_unsubscribe_notifications(a2a_v03_context_t *ctx)
 {
-    if (!ctx) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_unsubscribe_notifications: failed");
-        return AIRY_ERR_UNKNOWN;
-    }
+    A2A_REQ(ctx, AIRY_ERR_UNKNOWN, "a2a_v03_unsubscribe_notifications: failed");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     adapter->notification_handler = NULL;
     adapter->notification_handler_user_data = NULL;
@@ -99,11 +83,7 @@ int a2a_v03_unsubscribe_notifications(a2a_v03_context_t *ctx)
 
 int a2a_v03_send_notification(a2a_v03_context_t *ctx, const a2a_notification_t *notification)
 {
-    if (!ctx || !notification) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_send_notification: IO error");
-        return AIRY_ERR_UNKNOWN;
-    }
+    A2A_REQ(ctx && notification, AIRY_ERR_UNKNOWN, "a2a_v03_send_notification: IO error");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!adapter->notification_handler) {
         airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__, "operation failed");
@@ -116,11 +96,7 @@ int a2a_v03_send_notification(a2a_v03_context_t *ctx, const a2a_notification_t *
 int a2a_v03_stream_task_update(a2a_v03_context_t *ctx, const char *task_id, double progress,
                                const char *chunk_json, bool is_final)
 {
-    if (!ctx || !task_id) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_stream_task_update: failed");
-        return AIRY_ERR_UNKNOWN;
-    }
+    A2A_REQ(ctx && task_id, AIRY_ERR_UNKNOWN, "a2a_v03_stream_task_update: failed");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
@@ -149,11 +125,7 @@ int a2a_v03_stream_task_update(a2a_v03_context_t *ctx, const char *task_id, doub
 
 int a2a_v03_set_task_handler(a2a_v03_context_t *ctx, a2a_task_handler_t handler, void *user_data)
 {
-    if (!ctx) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_set_task_handler: failed");
-        return AIRY_ERR_UNKNOWN;
-    }
+    A2A_REQ(ctx, AIRY_ERR_UNKNOWN, "a2a_v03_set_task_handler: failed");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     adapter->task_handler = handler;
     adapter->task_handler_user_data = user_data;
@@ -163,11 +135,7 @@ int a2a_v03_set_task_handler(a2a_v03_context_t *ctx, a2a_task_handler_t handler,
 int a2a_v03_set_message_handler(a2a_v03_context_t *ctx, a2a_message_handler_t handler,
                                 void *user_data)
 {
-    if (!ctx) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_set_message_handler: failed");
-        return AIRY_ERR_UNKNOWN;
-    }
+    A2A_REQ(ctx, AIRY_ERR_UNKNOWN, "a2a_v03_set_message_handler: failed");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     adapter->message_handler = handler;
     adapter->message_handler_user_data = user_data;
@@ -177,11 +145,7 @@ int a2a_v03_set_message_handler(a2a_v03_context_t *ctx, a2a_message_handler_t ha
 int a2a_v03_set_negotiation_handler(a2a_v03_context_t *ctx, a2a_negotiation_handler_t handler,
                                     void *user_data)
 {
-    if (!ctx) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_set_negotiation_handler: failed");
-        return AIRY_ERR_UNKNOWN;
-    }
+    A2A_REQ(ctx, AIRY_ERR_UNKNOWN, "a2a_v03_set_negotiation_handler: failed");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     adapter->negotiation_handler = handler;
     adapter->negotiation_handler_user_data = user_data;
@@ -191,11 +155,7 @@ int a2a_v03_set_negotiation_handler(a2a_v03_context_t *ctx, a2a_negotiation_hand
 int a2a_v03_set_streaming_handler(a2a_v03_context_t *ctx, a2a_streaming_handler_t handler,
                                   void *user_data)
 {
-    if (!ctx) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_set_streaming_handler: failed");
-        return AIRY_ERR_UNKNOWN;
-    }
+    A2A_REQ(ctx, AIRY_ERR_UNKNOWN, "a2a_v03_set_streaming_handler: failed");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     adapter->streaming_handler = handler;
     adapter->streaming_handler_user_data = user_data;
@@ -205,11 +165,7 @@ int a2a_v03_set_streaming_handler(a2a_v03_context_t *ctx, a2a_streaming_handler_
 int a2a_v03_set_transport(a2a_v03_context_t *ctx, int (*write_fn)(void *, const void *, size_t),
                           void *transport_ctx)
 {
-    if (!ctx || !write_fn) {
-        airy_err_push_ex(AIRY_ERR_INVALID_PARAM, __FILE__, __LINE__, __func__,
-                         "a2a_v03_set_transport: invalid parameter");
-        return AIRY_ERR_INVALID_PARAM;
-    }
+    A2A_REQ(ctx && write_fn, AIRY_ERR_INVALID_PARAM, "a2a_v03_set_transport: invalid parameter");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     adapter->transport_write = write_fn;
     adapter->transport_ctx = transport_ctx;

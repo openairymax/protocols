@@ -104,11 +104,7 @@ typedef struct {
 int a2a_v03_delegate_task(a2a_handle_t handle, const a2a_task_request_internal_t *request,
                           a2a_task_response_internal_t *out_response)
 {
-    if (!handle || !request || !out_response) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_delegate_task: failed");
-        return AIRY_ERR_UNKNOWN;
-    }
+    A2A_REQ(handle && request && out_response, AIRY_ERR_UNKNOWN, "a2a_v03_delegate_task: failed");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)handle;
     if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
@@ -178,11 +174,7 @@ int a2a_v03_negotiate_task(a2a_handle_t handle, const char *task_id,
 int a2a_v03_achieve_consensus(a2a_handle_t handle, const a2a_consensus_request_internal_t *request,
                               a2a_consensus_result_internal_t *out_result)
 {
-    if (!handle || !request || !out_result) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_achieve_consensus: failed");
-        return AIRY_ERR_UNKNOWN;
-    }
+    A2A_REQ(handle && request && out_result, AIRY_ERR_UNKNOWN, "a2a_v03_achieve_consensus: failed");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)handle;
     if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
@@ -280,11 +272,7 @@ int a2a_v03_stream_task(a2a_handle_t handle, const a2a_task_request_internal_t *
 
 int a2a_v03_get_stats(a2a_handle_t handle, a2a_stats_internal_t *out_stats)
 {
-    if (!handle || !out_stats) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_get_stats: failed");
-        return AIRY_ERR_UNKNOWN;
-    }
+    A2A_REQ(handle && out_stats, AIRY_ERR_UNKNOWN, "a2a_v03_get_stats: failed");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)handle;
     if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
@@ -308,11 +296,7 @@ int a2a_v03_get_stats(a2a_handle_t handle, a2a_stats_internal_t *out_stats)
 int a2a_v03_create_task(a2a_v03_context_t *ctx, const char *agent_id, const char *description,
                         const char *input_json, a2a_task_t **task)
 {
-    if (!ctx || !task) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_create_task: failed");
-        return AIRY_ERR_UNKNOWN;
-    }
+    A2A_REQ(ctx && task, AIRY_ERR_UNKNOWN, "a2a_v03_create_task: failed");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
@@ -367,11 +351,7 @@ int a2a_v03_create_task(a2a_v03_context_t *ctx, const char *agent_id, const char
 int a2a_v03_update_task(a2a_v03_context_t *ctx, const char *task_id, a2a_task_state_t new_state,
                         const char *output_json, double progress)
 {
-    if (!ctx || !task_id) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_update_task: failed");
-        return AIRY_ERR_UNKNOWN;
-    }
+    A2A_REQ(ctx && task_id, AIRY_ERR_UNKNOWN, "a2a_v03_update_task: failed");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
@@ -396,11 +376,7 @@ int a2a_v03_update_task(a2a_v03_context_t *ctx, const char *task_id, a2a_task_st
 
 int a2a_v03_cancel_task(a2a_v03_context_t *ctx, const char *task_id, const char *reason)
 {
-    if (!ctx || !task_id) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_cancel_task: failed");
-        return AIRY_ERR_UNKNOWN;
-    }
+    A2A_REQ(ctx && task_id, AIRY_ERR_UNKNOWN, "a2a_v03_cancel_task: failed");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
@@ -423,11 +399,7 @@ int a2a_v03_cancel_task(a2a_v03_context_t *ctx, const char *task_id, const char 
 
 int a2a_v03_get_task(a2a_v03_context_t *ctx, const char *task_id, a2a_task_t **task)
 {
-    if (!ctx || !task_id || !task) {
-        airy_err_push_ex(AIRY_ERR_UNKNOWN, __FILE__, __LINE__, __func__,
-                         "a2a_v03_get_task: failed");
-        return AIRY_ERR_UNKNOWN;
-    }
+    A2A_REQ(ctx && task_id && task, AIRY_ERR_UNKNOWN, "a2a_v03_get_task: failed");
     struct a2a_v03_adapter_s *adapter = (struct a2a_v03_adapter_s *)ctx;
     if (!a2a_v03_ctx_ready(adapter, __func__, __FILE__, __LINE__))
         return AIRY_ERR_STATE_ERROR;
