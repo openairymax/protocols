@@ -92,18 +92,6 @@ void a2a_v03_destroy(a2a_handle_t handle)
     AIRY_FREE(adapter);
 }
 
-bool a2a_v03_is_initialized(a2a_handle_t handle)
-{
-    if (!handle)
-        return false;
-    return ((struct a2a_v03_adapter_s *)handle)->initialized;
-}
-
-const char *a2a_v03_version(void)
-{
-    return "AgentRT-A2A/" A2A_VERSION;
-}
-
 /* ============================================================================
  * New-Style API implementations (a2a_v03_adapter.h declared functions)
  * ============================================================================ */

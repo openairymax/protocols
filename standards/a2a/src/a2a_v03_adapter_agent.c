@@ -192,19 +192,6 @@ const a2a_agent_card_t *a2a_v03_get_agent_card(a2a_v03_context_t *ctx, const cha
     return NULL;
 }
 
-void a2a_free_agent_list(a2a_agent_list_t *list)
-{
-    if (!list)
-        return;
-    for (size_t i = 0; i < list->count && i < A2A_MAX_AGENTS; i++) {
-        AIRY_FREE((void *)list->agents[i].id);
-        AIRY_FREE((void *)list->agents[i].name);
-        AIRY_FREE((void *)list->agents[i].url);
-        AIRY_FREE((void *)list->agents[i].capabilities_json);
-    }
-    AIRY_MEMSET(list, 0, sizeof(*list));
-}
-
 int a2a_v03_unregister_agent(a2a_v03_context_t *ctx, const char *agent_id)
 {
     if (!ctx || !agent_id) {
