@@ -16,33 +16,26 @@ int mcp_v1_handle_tools_list(mcp_v1_context_t *ctx, char **response_json)
         return AIRY_ERR_UNKNOWN;
     }
 
-    size_t buf_size = 4096 + ctx->tool_count * 512;
-    char *buf = AIRY_MALLOC(buf_size);
-    if (!buf) {
-        airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__,
-                         "mcp_v1_adapter: null pointer");
-        return AIRY_ERR_NULL_POINTER;
-    }
-
-    size_t offset = 0;
-    offset += snprintf(buf + offset, buf_size - offset, "{\"tools\":[");
+    mcp_list_t list;
+    int rc = mcp_list_open(&list, ctx->tool_count, 512, "{\"tools\":[");
+    if (rc != 0)
+        return rc;
 
     for (size_t i = 0; i < ctx->tool_count; i++) {
         if (i > 0)
-            offset += snprintf(buf + offset, buf_size - offset, ",");
+            list.off += snprintf(list.buf + list.off, list.size - list.off, ",");
         char *name = json_string_escape(ctx->tools[i].tool.name);
         char *desc = json_string_escape(ctx->tools[i].tool.description);
-        offset +=
-            snprintf(buf + offset, buf_size - offset,
-                     "{\"name\":%s,\"description\":%s,\"inputSchema\":%s}", name, desc,
-                     ctx->tools[i].tool.input_schema_json ? ctx->tools[i].tool.input_schema_json :
-                                                            "{}");
+        list.off += snprintf(list.buf + list.off, list.size - list.off,
+                             "{\"name\":%s,\"description\":%s,\"inputSchema\":%s}", name, desc,
+                             ctx->tools[i].tool.input_schema_json ?
+                                 ctx->tools[i].tool.input_schema_json :
+                                 "{}");
         AIRY_FREE(name);
         AIRY_FREE(desc);
     }
 
-    offset += snprintf(buf + offset, buf_size - offset, "]}");
-    *response_json = buf;
+    *response_json = mcp_list_close(&list);
     return 0;
 }
 

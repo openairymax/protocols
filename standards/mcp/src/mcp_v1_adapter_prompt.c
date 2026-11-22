@@ -16,33 +16,26 @@ int mcp_v1_handle_prompts_list(mcp_v1_context_t *ctx, char **response_json)
         return AIRY_ERR_UNKNOWN;
     }
 
-    size_t buf_size = 4096 + ctx->prompt_count * 512;
-    char *buf = AIRY_MALLOC(buf_size);
-    if (!buf) {
-        airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__,
-                         "mcp_v1_adapter: null pointer");
-        return AIRY_ERR_NULL_POINTER;
-    }
-
-    size_t offset = 0;
-    offset += snprintf(buf + offset, buf_size - offset, "{\"prompts\":[");
+    mcp_list_t list;
+    int rc = mcp_list_open(&list, ctx->prompt_count, 512, "{\"prompts\":[");
+    if (rc != 0)
+        return rc;
 
     for (size_t i = 0; i < ctx->prompt_count; i++) {
         if (i > 0)
-            offset += snprintf(buf + offset, buf_size - offset, ",");
+            list.off += snprintf(list.buf + list.off, list.size - list.off, ",");
         char *name = json_string_escape(ctx->prompts[i].prompt.name);
         char *desc = json_string_escape(ctx->prompts[i].prompt.description);
-        offset += snprintf(buf + offset, buf_size - offset,
-                           "{\"name\":%s,\"description\":%s,\"arguments\":%s}", name, desc,
-                           ctx->prompts[i].prompt.arguments_schema_json ?
-                               ctx->prompts[i].prompt.arguments_schema_json :
-                               "[]");
+        list.off += snprintf(list.buf + list.off, list.size - list.off,
+                             "{\"name\":%s,\"description\":%s,\"arguments\":%s}", name, desc,
+                             ctx->prompts[i].prompt.arguments_schema_json ?
+                                 ctx->prompts[i].prompt.arguments_schema_json :
+                                 "[]");
         AIRY_FREE(name);
         AIRY_FREE(desc);
     }
 
-    offset += snprintf(buf + offset, buf_size - offset, "]}");
-    *response_json = buf;
+    *response_json = mcp_list_close(&list);
     return 0;
 }
 
@@ -76,35 +69,28 @@ int mcp_v1_handle_prompts_get(mcp_v1_context_t *ctx, const char *name, const cha
     size_t message_count = 0;
     found->handler(name, arguments_json, &messages, &message_count, found->user_data);
 
-    size_t buf_size = 4096 + message_count * 1024;
-    char *buf = AIRY_MALLOC(buf_size);
-    if (!buf) {
-        airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__,
-                         "mcp_v1_adapter: null pointer");
-        return AIRY_ERR_NULL_POINTER;
-    }
-
-    size_t offset = 0;
+    mcp_list_t list;
+    int rc = mcp_list_open(&list, message_count, 1024, "{\"description\":\"Prompt: ");
+    if (rc != 0)
+        return rc;
     char *name_esc = json_string_escape(name);
-    offset += snprintf(buf + offset, buf_size - offset,
-                       "{\"description\":\"Prompt: %s\",\"messages\":[", name_esc);
+    list.off += snprintf(list.buf + list.off, list.size - list.off, "%s\",\"messages\":[",
+                         name_esc);
     AIRY_FREE(name_esc);
-    name_esc = NULL;
 
     for (size_t i = 0; i < message_count && i < 100; i++) {
         if (i > 0)
-            offset += snprintf(buf + offset, buf_size - offset, ",");
+            list.off += snprintf(list.buf + list.off, list.size - list.off, ",");
         char *role = json_string_escape(messages[i].role);
         char *content =
             json_string_escape(messages[i].content ? (const char *)messages[i].content : "");
-        offset += snprintf(buf + offset, buf_size - offset,
-                           "{\"role\":%s,\"content\":{\"type\":\"text\",\"text\":\"%s\"}}", role,
-                           content);
+        list.off += snprintf(list.buf + list.off, list.size - list.off,
+                             "{\"role\":%s,\"content\":{\"type\":\"text\",\"text\":\"%s\"}}", role,
+                             content);
         AIRY_FREE(role);
         AIRY_FREE(content);
     }
 
-    offset += snprintf(buf + offset, buf_size - offset, "]}");
-    *response_json = buf;
+    *response_json = mcp_list_close(&list);
     return 0;
 }

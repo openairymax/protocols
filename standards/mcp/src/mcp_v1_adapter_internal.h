@@ -85,6 +85,33 @@ struct mcp_v1_context_s {
     int stream_active;
 };
 
+/* 列表响应缓冲区：open 申请并写入首段，close 补尾并移交所有权 */
+typedef struct {
+    char *buf;
+    size_t size;
+    size_t off;
+} mcp_list_t;
+
+static inline int mcp_list_open(mcp_list_t *l, size_t n, size_t per, const char *head)
+{
+    l->size = 4096 + n * per;
+    l->buf = AIRY_MALLOC(l->size);
+    l->off = 0;
+    if (!l->buf) {
+        airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__,
+                         "mcp_v1_adapter: null pointer");
+        return AIRY_ERR_NULL_POINTER;
+    }
+    l->off += snprintf(l->buf, l->size, "%s", head);
+    return 0;
+}
+
+static inline char *mcp_list_close(mcp_list_t *l)
+{
+    l->off += snprintf(l->buf + l->off, l->size - l->off, "]}");
+    return l->buf;
+}
+
 /* Helpers shared across files (was static; now external linkage) */
 char *json_string_escape(const char *str);
 char *strdup_safe(const char *s);

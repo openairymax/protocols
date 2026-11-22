@@ -16,35 +16,28 @@ int mcp_v1_handle_resources_list(mcp_v1_context_t *ctx, char **response_json)
         return AIRY_ERR_UNKNOWN;
     }
 
-    size_t buf_size = 4096 + ctx->resource_count * 512;
-    char *buf = AIRY_MALLOC(buf_size);
-    if (!buf) {
-        airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__,
-                         "mcp_v1_adapter: null pointer");
-        return AIRY_ERR_NULL_POINTER;
-    }
-
-    size_t offset = 0;
-    offset += snprintf(buf + offset, buf_size - offset, "{\"resources\":[");
+    mcp_list_t list;
+    int rc = mcp_list_open(&list, ctx->resource_count, 512, "{\"resources\":[");
+    if (rc != 0)
+        return rc;
 
     for (size_t i = 0; i < ctx->resource_count; i++) {
         if (i > 0)
-            offset += snprintf(buf + offset, buf_size - offset, ",");
+            list.off += snprintf(list.buf + list.off, list.size - list.off, ",");
         char *uri = json_string_escape(ctx->resources[i].resource.uri);
         char *name = json_string_escape(ctx->resources[i].resource.name);
         char *desc = json_string_escape(ctx->resources[i].resource.description);
         char *mime = json_string_escape(ctx->resources[i].resource.mime_type);
-        offset += snprintf(buf + offset, buf_size - offset,
-                           "{\"uri\":%s,\"name\":%s,\"description\":%s,\"mimeType\":%s}", uri, name,
-                           desc, mime);
+        list.off += snprintf(list.buf + list.off, list.size - list.off,
+                             "{\"uri\":%s,\"name\":%s,\"description\":%s,\"mimeType\":%s}", uri,
+                             name, desc, mime);
         AIRY_FREE(uri);
         AIRY_FREE(name);
         AIRY_FREE(desc);
         AIRY_FREE(mime);
     }
 
-    offset += snprintf(buf + offset, buf_size - offset, "]}");
-    *response_json = buf;
+    *response_json = mcp_list_close(&list);
     return 0;
 }
 
@@ -114,31 +107,25 @@ int mcp_v1_handle_resources_templates(mcp_v1_context_t *ctx, char **response_jso
         return AIRY_ERR_UNKNOWN;
     }
 
-    size_t buf_size = 4096 + ctx->template_count * 512;
-    char *buf = AIRY_MALLOC(buf_size);
-    if (!buf) {
-        airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__,
-                         "mcp_v1_adapter: null pointer");
-        return AIRY_ERR_NULL_POINTER;
-    }
-
-    size_t offset = 0;
-    offset += snprintf(buf + offset, buf_size - offset, "{\"resourceTemplates\":[");
+    mcp_list_t list;
+    int rc = mcp_list_open(&list, ctx->template_count, 512, "{\"resourceTemplates\":[");
+    if (rc != 0)
+        return rc;
 
     for (size_t i = 0; i < ctx->template_count; i++) {
         if (i > 0)
-            offset += snprintf(buf + offset, buf_size - offset, ",");
+            list.off += snprintf(list.buf + list.off, list.size - list.off, ",");
         char *uri = json_string_escape(ctx->resource_templates[i].uri_template);
         char *name = json_string_escape(ctx->resource_templates[i].name);
         char *desc = json_string_escape(ctx->resource_templates[i].description);
-        offset += snprintf(buf + offset, buf_size - offset,
-                           "{\"uriTemplate\":%s,\"name\":%s,\"description\":%s}", uri, name, desc);
+        list.off += snprintf(list.buf + list.off, list.size - list.off,
+                             "{\"uriTemplate\":%s,\"name\":%s,\"description\":%s}", uri, name,
+                             desc);
         AIRY_FREE(uri);
         AIRY_FREE(name);
         AIRY_FREE(desc);
     }
 
-    offset += snprintf(buf + offset, buf_size - offset, "]}");
-    *response_json = buf;
+    *response_json = mcp_list_close(&list);
     return 0;
 }
