@@ -8,6 +8,28 @@
 
 #include "mcp_v1_adapter_internal.h"
 
+/* 把执行结果打包成 MCP content 响应；容量按每项 1 KiB 预留，溢出返回 NULL */
+static char *mcp_pack(mcp_content_t *results, size_t count, bool is_error)
+{
+    if (count > (SIZE_MAX - 4096) / 1024)
+        return NULL;
+    size_t size = 4096 + count * 1024;
+    char *buf = AIRY_MALLOC(size);
+    if (!buf)
+        return NULL;
+    size_t off = snprintf(buf, size, "{\"isError\":%s,\"content\":[", is_error ? "true" : "false");
+    for (size_t i = 0; i < count; i++) {
+        if (i > 0)
+            off += snprintf(buf + off, size - off, ",");
+        char *text_esc = json_string_escape(results[i].text);
+        off += snprintf(buf + off, size - off, "{\"type\":\"%s\",\"text\":%s}",
+                        mcp_type_str(results[i].type), text_esc);
+        AIRY_FREE(text_esc);
+    }
+    off += snprintf(buf + off, size - off, "]}");
+    return buf;
+}
+
 int mcp_v1_handle_tools_list(mcp_v1_context_t *ctx, char **response_json)
 {
     if (!ctx || !response_json) {
@@ -90,30 +112,13 @@ int mcp_v1_handle_tools_call(mcp_v1_context_t *ctx, const char *name, const char
                          "mcp_v1_adapter: result_count overflow");
         return AIRY_ERR_OVERFLOW;
     }
-    size_t buf_size = 4096 + result_count * 1024;
-    char *buf = AIRY_MALLOC(buf_size);
+    char *buf = mcp_pack(results, result_count, is_error);
     if (!buf) {
         mcp_content_destroy(results, result_count);
         airy_err_push_ex(AIRY_ERR_NULL_POINTER, __FILE__, __LINE__, __func__,
                          "mcp_v1_adapter: null pointer");
         return AIRY_ERR_NULL_POINTER;
     }
-
-    size_t offset = 0;
-    offset += snprintf(buf + offset, buf_size - offset, "{\"isError\":%s,\"content\":[",
-                       is_error ? "true" : "false");
-
-    for (size_t i = 0; i < result_count; i++) {
-        if (i > 0)
-            offset += snprintf(buf + offset, buf_size - offset, ",");
-        const char *type_str = mcp_type_str(results[i].type);
-        char *text_esc = json_string_escape(results[i].text);
-        offset += snprintf(buf + offset, buf_size - offset, "{\"type\":\"%s\",\"text\":%s}",
-                           type_str, text_esc);
-        AIRY_FREE(text_esc);
-    }
-
-    offset += snprintf(buf + offset, buf_size - offset, "]}");
     *response_json = buf;
 
     mcp_content_destroy(results, result_count);
@@ -215,27 +220,8 @@ int mcp_v1_handle_tools_call_streaming(mcp_v1_context_t *ctx, const char *name,
         }
     }
 
-    size_t final_buf_size = 0;
-    char *final_json = NULL;
-    if (result_count <= (SIZE_MAX - 4096) / 1024) {
-        final_buf_size = 4096 + result_count * 1024;
-        final_json = AIRY_MALLOC(final_buf_size);
-    }
+    char *final_json = mcp_pack(results, result_count, is_error);
     if (final_json) {
-        size_t offset = 0;
-        offset += snprintf(final_json + offset, final_buf_size - offset,
-                           "{\"isError\":%s,\"content\":[", is_error ? "true" : "false");
-        for (size_t i = 0; i < result_count; i++) {
-            if (i > 0)
-                offset += snprintf(final_json + offset, final_buf_size - offset, ",");
-            const char *type_str = mcp_type_str(results[i].type);
-            char *text_esc = json_string_escape(results[i].text);
-            offset += snprintf(final_json + offset, final_buf_size - offset,
-                               "{\"type\":\"%s\",\"text\":%s}", type_str, text_esc);
-            AIRY_FREE(text_esc);
-        }
-        offset += snprintf(final_json + offset, final_buf_size - offset, "]}");
-
         emit_sse_event(callback, user_data, "tools/call/result", final_json);
         AIRY_FREE(final_json);
     }
